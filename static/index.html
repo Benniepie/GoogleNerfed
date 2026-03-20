@@ -40,8 +40,18 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .control-panel h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; }
+        .control-panel h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
         
+        .control-panel.collapsed .basemap-switcher,
+        .control-panel.collapsed .layer-list,
+        .control-panel.collapsed .upload-section {
+            display: none;
+        }
+
+        .control-panel.collapsed {
+            width: auto;
+        }
+
         /* Base Map Switcher */
         .basemap-switcher { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; }
         .basemap-switcher label { font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
@@ -114,8 +124,14 @@
 
     <div id="map"></div>
 
-    <div class="control-panel">
-        <h2>MyMaps Control</h2>
+    <div class="control-panel" id="controlPanel">
+        <h2>
+            MyMaps Control
+            <div>
+                <button class="icon-btn" id="settingsBtn" title="Settings" style="font-size: 1rem; margin-right: 5px;">⚙️</button>
+                <button class="icon-btn" id="collapseBtn" title="Toggle Panel" style="font-size: 1rem;">➖</button>
+            </div>
+        </h2>
 
         <div class="basemap-switcher">
             <label>
@@ -132,29 +148,62 @@
 
         <div class="upload-section">
             <form id="uploadForm">
-                <input type="file" id="kmlFile" accept=".kml,.kmz" required />
+                <input type="file" id="kmlFile" accept=".kml,.kmz" multiple required />
                 <button type="submit" id="uploadBtn" class="primary-btn">Upload KML / KMZ</button>
                 <div id="statusMsg" class="status-msg">Upload complete!</div>
             </form>
+            <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-top: 15px; background: var(--border-color);">⬇️ Export Displayed Data</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Settings</h3>
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="display:block; margin-bottom:5px;">Default Map Center (Lat, Lng):</label>
+                <input type="number" id="defaultLat" step="any" style="width: 45%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;"> ,
+                <input type="number" id="defaultLng" step="any" style="width: 45%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;">
+            </div>
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="display:block; margin-bottom:5px;">Default Zoom:</label>
+                <input type="number" id="defaultZoom" step="0.25" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;">
+            </div>
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="display:block; margin-bottom:5px;">Default Basemap:</label>
+                <select id="defaultBasemap" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;">
+                    <option value="dark">Dark Map</option>
+                    <option value="satellite">Satellite</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <button class="icon-btn" onclick="useCurrentView()" style="font-size: 0.9rem; background: rgba(255,255,255,0.1); padding: 5px 10px; width: 100%;">📍 Use Current Map View</button>
+            </div>
+            <button class="primary-btn" onclick="saveSettings()" style="width:100%; margin-bottom:10px;">Save Settings</button>
+            <button class="primary-btn" onclick="document.getElementById('settingsModal').style.display='none'" style="width:100%; background:var(--border-color);">Close</button>
         </div>
     </div>
 
     <!-- Style Picker Modal -->
     <div id="colorModal">
-        <div class="modal-content">
-            <h3 style="margin-top:0;">Pick a Colour</h3>
+        <div class="modal-content" style="width: 320px;">
+            <h3 style="margin-top:0;">Layer Styling</h3>
             <p id="stylingLayerName" style="font-size:0.8rem; color:#94a3b8; word-break:break-all;"></p>
-            <div class="color-options">
-                <div class="color-swatch" style="background:#ef4444" onclick="applyColor('#ef4444')"></div>
-                <div class="color-swatch" style="background:#3b82f6" onclick="applyColor('#3b82f6')"></div>
-                <div class="color-swatch" style="background:#22c55e" onclick="applyColor('#22c55e')"></div>
-                <div class="color-swatch" style="background:#eab308" onclick="applyColor('#eab308')"></div>
-                <div class="color-swatch" style="background:#a855f7" onclick="applyColor('#a855f7')"></div>
-                <div class="color-swatch" style="background:#f97316" onclick="applyColor('#f97316')"></div>
-                <div class="color-swatch" style="background:#ec4899" onclick="applyColor('#ec4899')"></div>
-                <div class="color-swatch" style="background:#ffffff" onclick="applyColor('#ffffff')"></div>
+
+            <div style="text-align: left; margin-bottom: 15px;">
+                <label style="display:block; margin-bottom:5px;">Style Type:</label>
+                <select id="styleTypeSelect" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;" onchange="renderColorPickers()">
+                    <option value="single">Single Style</option>
+                    <option value="grouped">Group by Name</option>
+                </select>
             </div>
-            <button class="primary-btn" onclick="document.getElementById('colorModal').style.display='none'" style="width:100%; margin-top:10px;">Close</button>
+
+            <div id="colorPickerContainer" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;">
+                <!-- Dynamically populated -->
+            </div>
+
+            <button class="primary-btn" onclick="applyStyle()" style="width:100%; margin-bottom: 10px;">Save Style</button>
+            <button class="primary-btn" onclick="document.getElementById('colorModal').style.display='none'" style="width:100%; background:var(--border-color);">Close</button>
         </div>
     </div>
 
@@ -166,10 +215,12 @@
     <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.20/leaflet-maplibre-gl.js"></script>
     <!-- toGeoJSON (Parses KML to GeoJSON) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
+    <!-- tokml (Parses GeoJSON to KML) -->
+    <script src="https://unpkg.com/tokml/tokml.js"></script>
 
     <script>
         // 1. Initialise the Map
-        const map = L.map('map', { zoomControl: false }).setView([49.0, 31.0], 6); // Default view centered on Ukraine
+        const map = L.map('map', { zoomControl: false, zoomSnap: 0.25, zoomDelta: 0.25 }).setView([49.0, 31.0], 6); // Default view centered on Ukraine
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         // 2. Base Maps Setup
@@ -182,9 +233,6 @@
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
             })
         };
-
-        // Add default dark map
-        baseMaps.dark.addTo(map);
 
         // Handle Base Map Switching
         document.querySelectorAll('input[name="basemap"]').forEach(radio => {
@@ -201,9 +249,92 @@
 
         const activeLayers = {};
         
-        // Load styles from local storage for persistence across reloads
-        let layerStyles = JSON.parse(localStorage.getItem('mymaps_styles')) || {};
+        // Settings from backend
+        let appSettings = {};
+        let layerStyles = {};
         let currentStylingLayer = null;
+
+        // Settings UI Logic
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            document.getElementById('defaultLat').value = appSettings.defaultLat || 49.0;
+            document.getElementById('defaultLng').value = appSettings.defaultLng || 31.0;
+            document.getElementById('defaultZoom').value = appSettings.defaultZoom || 6;
+            document.getElementById('defaultBasemap').value = appSettings.defaultBasemap || 'dark';
+            document.getElementById('settingsModal').style.display = 'flex';
+        });
+
+        function useCurrentView() {
+            const center = map.getCenter();
+            document.getElementById('defaultLat').value = center.lat.toFixed(5);
+            document.getElementById('defaultLng').value = center.lng.toFixed(5);
+            document.getElementById('defaultZoom').value = map.getZoom();
+        }
+
+        async function saveSettings() {
+            appSettings.defaultLat = parseFloat(document.getElementById('defaultLat').value);
+            appSettings.defaultLng = parseFloat(document.getElementById('defaultLng').value);
+            appSettings.defaultZoom = parseFloat(document.getElementById('defaultZoom').value);
+            appSettings.defaultBasemap = document.getElementById('defaultBasemap').value;
+            appSettings.layerStyles = layerStyles;
+
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(appSettings)
+                });
+                if (response.ok) {
+                    document.getElementById('settingsModal').style.display = 'none';
+                    alert('Settings saved!');
+                } else {
+                    alert('Failed to save settings.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error saving settings.');
+            }
+        }
+
+        async function saveStylesToServer() {
+            appSettings.layerStyles = layerStyles;
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(appSettings)
+                });
+            } catch (err) {
+                console.error('Error saving styles:', err);
+            }
+        }
+
+        async function loadSettingsAndInit() {
+            try {
+                const response = await fetch('/api/settings');
+                appSettings = await response.json();
+
+                layerStyles = appSettings.layerStyles || {};
+
+                // Apply default map settings if available
+                const defaultLat = appSettings.defaultLat ?? 49.0;
+                const defaultLng = appSettings.defaultLng ?? 31.0;
+                const defaultZoom = appSettings.defaultZoom ?? 6;
+                map.setView([defaultLat, defaultLng], defaultZoom);
+
+                const defaultBasemap = appSettings.defaultBasemap ?? 'dark';
+                document.querySelector(`input[name="basemap"][value="${defaultBasemap}"]`).checked = true;
+                if (defaultBasemap === 'dark') {
+                    baseMaps.dark.addTo(map);
+                } else {
+                    baseMaps.satellite.addTo(map);
+                }
+
+            } catch (err) {
+                console.error("Failed to load settings:", err);
+                baseMaps.dark.addTo(map); // Fallback
+            }
+            loadLayers();
+        }
 
         // 3. Fetch and Render Layers
         async function loadLayers() {
@@ -283,22 +414,34 @@
                 const xmlDoc = parser.parseFromString(kmlText, "text/xml");
                 const geoJsonData = toGeoJSON.kml(xmlDoc);
 
-                const layerColor = layerStyles[filename] || '#3b82f6'; // Default blue
+                const styleConfig = layerStyles[filename] || { type: 'single', color: '#3b82f6', opacity: 0.5 }; // Default style
+
+                function getFeatureStyle(feature) {
+                    if (styleConfig.type === 'grouped' && styleConfig.styles) {
+                        const name = feature.properties ? feature.properties.name : null;
+                        if (name && styleConfig.styles[name]) {
+                            return styleConfig.styles[name];
+                        }
+                    }
+                    return { color: styleConfig.color || '#3b82f6', opacity: styleConfig.opacity !== undefined ? styleConfig.opacity : 0.5 };
+                }
 
                 const layer = L.geoJSON(geoJsonData, {
                     // Style for polygons/lines
                     style: function (feature) {
-                        return { color: layerColor, weight: 2, fillOpacity: 0.3 };
+                        const style = getFeatureStyle(feature);
+                        return { color: style.color, weight: 2, fillOpacity: style.opacity };
                     },
                     // Style for points/markers
                     pointToLayer: function (feature, latlng) {
+                        const style = getFeatureStyle(feature);
                         return L.circleMarker(latlng, {
                             radius: 6,
-                            fillColor: layerColor,
+                            fillColor: style.color,
                             color: '#ffffff',
                             weight: 1,
                             opacity: 1,
-                            fillOpacity: 0.8
+                            fillOpacity: style.opacity
                         });
                     },
                     onEachFeature: function (feature, layer) {
@@ -328,18 +471,111 @@
         }
 
         // --- Styling Logic ---
+        let currentStylingFeatures = [];
+
         function openColorPicker(filename) {
             currentStylingLayer = filename;
             document.getElementById('stylingLayerName').textContent = filename;
+
+            // Get features for the current layer to find unique names
+            if (activeLayers[filename]) {
+                const layer = activeLayers[filename];
+                currentStylingFeatures = [];
+                layer.eachLayer(l => {
+                    if (l.feature) currentStylingFeatures.push(l.feature);
+                });
+            }
+
+            const existingStyle = layerStyles[filename] || { type: 'single', color: '#3b82f6', opacity: 0.5 };
+            document.getElementById('styleTypeSelect').value = existingStyle.type || 'single';
+
+            renderColorPickers(existingStyle);
+
             document.getElementById('colorModal').style.display = 'flex';
         }
 
-        function applyColor(hexColor) {
+        function renderColorPickers(existingStyle = null) {
+            const container = document.getElementById('colorPickerContainer');
+            const type = document.getElementById('styleTypeSelect').value;
+            container.innerHTML = ''; // Clear existing
+
+            if (type === 'single') {
+                const color = existingStyle?.color || '#3b82f6';
+                const opacity = existingStyle?.opacity !== undefined ? existingStyle.opacity : 0.5;
+
+                container.innerHTML = `
+                    <div style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 5px;">
+                        <label>Color:</label>
+                        <input type="color" id="singleColor" value="${color}" style="width: 100%; height: 30px;">
+                        <label>Opacity: <span id="singleOpacityVal">${opacity}</span></label>
+                        <input type="range" id="singleOpacity" min="0" max="1" step="0.1" value="${opacity}" oninput="document.getElementById('singleOpacityVal').textContent=this.value">
+                    </div>
+                `;
+            } else if (type === 'grouped') {
+                const uniqueNames = new Set();
+                currentStylingFeatures.forEach(f => {
+                    if (f.properties && f.properties.name) {
+                        uniqueNames.add(f.properties.name);
+                    }
+                });
+
+                if (uniqueNames.size === 0) {
+                    container.innerHTML = '<p style="font-size: 0.85rem; color: #cbd5e1;">No named features found in this layer.</p>';
+                    return;
+                }
+
+                Array.from(uniqueNames).sort().forEach((name, index) => {
+                    const style = (existingStyle?.styles && existingStyle.styles[name]) || { color: '#3b82f6', opacity: 0.5 };
+
+                    const row = document.createElement('div');
+                    row.style.cssText = "margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);";
+
+                    row.innerHTML = `
+                        <div style="font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; word-break: break-all;">${name}</div>
+                        <div style="display: flex; flex-direction: column; gap: 5px;">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <label style="width: 60px;">Color:</label>
+                                <input type="color" class="groupColor" data-name="${name}" value="${style.color}" style="flex-grow: 1; height: 30px;">
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <label style="width: 60px;">Opacity:</label>
+                                <input type="range" class="groupOpacity" data-name="${name}" min="0" max="1" step="0.1" value="${style.opacity}" style="flex-grow: 1;" oninput="this.nextElementSibling.textContent=this.value">
+                                <span style="width: 25px; font-size: 0.85rem;">${style.opacity}</span>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+        }
+
+        function applyStyle() {
             if (!currentStylingLayer) return;
             
-            // Save to local storage
-            layerStyles[currentStylingLayer] = hexColor;
-            localStorage.setItem('mymaps_styles', JSON.stringify(layerStyles));
+            const type = document.getElementById('styleTypeSelect').value;
+            let styleConfig = { type: type };
+
+            if (type === 'single') {
+                const colorInput = document.getElementById('singleColor');
+                const opacityInput = document.getElementById('singleOpacity');
+                if (!colorInput) return; // Safely handle if empty
+
+                styleConfig.color = colorInput.value;
+                styleConfig.opacity = parseFloat(opacityInput.value);
+            } else if (type === 'grouped') {
+                styleConfig.styles = {};
+                const colorInputs = document.querySelectorAll('.groupColor');
+                const opacityInputs = document.querySelectorAll('.groupOpacity');
+
+                colorInputs.forEach((input, index) => {
+                    const name = input.getAttribute('data-name');
+                    const opacity = parseFloat(opacityInputs[index].value);
+                    styleConfig.styles[name] = { color: input.value, opacity: opacity };
+                });
+            }
+
+            layerStyles[currentStylingLayer] = styleConfig;
+            saveStylesToServer();
             
             // Reload just this layer to apply style
             fetchAndAddKML(currentStylingLayer);
@@ -375,7 +611,9 @@
             if (fileInput.files.length === 0) return;
 
             const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            for (let i = 0; i < fileInput.files.length; i++) {
+                formData.append('files', fileInput.files[i]);
+            }
 
             const btn = document.getElementById('uploadBtn');
             const statusMsg = document.getElementById('statusMsg');
@@ -406,8 +644,60 @@
             }
         });
 
+        document.getElementById('collapseBtn').addEventListener('click', () => {
+            const panel = document.getElementById('controlPanel');
+            const isCollapsed = panel.classList.toggle('collapsed');
+            document.getElementById('collapseBtn').innerHTML = isCollapsed ? '➕' : '➖';
+        });
+
+        // --- Export KML ---
+        function exportKML() {
+            const features = [];
+            for (const filename in activeLayers) {
+                if (activeLayers.hasOwnProperty(filename)) {
+                    activeLayers[filename].eachLayer(layer => {
+                        if (layer.feature) {
+                            features.push(layer.feature);
+                        }
+                    });
+                }
+            }
+
+            if (features.length === 0) {
+                alert("No data to export.");
+                return;
+            }
+
+            const geoJsonData = {
+                type: "FeatureCollection",
+                features: features
+            };
+
+            try {
+                const kmlStr = tokml(geoJsonData, {
+                    documentName: "MyMaps Export",
+                    documentDescription: "Exported from MyMaps Clone",
+                    name: "name",
+                    description: "description"
+                });
+
+                const blob = new Blob([kmlStr], { type: "application/vnd.google-earth.kml+xml" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "export.kml";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error("Error exporting KML:", err);
+                alert("Failed to export KML.");
+            }
+        }
+
         // Initial load
-        loadLayers();
+        loadSettingsAndInit();
     </script>
 </body>
 </html>
