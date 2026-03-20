@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  mymaps-clone:
+    build: .
+    container_name: mymaps-clone
+#    ports:
+#      - "8080:8000"
+    volumes:
+      # This is the folder you can drop your initial KML/KMZ files into.
+      - ./data:/app/data
+    restart: unless-stopped
+    network_mode: host
+

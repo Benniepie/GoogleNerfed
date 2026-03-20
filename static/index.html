@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyMaps Open Source Clone</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- MapLibre GL CSS -->
+    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --bg-color: rgba(30, 30, 35, 0.85);
+            --text-color: #e2e8f0;
+            --border-color: #475569;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger-color: #ef4444;
+            --success-color: #22c55e;
+        }
+
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #1a1a1a; }
+        #map { width: 100%; height: 100%; }
+        
+        .control-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            z-index: 1000;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-panel h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; }
+        
+        /* Base Map Switcher */
+        .basemap-switcher { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; }
+        .basemap-switcher label { font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+
+        .layer-list { max-height: 250px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px; }
+        
+        /* Custom Scrollbar for layer list */
+        .layer-list::-webkit-scrollbar { width: 6px; }
+        .layer-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        .layer-list::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+        .layer-item { display: flex; align-items: center; margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; }
+        .layer-item input[type="checkbox"] { cursor: pointer; accent-color: var(--accent-color); }
+        .layer-item label { margin-left: 8px; font-size: 0.9rem; word-break: break-all; cursor: pointer; flex-grow: 1; }
+        
+        .layer-actions { display: flex; gap: 5px; }
+        .icon-btn { 
+            background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; 
+            color: var(--text-color); transition: background 0.2s; font-size: 1rem;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.1); }
+        .icon-btn.delete:hover { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
+
+        .upload-section { border-top: 1px solid var(--border-color); padding-top: 15px; }
+        .upload-section form { display: flex; flex-direction: column; gap: 10px; }
+        
+        input[type="file"] { font-size: 0.85rem; color: var(--text-color); }
+        input[type="file"]::file-selector-button {
+            background-color: var(--border-color); color: white; border: none; padding: 6px 10px;
+            border-radius: 4px; cursor: pointer; margin-right: 10px; transition: background 0.2s;
+        }
+        input[type="file"]::file-selector-button:hover { background-color: #64748b; }
+
+        button.primary-btn {
+            background-color: var(--accent-color); color: white; border: none; padding: 10px 12px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.2s;
+        }
+        button.primary-btn:hover { background-color: var(--accent-hover); }
+        button.primary-btn:disabled { background-color: var(--border-color); cursor: not-allowed; }
+        
+        .status-msg { font-size: 0.85rem; margin-top: 8px; color: var(--success-color); display: none; text-align: center; }
+        .error-msg { color: var(--danger-color); }
+        
+        /* Dark theme for Leaflet Popups */
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+            background: rgba(30, 30, 35, 0.95);
+            color: var(--text-color);
+            backdrop-filter: blur(5px);
+            border: 1px solid var(--border-color);
+        }
+        .leaflet-popup-content h3 { margin: 0 0 8px 0; font-size: 1.1em; color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; }
+        .leaflet-popup-content p { margin: 0; color: #cbd5e1; font-size: 0.9rem; }
+        .leaflet-container a.leaflet-popup-close-button { color: var(--text-color); }
+
+        /* Color Picker Modal */
+        #colorModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: var(--bg-color); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);
+            color: white; width: 250px; text-align: center; backdrop-filter: blur(10px);
+        }
+        .color-options { display: flex; gap: 10px; justify-content: center; margin: 15px 0; flex-wrap: wrap; }
+        .color-swatch { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .color-swatch:hover { transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="control-panel">
+        <h2>MyMaps Control</h2>
+
+        <div class="basemap-switcher">
+            <label>
+                <input type="radio" name="basemap" value="dark" checked> Dark Map
+            </label>
+            <label>
+                <input type="radio" name="basemap" value="satellite"> Satellite
+            </label>
+        </div>
+
+        <div class="layer-list" id="layerList">
+            <em style="font-size: 0.9rem; color: #94a3b8;">Loading layers...</em>
+        </div>
+
+        <div class="upload-section">
+            <form id="uploadForm">
+                <input type="file" id="kmlFile" accept=".kml,.kmz" required />
+                <button type="submit" id="uploadBtn" class="primary-btn">Upload KML / KMZ</button>
+                <div id="statusMsg" class="status-msg">Upload complete!</div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Style Picker Modal -->
+    <div id="colorModal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Pick a Colour</h3>
+            <p id="stylingLayerName" style="font-size:0.8rem; color:#94a3b8; word-break:break-all;"></p>
+            <div class="color-options">
+                <div class="color-swatch" style="background:#ef4444" onclick="applyColor('#ef4444')"></div>
+                <div class="color-swatch" style="background:#3b82f6" onclick="applyColor('#3b82f6')"></div>
+                <div class="color-swatch" style="background:#22c55e" onclick="applyColor('#22c55e')"></div>
+                <div class="color-swatch" style="background:#eab308" onclick="applyColor('#eab308')"></div>
+                <div class="color-swatch" style="background:#a855f7" onclick="applyColor('#a855f7')"></div>
+                <div class="color-swatch" style="background:#f97316" onclick="applyColor('#f97316')"></div>
+                <div class="color-swatch" style="background:#ec4899" onclick="applyColor('#ec4899')"></div>
+                <div class="color-swatch" style="background:#ffffff" onclick="applyColor('#ffffff')"></div>
+            </div>
+            <button class="primary-btn" onclick="document.getElementById('colorModal').style.display='none'" style="width:100%; margin-top:10px;">Close</button>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- MapLibre GL JS -->
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+    <!-- MapLibre GL Leaflet Binding -->
+    <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.20/leaflet-maplibre-gl.js"></script>
+    <!-- toGeoJSON (Parses KML to GeoJSON) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
+
+    <script>
+        // 1. Initialise the Map
+        const map = L.map('map', { zoomControl: false }).setView([49.0, 31.0], 6); // Default view centered on Ukraine
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // 2. Base Maps Setup
+        const baseMaps = {
+            dark: L.maplibreGL({
+                style: 'https://tiles.openfreemap.org/styles/dark',
+                attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>'
+            }),
+            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            })
+        };
+
+        // Add default dark map
+        baseMaps.dark.addTo(map);
+
+        // Handle Base Map Switching
+        document.querySelectorAll('input[name="basemap"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.value === 'dark') {
+                    map.removeLayer(baseMaps.satellite);
+                    baseMaps.dark.addTo(map);
+                } else {
+                    map.removeLayer(baseMaps.dark);
+                    baseMaps.satellite.addTo(map);
+                }
+            });
+        });
+
+        const activeLayers = {};
+        
+        // Load styles from local storage for persistence across reloads
+        let layerStyles = JSON.parse(localStorage.getItem('mymaps_styles')) || {};
+        let currentStylingLayer = null;
+
+        // 3. Fetch and Render Layers
+        async function loadLayers() {
+            try {
+                const response = await fetch('/api/layers');
+                const data = await response.json();
+                
+                const layerListEl = document.getElementById('layerList');
+                layerListEl.innerHTML = ''; 
+                
+                if (data.layers.length === 0) {
+                    layerListEl.innerHTML = '<em style="font-size: 0.9rem; color: #94a3b8;">No layers available.</em>';
+                    return;
+                }
+
+                data.layers.forEach(filename => {
+                    const item = document.createElement('div');
+                    item.className = 'layer-item';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = 'chk_' + filename;
+                    checkbox.checked = true;
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = 'chk_' + filename;
+                    label.textContent = filename;
+                    
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'layer-actions';
+
+                    // Style Button
+                    const styleBtn = document.createElement('button');
+                    styleBtn.className = 'icon-btn';
+                    styleBtn.innerHTML = '🎨';
+                    styleBtn.title = 'Change Colour';
+                    styleBtn.onclick = () => openColorPicker(filename);
+
+                    // Delete Button
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'icon-btn delete';
+                    deleteBtn.innerHTML = '🗑️';
+                    deleteBtn.title = 'Delete Layer';
+                    deleteBtn.onclick = () => deleteLayer(filename);
+                    
+                    actionsDiv.appendChild(styleBtn);
+                    actionsDiv.appendChild(deleteBtn);
+
+                    item.appendChild(checkbox);
+                    item.appendChild(label);
+                    item.appendChild(actionsDiv);
+                    layerListEl.appendChild(item);
+
+                    // Load KML
+                    fetchAndAddKML(filename);
+
+                    // Toggle visibility
+                    checkbox.addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            if (activeLayers[filename]) map.addLayer(activeLayers[filename]);
+                        } else {
+                            if (activeLayers[filename]) map.removeLayer(activeLayers[filename]);
+                        }
+                    });
+                });
+            } catch (err) {
+                console.error("Failed to load layers:", err);
+            }
+        }
+
+        async function fetchAndAddKML(filename) {
+            try {
+                const response = await fetch(`/data/${filename}?t=${new Date().getTime()}`);
+                const kmlText = await response.text();
+                
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(kmlText, "text/xml");
+                const geoJsonData = toGeoJSON.kml(xmlDoc);
+
+                const layerColor = layerStyles[filename] || '#3b82f6'; // Default blue
+
+                const layer = L.geoJSON(geoJsonData, {
+                    // Style for polygons/lines
+                    style: function (feature) {
+                        return { color: layerColor, weight: 2, fillOpacity: 0.3 };
+                    },
+                    // Style for points/markers
+                    pointToLayer: function (feature, latlng) {
+                        return L.circleMarker(latlng, {
+                            radius: 6,
+                            fillColor: layerColor,
+                            color: '#ffffff',
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        });
+                    },
+                    onEachFeature: function (feature, layer) {
+                        let popupContent = "";
+                        if (feature.properties && feature.properties.name) {
+                            popupContent += "<h3>" + feature.properties.name + "</h3>";
+                        }
+                        if (feature.properties && feature.properties.description) {
+                            popupContent += "<p>" + feature.properties.description + "</p>";
+                        }
+                        if (popupContent) {
+                            layer.bindPopup(popupContent);
+                        }
+                    }
+                });
+
+                if (activeLayers[filename]) {
+                    map.removeLayer(activeLayers[filename]);
+                }
+
+                layer.addTo(map);
+                activeLayers[filename] = layer;
+
+            } catch (err) {
+                console.error(`Error processing KML ${filename}:`, err);
+            }
+        }
+
+        // --- Styling Logic ---
+        function openColorPicker(filename) {
+            currentStylingLayer = filename;
+            document.getElementById('stylingLayerName').textContent = filename;
+            document.getElementById('colorModal').style.display = 'flex';
+        }
+
+        function applyColor(hexColor) {
+            if (!currentStylingLayer) return;
+            
+            // Save to local storage
+            layerStyles[currentStylingLayer] = hexColor;
+            localStorage.setItem('mymaps_styles', JSON.stringify(layerStyles));
+            
+            // Reload just this layer to apply style
+            fetchAndAddKML(currentStylingLayer);
+            document.getElementById('colorModal').style.display = 'none';
+        }
+
+        // --- Delete Logic ---
+        async function deleteLayer(filename) {
+            if (!confirm(`Are you sure you want to delete ${filename}?`)) return;
+
+            try {
+                // Ensure backend has: @app.delete("/api/layers/{filename}") route
+                const res = await fetch(`/api/layers/${filename}`, { method: 'DELETE' });
+                if (res.ok || res.status === 404) { // Treat 404 as already gone just in case
+                    if (activeLayers[filename]) {
+                        map.removeLayer(activeLayers[filename]);
+                        delete activeLayers[filename];
+                    }
+                    loadLayers(); // Refresh UI list
+                } else {
+                    alert("Failed to delete. Have you added the DELETE route to main.py?");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error communicating with backend.");
+            }
+        }
+
+        // 4. Handle File Uploads
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('kmlFile');
+            if (fileInput.files.length === 0) return;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            const btn = document.getElementById('uploadBtn');
+            const statusMsg = document.getElementById('statusMsg');
+            
+            btn.disabled = true;
+            btn.textContent = 'Uploading...';
+            statusMsg.style.display = 'none';
+            statusMsg.classList.remove('error-msg');
+
+            try {
+                const response = await fetch('/api/upload', { method: 'POST', body: formData });
+                if (response.ok) {
+                    statusMsg.textContent = 'Upload complete!';
+                    statusMsg.style.display = 'block';
+                    fileInput.value = '';
+                    loadLayers();
+                } else {
+                    throw new Error('Upload failed');
+                }
+            } catch (err) {
+                statusMsg.textContent = 'Error uploading file.';
+                statusMsg.classList.add('error-msg');
+                statusMsg.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Upload KML / KMZ';
+                setTimeout(() => { if (!statusMsg.classList.contains('error-msg')) statusMsg.style.display = 'none'; }, 3000);
+            }
+        });
+
+        // Initial load
+        loadLayers();
+    </script>
+</body>
+</html>
