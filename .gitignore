@@ -1,3 +1,5 @@
 data/*
 static/index2.html
 .env
+__pycache__/
+*.pyc

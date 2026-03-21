@@ -106,5 +106,13 @@ app.mount("/data", StaticFiles(directory="/app/data"), name="data")
 async def serve_frontend():
     return FileResponse("static/index.html")
 
+@app.get("/maplibre")
+async def serve_maplibre():
+    return FileResponse("static/maplibre.html")
+
+@app.get("/cesium")
+async def serve_cesium():
+    return FileResponse("static/cesium.html")
+
 # Serve any other static assets if needed
 app.mount("/", StaticFiles(directory="static"), name="static")
