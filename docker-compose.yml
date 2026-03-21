@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  mymaps-clone:
+  maps:
     build: .
     container_name: mymaps-clone
 #    ports:
@@ -10,5 +10,20 @@ services:
       # This is the folder you can drop your initial KML/KMZ files into.
       - ./data:/app/data
     restart: unless-stopped
-    network_mode: host
+    network_mode: service:tailscale
 
+  tailscale:
+    image: tailscale/tailscale:latest
+    hostname: maps
+    volumes:
+      - ./tailscale:/var/lib/tailscale
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--accept-dns --accept-routes --ssh
+      - TS_AUTH_ONCE=true
+    privileged: true
+    devices:
+      - /dev/net/tun:/dev/net/tun
