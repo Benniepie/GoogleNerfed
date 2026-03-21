@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CesiumJS 3D Globe Experiment</title>
+  <!-- Include the CesiumJS JavaScript and CSS files -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.139.1/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.139.1/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <style>
+      body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; background-color: #1a1a1a; }
+      #cesiumContainer { width: 100%; height: 100%; }
+      .title-overlay {
+          position: absolute;
+          top: 20px;
+          left: 20px;
+          color: white;
+          background: rgba(30, 30, 35, 0.85);
+          padding: 10px 20px;
+          border-radius: 8px;
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          z-index: 1000;
+      }
+  </style>
+</head>
+<body>
+  <div class="title-overlay">
+      <h2>CesiumJS 3D Globe Experiment</h2>
+      <a href="/" style="color: #3b82f6; text-decoration: none;">&larr; Back to Main Map</a>
+  </div>
+  <div id="cesiumContainer"></div>
+  <script type="module">
+    // Initialize the Cesium Viewer in the HTML element with the `cesiumContainer` ID.
+    // We are skipping Ion token authentication for a simple test.
+
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrainProvider: await Cesium.CesiumTerrainProvider.fromUrl('/ctod/tiles/dynamic/?cog=/vsis3/eodata/Sentinel-1/SAR/IW_GRDH_1S-COG/2023/02/06/S1A_IW_GRDH_1SDV_20230206T165115_20230206T165140_047118_05A716_E1BC_COG.SAFE/measurement/s1a-iw-grd-vv-20230206t165115-20230206t165140-047118-05a716-001-cog.tiff', {
+          requestVertexNormals: true
+      }),
+    });
+
+
+    // Fly the camera to Ukraine (matches other view centers)
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(31.0, 49.0, 5000000), // Lng, Lat, Height in meters
+      orientation: {
+        heading: Cesium.Math.toRadians(0.0),
+        pitch: Cesium.Math.toRadians(-90.0),
+      }
+    });
+  </script>
+</body>
+</html>

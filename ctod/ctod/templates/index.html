@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datasets - CTOD</title>
+    <style>
+        body {
+            font-family: "Courier New", Courier, "Lucida Console", "Monaco", monospace;
+            background-color: #202020;
+            color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            padding: 25px 50px;
+        }
+
+        h1 {
+            color: #f4f4f4;
+            font-size: 28px;
+            margin-bottom: 0px;
+        }
+
+        h2 {
+            color: #f4f4f4cc;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+
+        a {
+            color: #f4f4f4;
+            transition: color 0.3s;
+        }
+
+        p {
+            color: #f4f4f4;
+            font-size: 14px;
+            margin: 5px 0px 15px 0px;
+        }
+
+        .indent {
+            margin-left: 20px;
+        }
+
+        .status {
+            font-size: 11px;
+            width: 100%;
+            display: flex;
+            justify-content: right;
+        }
+
+        a:hover {
+            color: hotpink;
+        }
+
+        hr.solid {
+            border: 0;
+            border-top: 1px solid #f4f4f4;
+        }
+
+        .info {
+            background-color: #F0F4C3;
+            color: black;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="./preview/img/ctod_logo.jpg" />
+        <div class="status">
+            {{ status }}
+        </div>
+        <hr class="solid">
+
+        <h1>Datasets</h1>
+        <div class="indent">
+            <h2>Configured</h2>
+            <p>pre-configured CTOD datasets</p>
+            <div class="indent">
+                <ul>
+                    {% for link in links %}
+                    <li>- <a href="{{ link.url }}">{{ link.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <h2>Dynamic</h2>
+            <p>use any COG with the configuration you want</p>
+            {% if dynamic is not none %}
+                <div class="indent">
+                    <li><a href="{{ dynamic.url }}">Open preview</a></li>
+                </div>
+
+                {% else %}
+                <div class="info">
+                    DYNAMIC DATASETS TURNED OFF
+                </div>
+            {% endif %}
+        </div>
+
+        <h1>Documentation</h1>
+        <div class="indent">
+            <ul>
+                <li>- <a href="./docs">OpenAPI</a></li>
+                <li>- <a href="./redoc">ReDoc</a></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

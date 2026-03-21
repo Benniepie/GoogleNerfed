@@ -9,7 +9,93 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+
+import requests
+import time
+import asyncio
+import os
+import sys
+
+from contextlib import asynccontextmanager
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "ctod"))
+
+from ctod.server.fastapi import app as ctod_app, setup_globals, patch_occlusion, setup_logging, log_ctod_start
+from ctod.server.settings import Settings
+import logging
+
+from dotenv import load_dotenv
+load_dotenv()
+
+SH_USERNAME = os.environ.get("SH_USERNAME", "")
+SH_PASSWORD = os.environ.get("SH_PASSWORD", "")
+SH_CLIENT_ID = os.environ.get("SH_CLIENT_ID", "cdse-public")
+
+sh_access_token = None
+sh_refresh_token = None
+
+async def token_refresh_task():
+    global sh_access_token, sh_refresh_token
+    url = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
+
+    while True:
+        try:
+            if sh_refresh_token:
+                data = {
+                    "grant_type": "refresh_token",
+                    "refresh_token": sh_refresh_token,
+                    "client_id": SH_CLIENT_ID
+                }
+                resp = requests.post(url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"})
+            else:
+                data = {
+                    "grant_type": "password",
+                    "username": SH_USERNAME,
+                    "password": SH_PASSWORD,
+                    "client_id": SH_CLIENT_ID
+                }
+                resp = requests.post(url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"})
+
+            if resp.status_code == 200:
+                res_json = resp.json()
+                sh_access_token = res_json["access_token"]
+                sh_refresh_token = res_json.get("refresh_token", sh_refresh_token)
+                expires_in = res_json.get("expires_in", 1800)
+
+                # Set GDAL header
+                os.environ["GDAL_HTTP_HEADERS"] = f"Authorization: Bearer {sh_access_token}"
+                print("Sentinel Hub Token refreshed and GDAL headers set.")
+
+                await asyncio.sleep(expires_in - 60)
+                continue
+            else:
+                print("Failed to fetch token, status:", resp.status_code, resp.text)
+
+        except Exception as e:
+            print("Exception in token refresh task:", e)
+
+        await asyncio.sleep(60)
+
+ctod_settings = Settings()
+ctod_settings.port = 8080
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start token refresh task
+    task = asyncio.create_task(token_refresh_task())
+
+    # CTOD initialization
+    patch_occlusion()
+    setup_logging(log_level=getattr(logging, ctod_settings.logging_level.upper()))
+    log_ctod_start(ctod_settings)
+    await setup_globals(ctod_settings)
+
+    yield
+    task.cancel()
+
+
+app = FastAPI(lifespan=lifespan)
+app.mount("/ctod", ctod_app)
+
 
 # Enable CORS just in case
 app.add_middleware(
@@ -105,6 +191,14 @@ app.mount("/data", StaticFiles(directory="/app/data"), name="data")
 @app.get("/")
 async def serve_frontend():
     return FileResponse("static/index.html")
+
+@app.get("/maplibre")
+async def serve_maplibre():
+    return FileResponse("static/maplibre.html")
+
+@app.get("/cesium")
+async def serve_cesium():
+    return FileResponse("static/cesium.html")
 
 # Serve any other static assets if needed
 app.mount("/", StaticFiles(directory="static"), name="static")
