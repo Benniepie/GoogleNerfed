@@ -85,16 +85,15 @@
     viewer.scene.imageryLayers.removeAll();
 
     // Setup custom Imagery Providers
-    const esriProvider = new Cesium.ArcGisMapServerImageryProvider({
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+    const esriProvider = await Cesium.ArcGisMapServerImageryProvider.fromUrl('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer', {
         enablePickFeatures: false
     });
 
     // MapLibre / OpenFreeMap vector tiles are not natively supported as Raster Imagery by Cesium easily
     // without an external map server converting them to XYZ/WMTS raster tiles.
     // We will use standard OSM XYZ raster tiles for the alternative map to keep it simple and free.
-    const osmProvider = new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://a.tile.openstreetmap.org/'
+    const osmProvider = new Cesium.UrlTemplateImageryProvider({
+        url: 'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'
     });
 
     // Add initial layers (Esri is default)

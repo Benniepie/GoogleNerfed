@@ -1,0 +1,134 @@
+INFO:     Started server process [65960]
+INFO:     Waiting for application startup.
+2026-03-22 07:32:05 [INFO] -----------------------
+2026-03-22 07:32:05 [INFO] CTOD Started
+2026-03-22 07:32:05 [INFO] -----------------------
+2026-03-22 07:32:05 [INFO] Port:		 8080
+2026-03-22 07:32:05 [INFO] Caching:		 disabled
+2026-03-22 07:32:05 [INFO] Dataset Config:	 ./config/datasets.json
+2026-03-22 07:32:05 [INFO] Logging Level:	 info
+2026-03-22 07:32:05 [INFO] DB Name:		 factory_cache.db
+2026-03-22 07:32:05 [INFO] Dev Mode:		 False
+2026-03-22 07:32:05 [INFO] Unsafe:		 False
+2026-03-22 07:32:05 [INFO] No Dynamic:		 False
+2026-03-22 07:32:05 [INFO] -----------------------
+2026-03-22 07:32:05 [ERROR] JSON file not found: ./config/datasets.json
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8080 (Press CTRL+C to quit)
+2026-03-22 07:34:06 [INFO] GDAL signalled an error: err_no=15, msg='InvalidCredentials: No valid AWS credentials found. For authenticated requests, you need to set AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID or other configuration options, or create a /home/jules/.aws/credentials file. Consult https://gdal.org/en/stable/user/virtual_file_systems.html#vsis3-aws-s3-files for more details. For unauthenticated requests on public resources, set the AWS_NO_SIGN_REQUEST configuration option to YES.'
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "rasterio/_base.pyx", line 320, in rasterio._base.DatasetBase.__init__
+  File "rasterio/_base.pyx", line 232, in rasterio._base.open_dataset
+  File "rasterio/_err.pyx", line 359, in rasterio._err.exc_wrap_pointer
+rasterio._err.CPLE_AWSInvalidCredentialsError: InvalidCredentials: No valid AWS credentials found. For authenticated requests, you need to set AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID or other configuration options, or create a /home/jules/.aws/credentials file. Consult https://gdal.org/en/stable/user/virtual_file_systems.html#vsis3-aws-s3-files for more details. For unauthenticated requests on public resources, set the AWS_NO_SIGN_REQUEST configuration option to YES.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/fastapi/applications.py", line 1160, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/middleware/cors.py", line 87, in __call__
+    await self.app(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 462, in handle
+    await self.app(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/fastapi/applications.py", line 1160, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/middleware/cors.py", line 87, in __call__
+    await self.app(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 130, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 116, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 670, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/fastapi/routing.py", line 326, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/ctod/ctod/server/fastapi.py", line 147, in layer_json
+    return get_layer_json(globals["tms"], params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/ctod/ctod/server/handlers/layer.py", line 10, in get_layer_json
+    layer_json = generate_layer_json(tms, qp)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/ctod/ctod/core/layer.py", line 28, in generate_layer_json
+    return _generate_default_layer_json(tms, qp)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/ctod/ctod/core/layer.py", line 45, in _generate_default_layer_json
+    with COGReader(qp.get_cog()) as src:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "<attrs generated methods rio_tiler.io.rasterio.Reader>", line 45, in __init__
+    self.__attrs_post_init__()
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/rio_tiler/io/rasterio.py", line 98, in __attrs_post_init__
+    self.dataset = self._ctx_stack.enter_context(rasterio.open(self.input))
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/rasterio/env.py", line 464, in wrapper
+    return f(*args, **kwds)
+           ^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.13/lib/python3.12/site-packages/rasterio/__init__.py", line 367, in open
+    dataset = DatasetReader(path, driver=driver, sharing=sharing, thread_safe=thread_safe, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "rasterio/_base.pyx", line 329, in rasterio._base.DatasetBase.__init__
+rasterio.errors.RasterioIOError: InvalidCredentials: No valid AWS credentials found. For authenticated requests, you need to set AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID or other configuration options, or create a /home/jules/.aws/credentials file. Consult https://gdal.org/en/stable/user/virtual_file_systems.html#vsis3-aws-s3-files for more details. For unauthenticated requests on public resources, set the AWS_NO_SIGN_REQUEST configuration option to YES.
