@@ -25,30 +25,112 @@
   </style>
 </head>
 <body>
-  <div class="title-overlay">
-      <h2>CesiumJS 3D Globe Experiment</h2>
-      <a href="/" style="color: #3b82f6; text-decoration: none;">&larr; Back to Main Map</a>
+
+  <div class="title-overlay" style="width: 320px;">
+      <h2 style="margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid var(--border-color, #475569); padding-bottom: 10px; margin-bottom: 15px;">
+        CesiumJS 3D Globe
+      </h2>
+
+      <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color, #475569); display: flex; flex-direction: column; gap: 8px;">
+          <strong>Base Map Imagery:</strong>
+          <label style="font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+              <input type="radio" name="basemap" value="satellite" checked> Esri World Imagery (Satellite)
+          </label>
+          <label style="font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+              <input type="radio" name="basemap" value="osm"> OpenStreetMap (Vector/Map)
+          </label>
+      </div>
+
+      <div style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;">
+          <strong>3D Terrain (Elevation):</strong>
+          <label style="font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+              <input type="checkbox" id="toggleTerrain" checked> Enable Sentinel-1 Terrain (CTOD)
+          </label>
+      </div>
+
+      <a href="/" style="color: #3b82f6; text-decoration: none; font-size: 0.9rem;">&larr; Back to Main Map</a>
   </div>
+
   <div id="cesiumContainer"></div>
   <script type="module">
     // Initialize the Cesium Viewer in the HTML element with the `cesiumContainer` ID.
     // We are skipping Ion token authentication for a simple test.
 
-    const viewer = new Cesium.Viewer('cesiumContainer', {
-      terrainProvider: await Cesium.CesiumTerrainProvider.fromUrl('/ctod/tiles/dynamic/?cog=/vsis3/eodata/Sentinel-1/SAR/IW_GRDH_1S-COG/2023/02/06/S1A_IW_GRDH_1SDV_20230206T165115_20230206T165140_047118_05A716_E1BC_COG.SAFE/measurement/s1a-iw-grd-vv-20230206t165115-20230206t165140-047118-05a716-001-cog.tiff', {
-          requestVertexNormals: true
-      }),
+
+    // Disable default Ion and Bing map layers
+    Cesium.Ion.defaultAccessToken = null;
+
+    // Setup our custom CTOD terrain provider using Sentinel-1 S3 COG
+    const customTerrainProvider = await Cesium.CesiumTerrainProvider.fromUrl('/ctod/tiles/dynamic/?cog=/vsis3/eodata/Sentinel-1/SAR/IW_GRDH_1S-COG/2023/02/06/S1A_IW_GRDH_1SDV_20230206T165115_20230206T165140_047118_05A716_E1BC_COG.SAFE/measurement/s1a-iw-grd-vv-20230206t165115-20230206t165140-047118-05a716-001-cog.tiff', {
+        requestVertexNormals: true
     });
 
+    // Create the viewer with no default imagery and no default UI widgets
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrainProvider: customTerrainProvider,
+      baseLayerPicker: false,
+      geocoder: false,
+      homeButton: false,
+      infoBox: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      navigationInstructionsInitiallyVisible: false,
+      animation: false,
+      timeline: false,
+      fullscreenButton: false,
+      imageryProvider: false // We will set this manually below
+    });
 
-    // Fly the camera to Ukraine (matches other view centers)
+    // Remove the default empty layer that Cesium sometimes adds
+    viewer.scene.imageryLayers.removeAll();
+
+    // Setup custom Imagery Providers
+    const esriProvider = new Cesium.ArcGisMapServerImageryProvider({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+        enablePickFeatures: false
+    });
+
+    // MapLibre / OpenFreeMap vector tiles are not natively supported as Raster Imagery by Cesium easily
+    // without an external map server converting them to XYZ/WMTS raster tiles.
+    // We will use standard OSM XYZ raster tiles for the alternative map to keep it simple and free.
+    const osmProvider = new Cesium.OpenStreetMapImageryProvider({
+        url: 'https://a.tile.openstreetmap.org/'
+    });
+
+    // Add initial layers (Esri is default)
+    let currentImageryLayer = viewer.scene.imageryLayers.addImageryProvider(esriProvider);
+
+    // Fly the camera directly to the Sentinel-1 COG bounding box in Austria
     viewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(31.0, 49.0, 5000000), // Lng, Lat, Height in meters
+      destination: Cesium.Cartesian3.fromDegrees(14.5, 47.2, 8000), // Lng, Lat, Height in meters
       orientation: {
         heading: Cesium.Math.toRadians(0.0),
-        pitch: Cesium.Math.toRadians(-90.0),
+        pitch: Cesium.Math.toRadians(-20.0),
       }
     });
+
+    // --- UI Controls ---
+    document.querySelectorAll('input[name="basemap"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            viewer.scene.imageryLayers.remove(currentImageryLayer);
+            if (e.target.value === 'osm') {
+                currentImageryLayer = viewer.scene.imageryLayers.addImageryProvider(osmProvider);
+            } else {
+                currentImageryLayer = viewer.scene.imageryLayers.addImageryProvider(esriProvider);
+            }
+        });
+    });
+
+    document.getElementById('toggleTerrain').addEventListener('change', (e) => {
+        if (e.target.checked) {
+            viewer.terrainProvider = customTerrainProvider;
+        } else {
+            // Revert back to a flat ellipsoid (no 3D terrain)
+            viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+        }
+    });
+
+
   </script>
 </body>
 </html>
