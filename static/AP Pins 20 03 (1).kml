@@ -1,0 +1,1506 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="AP_Pins_20_03" id="AP_Pins_20_03">
+	<SimpleField name="timestamp" type="string"></SimpleField>
+	<SimpleField name="begin" type="string"></SimpleField>
+	<SimpleField name="end" type="string"></SimpleField>
+	<SimpleField name="altitudeMode" type="string"></SimpleField>
+	<SimpleField name="tessellate" type="int"></SimpleField>
+	<SimpleField name="extrude" type="int"></SimpleField>
+	<SimpleField name="visibility" type="int"></SimpleField>
+	<SimpleField name="drawOrder" type="int"></SimpleField>
+	<SimpleField name="icon" type="string"></SimpleField>
+	<SimpleField name="gx_media_links" type="string"></SimpleField>
+	<SimpleField name="distance" type="float"></SimpleField>
+	<SimpleField name="angle" type="float"></SimpleField>
+	<SimpleField name="layer" type="string"></SimpleField>
+	<SimpleField name="path" type="string"></SimpleField>
+</Schema>
+<Folder><name>AP_Pins_20_03</name>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">83.6931864050776</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.6500517155814,47.9989238665001,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.018</SimpleData>
+		<SimpleData name="angle">83.6931864050776</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.6560154029745,47.999582981571,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.024</SimpleData>
+		<SimpleData name="angle">83.6931864050776</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.6619790903677,48.0002420966419,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.03</SimpleData>
+		<SimpleData name="angle">163.819843153668</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.6663194191397,47.9984722817609,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.036</SimpleData>
+		<SimpleData name="angle">163.819843153668</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.6679913702139,47.9927099402572,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.042</SimpleData>
+		<SimpleData name="angle">163.819843153668</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.6696633212881,47.9869475987535,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.048</SimpleData>
+		<SimpleData name="angle">263.252102744015</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.6649392852839,47.9854244460926,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.054</SimpleData>
+		<SimpleData name="angle">263.252102744015</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.6589808486646,47.9847194403808,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.06</SimpleData>
+		<SimpleData name="angle">262.884820054205</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.6530235982347,47.9840046775628,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.066</SimpleData>
+		<SimpleData name="angle">262.884820054205</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.6470698032982,47.9832614912777,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.072</SimpleData>
+		<SimpleData name="angle">184.12808958487</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.7514851806485,48.4398823709061,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.078</SimpleData>
+		<SimpleData name="angle">291.01113728409</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.7457656378954,48.4406459184941,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.084</SimpleData>
+		<SimpleData name="angle">266.204481996066</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.7398703566416,48.4408535891242,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.09</SimpleData>
+		<SimpleData name="angle">264.866768163296</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.7338894490703,48.4403804327243,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.096</SimpleData>
+		<SimpleData name="angle">273.837471552894</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.7279117597401,48.4399986484054,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.102</SimpleData>
+		<SimpleData name="angle">292.696280238748</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.7221630743895,48.4414090394365,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.108</SimpleData>
+		<SimpleData name="angle">300.88354423275</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.7168042664878,48.4440738203645,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.114</SimpleData>
+		<SimpleData name="angle">197.581951124848</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.7126174828724,48.4451803852795,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.12</SimpleData>
+		<SimpleData name="angle">222.914837427247</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.7112134185067,48.4402975535098,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.126</SimpleData>
+		<SimpleData name="angle">270.521351525058</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.7060730587216,48.4407550485489,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.132</SimpleData>
+		<SimpleData name="angle">341.081051811919</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.7007713330681,48.4418883692954,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.138</SimpleData>
+		<SimpleData name="angle">305.743406180646</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6958376852399,48.4445874906848,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.144</SimpleData>
+		<SimpleData name="angle">291.208490212774</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.690378952543,48.447006749665,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.15</SimpleData>
+		<SimpleData name="angle">341.084830313272</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6865935647824,48.4509145938691,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.156</SimpleData>
+		<SimpleData name="angle">341.084830313272</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6846485574224,48.456590591259,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.162</SimpleData>
+		<SimpleData name="angle">297.196472197238</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6802260785337,48.4601236102987,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.168</SimpleData>
+		<SimpleData name="angle">41.5849670324721</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.676333529913,48.4639029494189,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.174</SimpleData>
+		<SimpleData name="angle">81.916777241253</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6803247155252,48.4683743942014,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.18</SimpleData>
+		<SimpleData name="angle">85.8267299347127</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6862990576877,48.468901832227,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.186</SimpleData>
+		<SimpleData name="angle">89.2327037236853</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6922904418135,48.4691694227296,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">78.8063508731178</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8500925,48.6871363,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">118.746124783707</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8553530557131,48.6842507231791,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">122.735758986213</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8604234727807,48.6810454370119,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.018</SimpleData>
+		<SimpleData name="angle">232.129328964814</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8627806954555,48.6776802315437,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.024</SimpleData>
+		<SimpleData name="angle">232.129328964814</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8580443048992,48.6739969443572,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.03</SimpleData>
+		<SimpleData name="angle">294.709974510751</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.852889838575,48.6739378672909,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.036</SimpleData>
+		<SimpleData name="angle">294.709974510751</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8474392260665,48.6764460186583,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.024</SimpleData>
+		<SimpleData name="angle">58.7467386965522</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8772882055467,48.7086710261562,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.03</SimpleData>
+		<SimpleData name="angle">116.824770773216</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8814922239587,48.7055830275636,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.036</SimpleData>
+		<SimpleData name="angle">116.824770773216</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8868465687974,48.7028754472143,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.042</SimpleData>
+		<SimpleData name="angle">135.714099531849</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8921635115047,48.7001168930627,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.048</SimpleData>
+		<SimpleData name="angle">135.714099531849</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8963529463705,48.6958217055807,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.054</SimpleData>
+		<SimpleData name="angle">255.85240333171</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8981197707782,48.6922112829448,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.06</SimpleData>
+		<SimpleData name="angle">243.580681479889</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8924637652808,48.6903063994742,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.066</SimpleData>
+		<SimpleData name="angle">297.693349574213</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8871070370097,48.689133606958,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.072</SimpleData>
+		<SimpleData name="angle">234.696906042908</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8818203941013,48.6915304568772,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.078</SimpleData>
+		<SimpleData name="angle">291.41272868366</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8769134887729,48.6881473314503,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.084</SimpleData>
+		<SimpleData name="angle">291.41272868366</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8713276403762,48.6903378331481,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.09</SimpleData>
+		<SimpleData name="angle">291.41272868366</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8657417919794,48.692528334846,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.03</SimpleData>
+		<SimpleData name="angle">82.8272848173933</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>38.0437723311253,48.8345025414434,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.036</SimpleData>
+		<SimpleData name="angle">82.8272848173933</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>38.0497253767678,48.8352517060306,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.042</SimpleData>
+		<SimpleData name="angle">78.2935233668832</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>38.0556027575591,48.8364559728313,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.048</SimpleData>
+		<SimpleData name="angle">170.716597492352</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>38.0588342685685,48.8324193101845,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.054</SimpleData>
+		<SimpleData name="angle">217.215920498545</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>38.0568800789736,48.8272246284196,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.06</SimpleData>
+		<SimpleData name="angle">276.169399284872</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>38.0534390826358,48.8244796683809,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.066</SimpleData>
+		<SimpleData name="angle">276.169399284872</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>38.0474738316189,48.8251244786667,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.072</SimpleData>
+		<SimpleData name="angle">287.269625460124</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>38.0416244710207,48.8263279444537,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">10.3005729852462</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9851718830717,48.5961458568941,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">226.071404563182</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>38.1127391083394,49.1346375504565,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">46.0695248862706</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>38.1170602014716,49.1388002603263,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">226.069524886256</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>38.1143247053552,49.1361650297644,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">48.5744985430496</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6831992,48.4699683,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">49.3668629202672</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6877525688261,48.473875579403,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">229.016059115073</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6852786374905,48.4717152281667,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.018</SimpleData>
+		<SimpleData name="angle">47.782134165832</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6825334645392,48.4693642695751,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">240.856434187663</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8660543,48.6718412,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">60.8832617384613</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8628925094822,48.6700986320714,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">60.8832617384613</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8681342901351,48.6730181758006,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">176.35724465643</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8885037,48.6749,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">266.344341123486</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8825159084346,48.674517439979,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">266.344341123486</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8765281168693,48.6741348799579,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.018</SimpleData>
+		<SimpleData name="angle">266.680532623373</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.870540231926,48.6737538521098,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.024</SimpleData>
+		<SimpleData name="angle">86.3701481893743</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8741061296866,48.6739866504024,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.03</SimpleData>
+		<SimpleData name="angle">86.3701481893743</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8800940929566,48.674366513374,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.036</SimpleData>
+		<SimpleData name="angle">86.3701481893743</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={03145ec8-78de-403c-b27d-334e9a7832c8}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8860820562266,48.6747463763456,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">303.772019046147</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.0934219,48.3084498,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">299.533235019435</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.0908711099191,48.3127794399388,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">299.533235019435</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.0856506904347,48.3157370099561,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.018</SimpleData>
+		<SimpleData name="angle">35.8280221814232</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.0854879391063,48.3213070374869,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.024</SimpleData>
+		<SimpleData name="angle">301.962512902544</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.0829339629625,48.3250265698508,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.03</SimpleData>
+		<SimpleData name="angle">301.962512902544</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.0778435952027,48.3282027556246,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.036</SimpleData>
+		<SimpleData name="angle">97.1056385906818</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.0778539030958,48.3304445198942,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.042</SimpleData>
+		<SimpleData name="angle">100.525711459431</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.0837916447431,48.329598016999,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.048</SimpleData>
+		<SimpleData name="angle">120.364374808745</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.0893504238859,48.3274181065705,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.054</SimpleData>
+		<SimpleData name="angle">120.364374808745</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.0945273927412,48.3243851223188,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.06</SimpleData>
+		<SimpleData name="angle">101.728556137056</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.1001847589729,48.3226005888716,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.066</SimpleData>
+		<SimpleData name="angle">118.826875528931</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.105550778879,48.3200040701482,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.072</SimpleData>
+		<SimpleData name="angle">157.718547533929</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.078</SimpleData>
+		<SimpleData name="angle">228.496290247231</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.084</SimpleData>
+		<SimpleData name="angle">174.374328123773</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.09</SimpleData>
+		<SimpleData name="angle">298.342855572659</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.1044023664568,48.3025268294784,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.096</SimpleData>
+		<SimpleData name="angle">298.342855572659</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.0991216314382,48.305375309365,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.102</SimpleData>
+		<SimpleData name="angle">298.342855572659</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.0938408964197,48.3082237892515,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">165.338500127898</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">111.810423301416</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">162.59194625515</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9354534,48.9272771,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">222.20824040052</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9328513983466,48.9221191214156,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">228.240334746236</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9274919320572,48.9198851318487,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.018</SimpleData>
+		<SimpleData name="angle">28.46238834788</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.024</SimpleData>
+		<SimpleData name="angle">354.291168987226</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.03</SimpleData>
+		<SimpleData name="angle">39.3051647910979</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.036</SimpleData>
+		<SimpleData name="angle">134.310146384451</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9337184513639,48.9289707653846,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">280.304846468804</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">136.072926256445</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">226.072926256439</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<description>Or at least what is left of it.</description>
+	<ExtendedData><SchemaData schemaUrl="#AP_Pins_20_03">
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">46.072926256451</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=description:string(0,0)&amp;field=timestamp:datetime(0,0)&amp;field=begin:datetime(0,0)&amp;field=end:datetime(0,0)&amp;field=altitudeMode:string(0,0)&amp;field=tessellate:integer(0,0)&amp;field=extrude:integer(0,0)&amp;field=visibility:integer(0,0)&amp;field=drawOrder:integer(0,0)&amp;field=icon:string(0,0)&amp;field=gx_media_links:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={ebf65526-aa0c-4c4e-aee9-1eccd01c0f66}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+</Folder>
+</Document></kml>

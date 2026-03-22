@@ -1,0 +1,1272 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="SM_Pins_20_03" id="SM_Pins_20_03">
+	<SimpleField name="distance" type="float"></SimpleField>
+	<SimpleField name="angle" type="float"></SimpleField>
+	<SimpleField name="layer" type="string"></SimpleField>
+	<SimpleField name="path" type="string"></SimpleField>
+</Schema>
+<Folder><name>SM_Pins_20_03</name>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.036</SimpleData>
+		<SimpleData name="angle">254.409057008199</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.5345755475648,47.8631219802567,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.042</SimpleData>
+		<SimpleData name="angle">254.409057008199</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.5287963171799,47.8615093748624,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.048</SimpleData>
+		<SimpleData name="angle">254.409057008199</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.5230170867949,47.8598967694682,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.054</SimpleData>
+		<SimpleData name="angle">254.409057008199</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.51723785641,47.858284164074,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.06</SimpleData>
+		<SimpleData name="angle">261.453036943047</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.5114019515694,47.8569366220824,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.066</SimpleData>
+		<SimpleData name="angle">261.453036943047</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.5054685853032,47.8560449019738,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.072</SimpleData>
+		<SimpleData name="angle">306.176075115689</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.5001650716321,47.8577146729012,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.078</SimpleData>
+		<SimpleData name="angle">15.4191918599572</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.497102496533,47.8618764608299,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.084</SimpleData>
+		<SimpleData name="angle">15.4191918599572</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4986977707555,47.867660499225,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.09</SimpleData>
+		<SimpleData name="angle">355.397621574975</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.5001162030031,47.8734612802877,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">254.919200348088</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8080622,48.5818007,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">91.0526780288112</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.805594329938,48.5819643780347,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.03</SimpleData>
+		<SimpleData name="angle">79.3546643925124</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.850192759094,48.7503716251177,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.036</SimpleData>
+		<SimpleData name="angle">67.1857264855281</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8559096605738,48.7520782912666,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.042</SimpleData>
+		<SimpleData name="angle">67.1857264855281</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8614402600848,48.7544047626395,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.048</SimpleData>
+		<SimpleData name="angle">126.721889663831</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8666410518502,48.7540271445803,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.054</SimpleData>
+		<SimpleData name="angle">126.721889663831</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8714503354403,48.7504395560657,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">36.0610429115918</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8478925,48.7582481,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.018</SimpleData>
+		<SimpleData name="angle">156.388736791939</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.855002770387,48.7699999647374,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.024</SimpleData>
+		<SimpleData name="angle">132.838497251313</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8583189063421,48.7651507417608,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.03</SimpleData>
+		<SimpleData name="angle">197.684102133214</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8560351986101,48.7602243232643,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.036</SimpleData>
+		<SimpleData name="angle">265.882519612818</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8512010998265,48.7583324722741,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.048</SimpleData>
+		<SimpleData name="angle">99.3209416603857</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9258535078021,48.8677025351401,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.054</SimpleData>
+		<SimpleData name="angle">179.51621413554</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.931436911679,48.8664417719149,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.06</SimpleData>
+		<SimpleData name="angle">101.180976029548</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9353777378758,48.8636660932383,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.066</SimpleData>
+		<SimpleData name="angle">130.610317286526</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9394131270643,48.8601757441555,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.072</SimpleData>
+		<SimpleData name="angle">94.3953965287338</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9453837685584,48.859687639398,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.078</SimpleData>
+		<SimpleData name="angle">59.0198618391767</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9479761853217,48.864498158604,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.084</SimpleData>
+		<SimpleData name="angle">59.0198618391767</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9531202600585,48.8675866040224,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.09</SimpleData>
+		<SimpleData name="angle">162.345505356591</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9560813315743,48.8635156185265,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.096</SimpleData>
+		<SimpleData name="angle">91.9440272362947</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9592412645062,48.8595674886571,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.102</SimpleData>
+		<SimpleData name="angle">89.0835560390951</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.965238913673,48.8594868927778,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.108</SimpleData>
+		<SimpleData name="angle">83.60986664277</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9695101399925,48.8618734189512,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.114</SimpleData>
+		<SimpleData name="angle">112.2347121937</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9742589493935,48.8593920459645,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.12</SimpleData>
+		<SimpleData name="angle">112.2347121937</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9798127984119,48.8571216360718,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.126</SimpleData>
+		<SimpleData name="angle">127.612190714494</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9850878067131,48.8543667662808,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.132</SimpleData>
+		<SimpleData name="angle">263.045517678551</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9847673810702,48.8512211894138,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.138</SimpleData>
+		<SimpleData name="angle">273.802460293856</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.97879072361,48.8512507521111,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.144</SimpleData>
+		<SimpleData name="angle">273.802460293856</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9728039318807,48.851648652588,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.15</SimpleData>
+		<SimpleData name="angle">265.718133831674</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9685304006274,48.8495573757522,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.156</SimpleData>
+		<SimpleData name="angle">265.718133831674</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9625471477435,48.8491093970388,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.162</SimpleData>
+		<SimpleData name="angle">211.005137190696</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9585096891457,48.8455809445542,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.168</SimpleData>
+		<SimpleData name="angle">103.104824128378</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9638894953925,48.8440241411295,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.174</SimpleData>
+		<SimpleData name="angle">103.104824128378</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9697332366754,48.842663741255,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.18</SimpleData>
+		<SimpleData name="angle">227.906694832262</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9734687316446,48.8407583379049,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.186</SimpleData>
+		<SimpleData name="angle">212.329714150636</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9692383448973,48.8365492884577,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.192</SimpleData>
+		<SimpleData name="angle">212.329714150636</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9660296010659,48.8314793808624,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.198</SimpleData>
+		<SimpleData name="angle">266.792720651364</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9632905856107,48.8277025324681,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.204</SimpleData>
+		<SimpleData name="angle">266.792720651364</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9572999836263,48.8273668423379,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.21</SimpleData>
+		<SimpleData name="angle">266.792720651364</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9513093816418,48.8270311522076,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.216</SimpleData>
+		<SimpleData name="angle">260.890107980919</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9453748835792,48.8261755166185,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.222</SimpleData>
+		<SimpleData name="angle">250.893369721395</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9396658156235,48.8243691180204,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.228</SimpleData>
+		<SimpleData name="angle">250.893369721395</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9339963493828,48.8224051545416,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.06</SimpleData>
+		<SimpleData name="angle">83.7456485737734</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8996263404151,49.2342028147548,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.066</SimpleData>
+		<SimpleData name="angle">83.7456485737734</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9055906288187,49.2348564689739,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.072</SimpleData>
+		<SimpleData name="angle">263.066205804656</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9073947342705,49.2350292097253,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.078</SimpleData>
+		<SimpleData name="angle">263.066205804656</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9014386164096,49.2343048755292,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.084</SimpleData>
+		<SimpleData name="angle">263.066205804656</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8954824985488,49.2335805413331,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.09</SimpleData>
+		<SimpleData name="angle">260.174144596669</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8925461414876,49.2305039824961,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.096</SimpleData>
+		<SimpleData name="angle">258.046544908449</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8937165668779,49.225756311148,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.102</SimpleData>
+		<SimpleData name="angle">226.879725639289</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8878807516953,49.2250209380881,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.108</SimpleData>
+		<SimpleData name="angle">226.879725639289</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8835012289862,49.2209197454761,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.114</SimpleData>
+		<SimpleData name="angle">248.471218033756</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8779153703507,49.2187792471709,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">69.4655590590707</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>34.3838661,51.8439722,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.084</SimpleData>
+		<SimpleData name="angle">66.4353704159074</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>34.3694826772996,51.8362368427097,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.09</SimpleData>
+		<SimpleData name="angle">66.4353704159074</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>34.3749823355146,51.8386355422572,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ru gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.096</SimpleData>
+		<SimpleData name="angle">59.2278416880064</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={3476c0fd-309b-4da0-b34f-c25c91627bd5}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>34.3803098490346,51.8413696541311,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">51.9975626515522</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4758637,47.8463715,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">32.5749691006521</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4781964920089,47.8518612042507,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">294.322598149273</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4756827291089,47.8552102403429,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.018</SimpleData>
+		<SimpleData name="angle">294.322598149273</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4702152837119,47.8576814831133,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.024</SimpleData>
+		<SimpleData name="angle">294.322598149273</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4647478383149,47.8601527258838,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.03</SimpleData>
+		<SimpleData name="angle">300.923746295484</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4594922988699,47.8630289083901,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.036</SimpleData>
+		<SimpleData name="angle">300.923746295484</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4543451869039,47.8661122893931,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.042</SimpleData>
+		<SimpleData name="angle">291.841936966965</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4488209655355,47.8684354168534,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.048</SimpleData>
+		<SimpleData name="angle">291.841936966965</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.443251682976,47.8706677008346,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.054</SimpleData>
+		<SimpleData name="angle">95.1181970377885</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4458898042853,47.873187642609,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.06</SimpleData>
+		<SimpleData name="angle">95.1181970377885</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4518658809803,47.8726523788095,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.066</SimpleData>
+		<SimpleData name="angle">8.18680520954511</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4576373354352,47.8723757705574,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.072</SimpleData>
+		<SimpleData name="angle">342.528938734445</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4582662609697,47.8782963162673,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.078</SimpleData>
+		<SimpleData name="angle">82.8037878281947</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4617069973696,47.8806585166952,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.084</SimpleData>
+		<SimpleData name="angle">108.393688122578</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4675452355913,47.8802420994996,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.09</SimpleData>
+		<SimpleData name="angle">108.393688122578</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4732387002638,47.8783488324758,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.096</SimpleData>
+		<SimpleData name="angle">82.5208946766237</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4791838717553,47.8790902241156,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.102</SimpleData>
+		<SimpleData name="angle">82.5208946766237</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4851328261304,47.8798712118508,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.108</SimpleData>
+		<SimpleData name="angle">96.1664035652503</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4910933457429,47.8796426628793,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.114</SimpleData>
+		<SimpleData name="angle">96.1664035652503</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4970586304657,47.8789981644886,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.12</SimpleData>
+		<SimpleData name="angle">274.033874270966</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.126</SimpleData>
+		<SimpleData name="angle">269.734313727389</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.132</SimpleData>
+		<SimpleData name="angle">269.734313727389</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.138</SimpleData>
+		<SimpleData name="angle">182.965630036632</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.144</SimpleData>
+		<SimpleData name="angle">153.224159237867</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.15</SimpleData>
+		<SimpleData name="angle">153.224159237867</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.156</SimpleData>
+		<SimpleData name="angle">163.010351569589</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.162</SimpleData>
+		<SimpleData name="angle">163.010351569589</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.168</SimpleData>
+		<SimpleData name="angle">220.323209611203</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.174</SimpleData>
+		<SimpleData name="angle">247.204389724461</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.18</SimpleData>
+		<SimpleData name="angle">263.935201991351</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.186</SimpleData>
+		<SimpleData name="angle">263.935201991351</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.192</SimpleData>
+		<SimpleData name="angle">267.155708126336</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.198</SimpleData>
+		<SimpleData name="angle">337.717827288231</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.204</SimpleData>
+		<SimpleData name="angle">85.0063537338211</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.21</SimpleData>
+		<SimpleData name="angle">85.0063537338211</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>36.4700636289118,47.8458647076396,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">45.6294479591481</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6632391,48.4993388,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">144.798489935996</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6688772902922,48.4996192928429,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">262.387322030458</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.018</SimpleData>
+		<SimpleData name="angle">262.387322030458</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.024</SimpleData>
+		<SimpleData name="angle">10.4457256345715</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6630895899923,48.4985278296961,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">79.9774205305345</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.6864573,48.4986766,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">259.060267521325</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">299.336031270866</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.833291,48.5767087,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">265.696878882846</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8280935563985,48.5784541759875,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">253.932342078363</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8222108626816,48.5775351072658,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.018</SimpleData>
+		<SimpleData name="angle">272.766532088484</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.8162288121625,48.5778971158616,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.024</SimpleData>
+		<SimpleData name="angle">301.882656975172</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.812435083811,48.5808014106176,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.03</SimpleData>
+		<SimpleData name="angle">80.44661886903</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.036</SimpleData>
+		<SimpleData name="angle">95.7113526556856</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.042</SimpleData>
+		<SimpleData name="angle">98.8185228159288</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.048</SimpleData>
+		<SimpleData name="angle">80.7121236310484</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.054</SimpleData>
+		<SimpleData name="angle">90.3557317394228</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.06</SimpleData>
+		<SimpleData name="angle">165.147463323991</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">357.781572957006</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0</SimpleData>
+		<SimpleData name="angle">111.977226738191</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.006</SimpleData>
+		<SimpleData name="angle">200.668992393997</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.012</SimpleData>
+		<SimpleData name="angle">23.2854610823847</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>37.9568526126727,48.8021485081024,0</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<name>Ukr gains</name>
+	<ExtendedData><SchemaData schemaUrl="#SM_Pins_20_03">
+		<SimpleData name="distance">0.018</SimpleData>
+		<SimpleData name="angle">23.2854610823847</SimpleData>
+		<SimpleData name="layer">Calculated</SimpleData>
+		<SimpleData name="path">PointZ?crs=EPSG:4326&amp;field=Name:string(0,0)&amp;field=distance:double(0,0)&amp;field=angle:double(0,0)&amp;uid={89f018ed-21df-4edf-b472-baf42a1fdd9f}</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>0,0,0</coordinates></Point>
+  </Placemark>
+</Folder>
+</Document></kml>
