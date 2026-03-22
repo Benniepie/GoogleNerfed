@@ -2,12 +2,19 @@ import os
 import shutil
 import zipfile
 import json
+import urllib.request
+import tempfile
+from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any
-from fastapi import FastAPI, UploadFile, File, Body
+from typing import List, Dict, Any, Optional
+from fastapi import FastAPI, UploadFile, File, Body, Form, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from geoprocessing import load_kml, save_kml, run_ap_model, run_sm_model, copy_kml_styles
+
+
 
 app = FastAPI()
 
@@ -86,6 +93,117 @@ async def save_settings(settings: Dict[str, Any] = Body(...)):
     with open(settings_path, "w") as f:
         json.dump(settings, f)
     return {"message": "Settings saved successfully"}
+
+
+
+class ProcessUpdateRequest(BaseModel):
+    new_ap_url: str = ""
+    new_sm_url: str = ""
+
+def get_latest_layer(prefix: str) -> Optional[Path]:
+    layers = []
+    for f in DATA_DIR.iterdir():
+        if f.is_file() and f.name.startswith(prefix) and f.name.endswith('.kml'):
+            layers.append(f)
+    if not layers:
+        return None
+    # sort by name, which contains date so last is latest
+    return sorted(layers)[-1]
+
+def download_file(url: str, dest: Path) -> bool:
+    if not url: return False
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req) as response, open(dest, 'wb') as out_file:
+            shutil.copyfileobj(response, out_file)
+
+        # If it's a KMZ, extract it to KML
+        if url.lower().endswith('.kmz') or url.lower().endswith('forcekml=1'):
+            try:
+                with zipfile.ZipFile(dest, 'r') as zip_ref:
+                    kml_files = [f for f in zip_ref.namelist() if f.lower().endswith('.kml')]
+                    if kml_files:
+                        extracted_path = zip_ref.extract(kml_files[0], path="/tmp")
+                        shutil.move(extracted_path, dest)
+            except zipfile.BadZipFile:
+                pass # Probably already KML or something else
+        return True
+    except Exception as e:
+        print(f"Error downloading {url}: {e}")
+        return False
+
+@app.post("/api/process_updates")
+def process_updates(req: ProcessUpdateRequest):
+    if not req.new_ap_url and not req.new_sm_url:
+        raise HTTPException(status_code=400, detail="Must provide at least one URL")
+
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    results = []
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+
+        # Process AP Map
+        if req.new_ap_url:
+            latest_old_ap = get_latest_layer("AP Map")
+            if not latest_old_ap:
+                raise HTTPException(status_code=400, detail="No existing AP Map found to compare against.")
+
+            new_ap_path = tmp_path / "new_ap.kml"
+            if download_file(req.new_ap_url, new_ap_path):
+                old_ap_gdf = load_kml(latest_old_ap)
+                new_ap_gdf = load_kml(new_ap_path)
+
+                if old_ap_gdf.empty or new_ap_gdf.empty:
+                    results.append({"status": "error", "message": "Failed to parse AP KMLs"})
+                else:
+                    map_out, pins_out = run_ap_model(old_ap_gdf, new_ap_gdf)
+
+                    out_map_name = f"AP Map {date_str}.kml"
+                    out_pins_name = f"AP Pins {date_str}.kml"
+
+                    save_kml(map_out, DATA_DIR / out_map_name)
+                    save_kml(pins_out, DATA_DIR / out_pins_name)
+                    copy_kml_styles(latest_old_sm, DATA_DIR / out_map_name)
+                    copy_kml_styles(latest_old_sm, DATA_DIR / out_pins_name)
+                    copy_kml_styles(latest_old_ap, DATA_DIR / out_map_name)
+                    copy_kml_styles(latest_old_ap, DATA_DIR / out_pins_name)
+
+                    results.append({"status": "success", "layer": "AP Map", "new_files": [out_map_name, out_pins_name]})
+            else:
+                results.append({"status": "error", "message": "Failed to download AP Map"})
+
+        # Process SM Map
+        if req.new_sm_url:
+            latest_old_sm = get_latest_layer("SM Map")
+            if not latest_old_sm:
+                raise HTTPException(status_code=400, detail="No existing SM Map found to compare against.")
+
+            new_sm_path = tmp_path / "new_sm.kml"
+            if download_file(req.new_sm_url, new_sm_path):
+                old_sm_gdf = load_kml(latest_old_sm)
+                new_sm_gdf = load_kml(new_sm_path)
+
+                if old_sm_gdf.empty or new_sm_gdf.empty:
+                    results.append({"status": "error", "message": "Failed to parse SM KMLs"})
+                else:
+                    map_out, pins_out = run_sm_model(old_sm_gdf, new_sm_gdf)
+
+                    out_map_name = f"SM Map {date_str}.kml"
+                    out_pins_name = f"SM Pins {date_str}.kml"
+
+                    save_kml(map_out, DATA_DIR / out_map_name)
+                    save_kml(pins_out, DATA_DIR / out_pins_name)
+                    copy_kml_styles(latest_old_sm, DATA_DIR / out_map_name)
+                    copy_kml_styles(latest_old_sm, DATA_DIR / out_pins_name)
+                    copy_kml_styles(latest_old_ap, DATA_DIR / out_map_name)
+                    copy_kml_styles(latest_old_ap, DATA_DIR / out_pins_name)
+
+                    results.append({"status": "success", "layer": "SM Map", "new_files": [out_map_name, out_pins_name]})
+            else:
+                results.append({"status": "error", "message": "Failed to download SM Map"})
+
+    return {"results": results}
 
 
 @app.delete("/api/layers/{filename}")

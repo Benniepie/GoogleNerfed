@@ -3,3 +3,5 @@ static/index2.html
 .env
 __pycache__/
 *.pyc
+node_modules/
+uvicorn.log

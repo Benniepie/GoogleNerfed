@@ -146,13 +146,47 @@
             <em style="font-size: 0.9rem; color: #94a3b8;">Loading layers...</em>
         </div>
 
+
         <div class="upload-section">
             <form id="uploadForm">
                 <input type="file" id="kmlFile" accept=".kml,.kmz" multiple required />
                 <button type="submit" id="uploadBtn" class="primary-btn">Upload KML / KMZ</button>
                 <div id="statusMsg" class="status-msg">Upload complete!</div>
             </form>
-            <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-top: 15px; background: var(--border-color);">⬇️ Export Displayed Data</button>
+            <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; margin-top: 10px; background: #8b5cf6;">🤖 Automate Map Update</button>
+            <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-top: 10px; background: var(--border-color);">⬇️ Export Displayed Data</button>
+        </div>
+
+        <div id="timelineContainer" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); text-align: center;">
+            <label style="font-size: 0.85rem; display: block; margin-bottom: 5px;">Map Timeline: <span id="currentDateDisplay" style="font-weight: bold; color: var(--accent-color);">Latest</span></label>
+            <input type="range" id="timelineSlider" min="0" max="0" value="0" style="width: 100%;" disabled>
+        </div>
+
+    </div>
+
+
+    <!-- Automate Update Modal -->
+    <div id="automateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="width: 350px;">
+            <h3 style="margin-top:0;">🤖 Automate Update</h3>
+            <p style="font-size:0.85rem; color:#cbd5e1; margin-bottom: 15px;">Run geoprocessing to calculate Ukraine/Russian gains automatically.</p>
+
+            <form id="automateForm">
+                <div style="text-align: left; margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px;">New AP Map URL:</label>
+                    <input type="url" id="newApUrl" placeholder="https://www.google.com/maps/...&forcekml=1" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box;">
+                </div>
+
+                <div style="text-align: left; margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px;">New SM Map URL:</label>
+                    <input type="url" id="newSmUrl" placeholder="https://www.google.com/maps/...&forcekml=1" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box;">
+                </div>
+
+                <div id="automateStatus" style="font-size: 0.85rem; margin-bottom: 10px; display: none; text-align: center;"></div>
+
+                <button type="submit" id="automateBtn" class="primary-btn" style="width:100%; margin-bottom:10px;">Run Update</button>
+                <button type="button" class="primary-btn" onclick="document.getElementById('automateModal').style.display='none'" style="width:100%; background:var(--border-color);">Cancel</button>
+            </form>
         </div>
     </div>
 
@@ -302,7 +336,8 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(appSettings)
-                });
+                }
+                updateTimeline();
             } catch (err) {
                 console.error('Error saving styles:', err);
             }
@@ -350,7 +385,7 @@
                     return;
                 }
 
-                data.layers.forEach(filename => {
+                                for (const filename of data.layers) {
                     const item = document.createElement('div');
                     item.className = 'layer-item';
                     
@@ -389,7 +424,7 @@
                     layerListEl.appendChild(item);
 
                     // Load KML
-                    fetchAndAddKML(filename);
+                    await fetchAndAddKML(filename);
 
                     // Toggle visibility
                     checkbox.addEventListener('change', (e) => {
@@ -399,7 +434,8 @@
                             if (activeLayers[filename]) map.removeLayer(activeLayers[filename]);
                         }
                     });
-                });
+                }
+                updateTimeline();
             } catch (err) {
                 console.error("Failed to load layers:", err);
             }
@@ -594,7 +630,7 @@
                         map.removeLayer(activeLayers[filename]);
                         delete activeLayers[filename];
                     }
-                    loadLayers(); // Refresh UI list
+                    loadLayers().then(() => updateTimeline()); // Refresh UI list
                 } else {
                     alert("Failed to delete. Have you added the DELETE route to main.py?");
                 }
@@ -695,6 +731,133 @@
                 alert("Failed to export KML.");
             }
         }
+
+
+        // --- Timeline & Automation Logic ---
+        let availableDates = [];
+
+        function extractDateFromFilename(filename) {
+            // Looks for YYYY-MM-DD pattern
+            const match = filename.match(/(\d{4}-\d{2}-\d{2})/);
+            if (match) return match[1];
+
+            // Looks for DD MM (YY/YYYY) pattern
+            const altMatch = filename.match(/(\d{2})_?(\d{2})/); // Like 20 03
+            if (altMatch) return `2024-${altMatch[2]}-${altMatch[1]}`; // Approximation
+
+            return null;
+        }
+
+        function updateTimeline() {
+            const datesSet = new Set();
+            for (const filename in activeLayers) {
+                const d = extractDateFromFilename(filename);
+                if (d) datesSet.add(d);
+            }
+
+            availableDates = Array.from(datesSet).sort();
+            const slider = document.getElementById('timelineSlider');
+            const display = document.getElementById('currentDateDisplay');
+
+            if (availableDates.length > 0) {
+                slider.disabled = false;
+                slider.max = availableDates.length - 1;
+                slider.value = availableDates.length - 1; // Default to latest
+                display.textContent = availableDates[slider.value];
+            } else {
+                slider.disabled = true;
+                slider.value = 0;
+                display.textContent = "Latest";
+            }
+        }
+
+        document.getElementById('timelineSlider').addEventListener('input', (e) => {
+            if (availableDates.length === 0) return;
+            const idx = e.target.value;
+            const selectedDate = availableDates[idx];
+            document.getElementById('currentDateDisplay').textContent = selectedDate;
+
+            // Toggle layer visibility
+            for (const filename in activeLayers) {
+                const layerDate = extractDateFromFilename(filename);
+                const isChecked = document.getElementById('chk_' + filename)?.checked;
+
+                if (isChecked && layerDate && layerDate === selectedDate) {
+                    if (!map.hasLayer(activeLayers[filename])) {
+                        map.addLayer(activeLayers[filename]);
+                    }
+                } else {
+                    if (map.hasLayer(activeLayers[filename])) {
+                        map.removeLayer(activeLayers[filename]);
+                    }
+                }
+            }
+        });
+
+        function openAutomateModal() {
+            document.getElementById('automateStatus').style.display = 'none';
+            document.getElementById('automateModal').style.display = 'flex';
+        }
+
+        document.getElementById('automateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const apUrl = document.getElementById('newApUrl').value;
+            const smUrl = document.getElementById('newSmUrl').value;
+
+            if (!apUrl && !smUrl) {
+                alert('Please provide at least one URL');
+                return;
+            }
+
+            const btn = document.getElementById('automateBtn');
+            const status = document.getElementById('automateStatus');
+
+            btn.disabled = true;
+            btn.textContent = 'Processing (This may take a minute)...';
+            status.style.display = 'block';
+            status.style.color = '#e2e8f0';
+            status.textContent = 'Downloading and running QGIS models...';
+
+            try {
+                const response = await fetch('/api/process_updates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ new_ap_url: apUrl, new_sm_url: smUrl })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    let msg = "Success! Generated:<br>";
+                    data.results.forEach(r => {
+                        if(r.status === 'success') {
+                            msg += r.new_files.join('<br>') + '<br>';
+                        } else {
+                            msg += `<span style="color:var(--danger-color)">Error processing ${r.layer || ''}: ${r.message}</span><br>`;
+                        }
+                    });
+                    status.innerHTML = msg;
+                    status.style.color = 'var(--success-color)';
+
+                    // Reload layers to get the new maps
+                    await loadLayers();
+
+                    setTimeout(() => {
+                        document.getElementById('automateModal').style.display = 'none';
+                    }, 4000);
+                } else {
+                    status.textContent = 'Error: ' + (data.detail || 'Unknown error');
+                    status.style.color = 'var(--danger-color)';
+                }
+            } catch (err) {
+                status.textContent = 'Network error communicating with server.';
+                status.style.color = 'var(--danger-color)';
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run Update';
+            }
+        });
 
         // Initial load
         loadSettingsAndInit();
