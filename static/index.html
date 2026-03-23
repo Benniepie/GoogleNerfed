@@ -173,13 +173,27 @@
 
             <form id="automateForm">
                 <div style="text-align: left; margin-bottom: 15px;">
-                    <label style="display:block; margin-bottom:5px;">New AP Map URL:</label>
-                    <input type="url" id="newApUrl" placeholder="https://www.google.com/maps/...&forcekml=1" value="https://www.google.com/maps/d/u/0/viewer?mid=1gO8X7RC8cUzc-1q7-s4-09X53HNIEJA&ll=50.44920983313782%2C35.576686881141974&z=14&forcekml=1" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box;">
+                    <label style="display:block; margin-bottom:5px; font-weight: bold; color: #a78bfa;">AP Maps Process</label>
+
+                    <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">Base AP Layer (Old):</label>
+                    <select id="oldApLayerSelect" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box; margin-bottom: 5px;">
+                        <option value="">-- Do not process AP Map --</option>
+                    </select>
+
+                    <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">New AP URL (.kml or .kmz):</label>
+                    <input type="url" id="newApUrl" placeholder="https://www.google.com/maps/d/kml?mid=...&forcekml=1" value="https://www.google.com/maps/d/kml?mid=1gO8X7RC8cUzc-1q7-s4-09X53HNIEJA&forcekml=1" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box;">
                 </div>
 
                 <div style="text-align: left; margin-bottom: 15px;">
-                    <label style="display:block; margin-bottom:5px;">New SM Map URL:</label>
-                    <input type="url" id="newSmUrl" placeholder="https://www.google.com/maps/...&forcekml=1" value="https://www.google.com/maps/d/u/0/viewer?mid=1V8NzjQkzMOhpuLhkktbiKgodOQ27X6IV&ll=48.29269353772792%2C37.041430830436305&z=12&forcekml=1" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box;">
+                    <label style="display:block; margin-bottom:5px; font-weight: bold; color: #a78bfa;">SM Maps Process</label>
+
+                    <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">Base SM Layer (Old):</label>
+                    <select id="oldSmLayerSelect" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box; margin-bottom: 5px;">
+                        <option value="">-- Do not process SM Map --</option>
+                    </select>
+
+                    <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">New SM URL (.kml or .kmz):</label>
+                    <input type="url" id="newSmUrl" placeholder="https://www.google.com/maps/d/kml?mid=...&forcekml=1" value="https://www.google.com/maps/d/kml?mid=1V8NzjQkzMOhpuLhkktbiKgodOQ27X6IV&forcekml=1" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box;">
                 </div>
 
                 <div id="automateStatus" style="font-size: 0.85rem; margin-bottom: 10px; display: none; text-align: center;"></div>
@@ -796,12 +810,46 @@
 
         function openAutomateModal() {
             document.getElementById('automateStatus').style.display = 'none';
+
+            // Populate the dropdowns with currently loaded files from `activeLayers`
+            // We just grab the names of the files loaded in the map state
+            const apSelect = document.getElementById('oldApLayerSelect');
+            const smSelect = document.getElementById('oldSmLayerSelect');
+
+            // Clear current options except the "Do not process" one
+            apSelect.innerHTML = '<option value="">-- Do not process AP Map --</option>';
+            smSelect.innerHTML = '<option value="">-- Do not process SM Map --</option>';
+
+            const filenames = Object.keys(activeLayers).sort().reverse(); // Sort descending so latest dates are near top typically
+
+            for (const filename of filenames) {
+                if (filename.toLowerCase().includes('ap map')) {
+                    const opt = document.createElement('option');
+                    opt.value = filename;
+                    opt.textContent = filename;
+                    apSelect.appendChild(opt);
+                } else if (filename.toLowerCase().includes('sm map')) {
+                    const opt = document.createElement('option');
+                    opt.value = filename;
+                    opt.textContent = filename;
+                    smSelect.appendChild(opt);
+                }
+            }
+
+            // Auto-select the first (latest) if available
+            if (apSelect.options.length > 1) apSelect.selectedIndex = 1;
+            if (smSelect.options.length > 1) smSelect.selectedIndex = 1;
+
             document.getElementById('automateModal').style.display = 'flex';
         }
 
         document.getElementById('automateForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const oldAp = document.getElementById('oldApLayerSelect').value;
             const apUrl = document.getElementById('newApUrl').value;
+
+            const oldSm = document.getElementById('oldSmLayerSelect').value;
             const smUrl = document.getElementById('newSmUrl').value;
 
             if (!apUrl && !smUrl) {
@@ -822,7 +870,7 @@
                 const response = await fetch('/api/process_updates', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ new_ap_url: apUrl, new_sm_url: smUrl })
+                    body: JSON.stringify({ new_ap_url: apUrl, new_sm_url: smUrl, old_ap_filename: oldAp, old_sm_filename: oldSm })
                 });
 
                 const data = await response.json();
