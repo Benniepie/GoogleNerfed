@@ -13,6 +13,9 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from geoprocessing import load_kml, save_kml, run_ap_model, run_sm_model, copy_kml_styles
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('mymaps-automation')
 
 
 
@@ -99,6 +102,8 @@ async def save_settings(settings: Dict[str, Any] = Body(...)):
 class ProcessUpdateRequest(BaseModel):
     new_ap_url: str = ""
     new_sm_url: str = ""
+    old_ap_filename: str = ""
+    old_sm_filename: str = ""
 
 def get_latest_layer(prefix: str) -> Optional[Path]:
     layers = []
@@ -146,63 +151,89 @@ def process_updates(req: ProcessUpdateRequest):
 
         # Process AP Map
         if req.new_ap_url:
-            latest_old_ap = get_latest_layer("AP Map")
-            if not latest_old_ap:
-                raise HTTPException(status_code=400, detail="No existing AP Map found to compare against.")
-
-            new_ap_path = tmp_path / "new_ap.kml"
-            if download_file(req.new_ap_url, new_ap_path):
-                old_ap_gdf = load_kml(latest_old_ap)
-                new_ap_gdf = load_kml(new_ap_path)
-
-                if old_ap_gdf.empty or new_ap_gdf.empty:
-                    results.append({"status": "error", "message": "Failed to parse AP KMLs"})
-                else:
-                    map_out, pins_out = run_ap_model(old_ap_gdf, new_ap_gdf)
-
-                    out_map_name = f"AP Map {date_str}.kml"
-                    out_pins_name = f"AP Pins {date_str}.kml"
-
-                    save_kml(map_out, DATA_DIR / out_map_name)
-                    save_kml(pins_out, DATA_DIR / out_pins_name)
-                    copy_kml_styles(latest_old_sm, DATA_DIR / out_map_name)
-                    copy_kml_styles(latest_old_sm, DATA_DIR / out_pins_name)
-                    copy_kml_styles(latest_old_ap, DATA_DIR / out_map_name)
-                    copy_kml_styles(latest_old_ap, DATA_DIR / out_pins_name)
-
-                    results.append({"status": "success", "layer": "AP Map", "new_files": [out_map_name, out_pins_name]})
+            logger.info("--- Processing AP Map ---")
+            if not req.old_ap_filename:
+                logger.error("No base AP Map filename provided.")
+                results.append({"status": "error", "layer": "AP Map", "message": "No base AP Map selected in UI."})
             else:
-                results.append({"status": "error", "message": "Failed to download AP Map"})
+                latest_old_ap = DATA_DIR / req.old_ap_filename
+                if not latest_old_ap.exists():
+                    logger.error(f"Base AP Map {latest_old_ap} does not exist on disk.")
+                    results.append({"status": "error", "layer": "AP Map", "message": f"Selected base file {req.old_ap_filename} not found."})
+                else:
+                    new_ap_path = tmp_path / "new_ap.kml"
+                    if download_file(req.new_ap_url, new_ap_path):
+                        logger.info(f"Loading base AP Map: {latest_old_ap}")
+                        old_ap_gdf = load_kml(latest_old_ap)
+                        logger.info("Loading downloaded new AP Map")
+                        new_ap_gdf = load_kml(new_ap_path)
+
+                        if old_ap_gdf.empty or new_ap_gdf.empty:
+                            logger.error("Failed to parse one or both AP KMLs (they might be empty or invalid).")
+                            results.append({"status": "error", "layer": "AP Map", "message": "Failed to parse AP KMLs. Check if URL returned valid KML/KMZ."})
+                        else:
+                            logger.info(f"Geoprocessing AP Maps: Old ({len(old_ap_gdf)} features) vs New ({len(new_ap_gdf)} features)")
+                            map_out, pins_out = run_ap_model(old_ap_gdf, new_ap_gdf)
+
+                            out_map_name = f"AP Map {date_str}.kml"
+                            out_pins_name = f"AP Pins {date_str}.kml"
+
+                            logger.info(f"Saving new AP Map to {out_map_name}")
+                            save_kml(map_out, DATA_DIR / out_map_name)
+                            logger.info(f"Saving new AP Pins to {out_pins_name}")
+                            save_kml(pins_out, DATA_DIR / out_pins_name)
+
+                            logger.info("Copying KML styles from base layer...")
+                            copy_kml_styles(latest_old_ap, DATA_DIR / out_map_name)
+                            copy_kml_styles(latest_old_ap, DATA_DIR / out_pins_name)
+
+                            logger.info("AP Map update successful!")
+                            results.append({"status": "success", "layer": "AP Map", "new_files": [out_map_name, out_pins_name]})
+                    else:
+                        results.append({"status": "error", "layer": "AP Map", "message": "Failed to download AP Map from URL."})
 
         # Process SM Map
         if req.new_sm_url:
-            latest_old_sm = get_latest_layer("SM Map")
-            if not latest_old_sm:
-                raise HTTPException(status_code=400, detail="No existing SM Map found to compare against.")
-
-            new_sm_path = tmp_path / "new_sm.kml"
-            if download_file(req.new_sm_url, new_sm_path):
-                old_sm_gdf = load_kml(latest_old_sm)
-                new_sm_gdf = load_kml(new_sm_path)
-
-                if old_sm_gdf.empty or new_sm_gdf.empty:
-                    results.append({"status": "error", "message": "Failed to parse SM KMLs"})
-                else:
-                    map_out, pins_out = run_sm_model(old_sm_gdf, new_sm_gdf)
-
-                    out_map_name = f"SM Map {date_str}.kml"
-                    out_pins_name = f"SM Pins {date_str}.kml"
-
-                    save_kml(map_out, DATA_DIR / out_map_name)
-                    save_kml(pins_out, DATA_DIR / out_pins_name)
-                    copy_kml_styles(latest_old_sm, DATA_DIR / out_map_name)
-                    copy_kml_styles(latest_old_sm, DATA_DIR / out_pins_name)
-                    copy_kml_styles(latest_old_ap, DATA_DIR / out_map_name)
-                    copy_kml_styles(latest_old_ap, DATA_DIR / out_pins_name)
-
-                    results.append({"status": "success", "layer": "SM Map", "new_files": [out_map_name, out_pins_name]})
+            logger.info("--- Processing SM Map ---")
+            if not req.old_sm_filename:
+                logger.error("No base SM Map filename provided.")
+                results.append({"status": "error", "layer": "SM Map", "message": "No base SM Map selected in UI."})
             else:
-                results.append({"status": "error", "message": "Failed to download SM Map"})
+                latest_old_sm = DATA_DIR / req.old_sm_filename
+                if not latest_old_sm.exists():
+                    logger.error(f"Base SM Map {latest_old_sm} does not exist on disk.")
+                    results.append({"status": "error", "layer": "SM Map", "message": f"Selected base file {req.old_sm_filename} not found."})
+                else:
+                    new_sm_path = tmp_path / "new_sm.kml"
+                    if download_file(req.new_sm_url, new_sm_path):
+                        logger.info(f"Loading base SM Map: {latest_old_sm}")
+                        old_sm_gdf = load_kml(latest_old_sm)
+                        logger.info("Loading downloaded new SM Map")
+                        new_sm_gdf = load_kml(new_sm_path)
+
+                        if old_sm_gdf.empty or new_sm_gdf.empty:
+                            logger.error("Failed to parse one or both SM KMLs (they might be empty or invalid).")
+                            results.append({"status": "error", "layer": "SM Map", "message": "Failed to parse SM KMLs. Check if URL returned valid KML/KMZ."})
+                        else:
+                            logger.info(f"Geoprocessing SM Maps: Old ({len(old_sm_gdf)} features) vs New ({len(new_sm_gdf)} features)")
+                            map_out, pins_out = run_sm_model(old_sm_gdf, new_sm_gdf)
+
+                            out_map_name = f"SM Map {date_str}.kml"
+                            out_pins_name = f"SM Pins {date_str}.kml"
+
+                            logger.info(f"Saving new SM Map to {out_map_name}")
+                            save_kml(map_out, DATA_DIR / out_map_name)
+                            logger.info(f"Saving new SM Pins to {out_pins_name}")
+                            save_kml(pins_out, DATA_DIR / out_pins_name)
+
+                            logger.info("Copying KML styles from base layer...")
+                            copy_kml_styles(latest_old_sm, DATA_DIR / out_map_name)
+                            copy_kml_styles(latest_old_sm, DATA_DIR / out_pins_name)
+
+                            logger.info("SM Map update successful!")
+                            results.append({"status": "success", "layer": "SM Map", "new_files": [out_map_name, out_pins_name]})
+                    else:
+                        results.append({"status": "error", "layer": "SM Map", "message": "Failed to download SM Map from URL."})
 
     return {"results": results}
 
