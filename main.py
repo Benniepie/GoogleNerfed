@@ -146,8 +146,21 @@ def process_updates(req: ProcessUpdateRequest):
     date_str = datetime.now().strftime("%Y-%m-%d")
     results = []
 
+
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
+
+        # Ensure ukraine_provinces exists
+        prov_path = DATA_DIR / "ukraine-with-regions_1530.kml"
+        if not prov_path.exists():
+            logger.info("Downloading missing ukraine_provinces KML for geoprocessing boundaries...")
+            download_file("https://raw.githubusercontent.com/Benniepie/GoogleNerfed/main/static/ukraine-with-regions_1530%20(1).kml", prov_path)
+
+        if prov_path.exists():
+            ukr_prov_gdf = load_kml(prov_path)
+        else:
+            logger.warning("Could not load ukr_prov_gdf, processing will run without country boundary clips!")
+            ukr_prov_gdf = None
 
         # Process AP Map
         if req.new_ap_url:
@@ -173,7 +186,7 @@ def process_updates(req: ProcessUpdateRequest):
                             results.append({"status": "error", "layer": "AP Map", "message": "Failed to parse AP KMLs. Check if URL returned valid KML/KMZ."})
                         else:
                             logger.info(f"Geoprocessing AP Maps: Old ({len(old_ap_gdf)} features) vs New ({len(new_ap_gdf)} features)")
-                            map_out, pins_out = run_ap_model(old_ap_gdf, new_ap_gdf)
+                            map_out, pins_out = run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf)
 
                             out_map_name = f"AP Map {date_str}.kml"
                             out_pins_name = f"AP Pins {date_str}.kml"
@@ -216,7 +229,7 @@ def process_updates(req: ProcessUpdateRequest):
                             results.append({"status": "error", "layer": "SM Map", "message": "Failed to parse SM KMLs. Check if URL returned valid KML/KMZ."})
                         else:
                             logger.info(f"Geoprocessing SM Maps: Old ({len(old_sm_gdf)} features) vs New ({len(new_sm_gdf)} features)")
-                            map_out, pins_out = run_sm_model(old_sm_gdf, new_sm_gdf)
+                            map_out, pins_out = run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf)
 
                             out_map_name = f"SM Map {date_str}.kml"
                             out_pins_name = f"SM Pins {date_str}.kml"

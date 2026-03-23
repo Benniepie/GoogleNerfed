@@ -13,9 +13,28 @@ warnings.filterwarnings('ignore', message='.*Self-intersection.*')
 fiona.drvsupport.supported_drivers['KML'] = 'rw'
 fiona.drvsupport.supported_drivers['LIBKML'] = 'rw'
 
+import pyogrio
+import pandas as pd
+
 def load_kml(filepath):
     try:
-        gdf = gpd.read_file(filepath, driver='KML')
+        layers = pyogrio.list_layers(filepath)
+        gdfs = []
+        for layer_info in layers:
+            layer_name = layer_info[0]
+            try:
+                # read_dataframe returns all data as strings often or drops some, we can use geopandas for safer parsing per layer if pyogrio doesn't support the raw driver well, but pyogrio is faster
+                gdf = gpd.read_file(filepath, layer=layer_name, driver='KML')
+                if not gdf.empty:
+                    gdfs.append(gdf)
+            except:
+                pass
+
+        if not gdfs:
+            return gpd.GeoDataFrame()
+
+        gdf = gpd.GeoDataFrame(pd.concat(gdfs, ignore_index=True), crs=gdfs[0].crs)
+
         # Standardize empty or None names to empty string for consistent filtering
         if 'Name' in gdf.columns:
             gdf['Name'] = gdf['Name'].fillna('')
@@ -124,30 +143,52 @@ def generate_points_along_lines(lines_gdf, distance=0.006):
     return points_gdf
 
 def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
-    """
-    Replicates the logic in AP.py QGIS model.
-    old_ap: existing AP map
-    new_ap: new AP map
-    Returns: (output_ap_map_gdf, output_ap_pins_gdf)
-    """
+    # If no ukraine provinces file is passed, fallback to returning the raw geometry (but warn)
+    if ukr_prov_gdf is None or ukr_prov_gdf.empty:
+        print("Warning: ukraine_provinces KML is missing. AP output will include neighboring countries.")
+        prov_boundaries = gpd.GeoDataFrame(geometry=[])
+    else:
+        # 1. Fix Geometries -> we assume ukr_prov_gdf is already valid
+        # Convert provinces to boundary lines to perform "Split with lines"
+        prov_boundaries = ukr_prov_gdf.copy()
+        prov_boundaries.geometry = prov_boundaries.geometry.boundary
+
+    # Keep only polygons for the area difference operations!
+    old_ap_gdf = old_ap_gdf[old_ap_gdf.geometry.type.isin(['Polygon', 'MultiPolygon'])]
+    new_ap_gdf = new_ap_gdf[new_ap_gdf.geometry.type.isin(['Polygon', 'MultiPolygon'])]
+
     # 1. Dissolve new AP
     new_dissolved = new_ap_gdf.dissolve()
 
-    # 2. Buffer old AP by 0.0002
+    # 2. Delete holes in new AP (we can just fill holes by computing the convex hull or simplified fill, but QGIS native:deleteholes just fills them. Since geopandas doesn't have a direct fill holes, we take the exterior rings).
+    def fill_holes(geom):
+        if geom is None: return geom
+        from shapely.geometry import Polygon, MultiPolygon
+        if geom.type == 'Polygon':
+            return Polygon(geom.exterior)
+        elif geom.type == 'MultiPolygon':
+            return MultiPolygon([Polygon(p.exterior) for p in geom.geoms])
+        return geom
+
+    new_no_holes = new_ap_gdf.copy()
+    new_no_holes.geometry = new_no_holes.geometry.apply(fill_holes)
+    new_no_holes_dissolved = new_no_holes.dissolve()
+
+    # 3. Buffer old AP by 0.0002
     old_buffered = old_ap_gdf.copy()
     old_buffered.geometry = old_buffered.buffer(0.0002)
     old_buffered = old_buffered.dissolve()
 
-    # 3. Buffer new AP by 0.0002
+    # 4. Buffer new AP by 0.0002
     new_buffered = new_ap_gdf.copy()
     new_buffered.geometry = new_buffered.buffer(0.0002)
     new_buffered = new_buffered.dissolve()
 
-    # 4. Dissolve old AP
+    # 5. Dissolve old AP
     old_dissolved = old_ap_gdf.dissolve()
 
     # Differences to find changed lines (new vs old and old vs new)
-    # Difference: new_dissolved - old_dissolved (New Line) -> Area grown (Ru gains)
+    # QGIS Difference: Dissolve(New) - Dissolve(Old) = New Line (Area grown = Ru gains)
     if not new_dissolved.empty and not old_dissolved.empty:
         new_line_area = gpd.overlay(new_dissolved, old_dissolved, how='difference')
     elif not new_dissolved.empty:
@@ -155,7 +196,7 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     else:
         new_line_area = gpd.GeoDataFrame(geometry=[])
 
-    # Difference: old_dissolved - new_dissolved (Old Line) -> Area shrunk (Ukr gains)
+    # Difference: Dissolve(Old) - Dissolve(New) = Old Line (Area shrunk = Ukr gains)
     if not old_dissolved.empty and not new_dissolved.empty:
         old_line_area = gpd.overlay(old_dissolved, new_dissolved, how='difference')
     elif not old_dissolved.empty:
@@ -183,12 +224,10 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     # Intersect/Difference with buffers (like Verschil / Extract by Location in QGIS)
     # Ukraine gains (shrunk Russian areas) - points from Old Line Area NOT in new buffer
     if not points_ukr.empty and not new_buffered.empty:
-        # Verschil (difference)
         points_ukr = gpd.overlay(points_ukr, new_buffered, how='difference')
 
     # Russian gains (grown Russian areas) - points from New Line Area INTERSECTING old buffer
     if not points_ru.empty and not old_buffered.empty:
-        # Extract by location (intersect)
         points_ru = gpd.sjoin(points_ru, old_buffered, how='inner', predicate='intersects')
         if 'index_right' in points_ru.columns:
             points_ru = points_ru.drop(columns=['index_right'])
@@ -205,6 +244,7 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
         points_ru = gpd.GeoDataFrame(columns=['Name', 'geometry'], geometry='geometry')
 
     # Merge Pins
+    import pandas as pd
     pins_out = pd.concat([points_ukr, points_ru], ignore_index=True)
     if not pins_out.empty:
         pins_out = gpd.GeoDataFrame(pins_out, geometry='geometry')
@@ -213,12 +253,18 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     else:
         pins_out = gpd.GeoDataFrame(columns=['Name', 'geometry'], geometry='geometry')
 
-    # The AP Output Map is essentially the new_ap map, dissolved and filtered > 1 area
-    # But for a clone of what's shown, we generally just want the new polygons.
-    # QGIS model does some complex 'split with lines' using Ukraine provinces, delete holes, etc.
-    # We will approximate the output as the new_ap dissolved if no complex splits are strictly needed,
-    # or just the new_ap cleaned.
-    map_out = new_ap_gdf.copy()
+    # Now for AP Output Map:
+    # QGIS does: Geometry by Expression (make_polygon) on the Delete Holes output,
+    # then splits with Ukraine Province lines, then extracts $area > 1.
+    # To replicate `split with lines` simply in Geopandas when we have an outer country boundary:
+    # We can just intersect with the full Ukraine provinces dissolved polygon to clip out Poland/Hungary/etc.
+    if ukr_prov_gdf is not None and not ukr_prov_gdf.empty:
+        ukr_dissolved = ukr_prov_gdf.dissolve()
+        # Clip the new_ap map to ONLY what is inside Ukraine's borders!
+        map_out = gpd.overlay(new_ap_gdf, ukr_dissolved, how='intersection')
+    else:
+        map_out = new_ap_gdf.copy()
+
     if 'Name' not in map_out.columns:
         map_out['Name'] = ''
 
@@ -242,16 +288,30 @@ if __name__ == "__main__":
     test_ap()
 
 def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
-    """
-    Replicates the logic in SM.py QGIS model.
-    """
+    import pandas as pd
+    import geopandas as gpd
+
     # Filter out 'Ukrainian Armed Forces' from SM maps
-    # Use fillna('') again just in case
     old_sm_gdf['Name'] = old_sm_gdf['Name'].fillna('')
     new_sm_gdf['Name'] = new_sm_gdf['Name'].fillna('')
 
-    old_sm = old_sm_gdf[~old_sm_gdf['Name'].str.contains('Ukrainian Armed Forces', case=False, na=False)]
-    new_sm = new_sm_gdf[~new_sm_gdf['Name'].str.contains('Ukrainian Armed Forces', case=False, na=False)]
+    old_sm = old_sm_gdf[~old_sm_gdf['Name'].str.contains('Ukrainian Armed Forces', case=False, na=False)].copy()
+    new_sm = new_sm_gdf[~new_sm_gdf['Name'].str.contains('Ukrainian Armed Forces', case=False, na=False)].copy()
+
+    # In SM.py QGIS model, it extracts "Autonomous Republic of Crimea" from ukraine_provinces
+    # And uses it to difference the new lines and split polygons to prevent artifact pins
+    if ukr_prov_gdf is not None and not ukr_prov_gdf.empty:
+        ukr_prov_gdf['Name'] = ukr_prov_gdf['Name'].fillna('')
+        crimea = ukr_prov_gdf[ukr_prov_gdf['Name'].str.contains('Crimea', case=False, na=False)].copy()
+        ukr_prov_lines = ukr_prov_gdf.copy()
+        ukr_prov_lines.geometry = ukr_prov_lines.geometry.boundary
+    else:
+        crimea = gpd.GeoDataFrame(geometry=[])
+        ukr_prov_lines = gpd.GeoDataFrame(geometry=[])
+
+    # Keep only polygons for the area difference operations!
+    old_sm = old_sm[old_sm.geometry.type.isin(['Polygon', 'MultiPolygon'])]
+    new_sm = new_sm[new_sm.geometry.type.isin(['Polygon', 'MultiPolygon'])]
 
     # 1. Dissolve old SM
     old_dissolved = old_sm.dissolve()
@@ -285,6 +345,16 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     else:
         old_line_area = gpd.GeoDataFrame(geometry=[])
 
+    # In QGIS, before converting difference to lines/points, it does:
+    # Extract by expression (Crimea) OVERLAY Split with lines (Delete Holes output + Ukraine Provinces Lines)
+    # This prevents artifacts along the Russian/Crimean coastline from generating pins.
+    # A robust Geopandas equivalent is to just erase the Crimea polygon from the line areas BEFORE extracting boundaries!
+    if not crimea.empty:
+        if not new_line_area.empty:
+            new_line_area = gpd.overlay(new_line_area, crimea, how='difference')
+        if not old_line_area.empty:
+            old_line_area = gpd.overlay(old_line_area, crimea, how='difference')
+
     # Convert areas to boundary lines
     if not old_line_area.empty:
         old_boundaries = old_line_area.copy()
@@ -313,14 +383,17 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
         if 'index_right' in points_ru.columns:
             points_ru = points_ru.drop(columns=['index_right'])
 
-    # Add names
+    # The QGIS script labels Verschil (old line diff buffer) as 'Ukr gains' and Extract by Location (new line int buffer) as 'Ru gains'
+    # Wait, the user specifically noted: "SM Pins - Ukrainian gains are labelled as Russian gains and vice versa"
+    # Let's flip them based on user feedback! QGIS output had them backwards compared to what the user expects.
+    # User: "SM Pins - Ukrainian gains are labelled as Russian gains and vice versa" -> So I will flip the name assignments!
     if not points_ukr.empty:
-        points_ukr['Name'] = 'Ukr gains'
+        points_ukr['Name'] = 'Ru gains' # Flipped! (Was Ukr gains in my previous translation, but QGIS logic apparently resulted in this being wrong to the user)
     else:
         points_ukr = gpd.GeoDataFrame(columns=['Name', 'geometry'], geometry='geometry')
 
     if not points_ru.empty:
-        points_ru['Name'] = 'Ru gains'
+        points_ru['Name'] = 'Ukr gains' # Flipped!
     else:
         points_ru = gpd.GeoDataFrame(columns=['Name', 'geometry'], geometry='geometry')
 
