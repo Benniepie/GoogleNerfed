@@ -812,7 +812,6 @@
             document.getElementById('automateStatus').style.display = 'none';
 
             // Populate the dropdowns with currently loaded files from `activeLayers`
-            // We just grab the names of the files loaded in the map state
             const apSelect = document.getElementById('oldApLayerSelect');
             const smSelect = document.getElementById('oldSmLayerSelect');
 
@@ -820,15 +819,16 @@
             apSelect.innerHTML = '<option value="">-- Do not process AP Map --</option>';
             smSelect.innerHTML = '<option value="">-- Do not process SM Map --</option>';
 
-            const filenames = Object.keys(activeLayers).sort().reverse(); // Sort descending so latest dates are near top typically
+            const filenames = Object.keys(activeLayers).sort().reverse();
 
             for (const filename of filenames) {
-                if (filename.toLowerCase().includes('ap map')) {
+                const normalizedName = filename.toLowerCase().replace(/_/g, ' ');
+                if (normalizedName.includes('ap map')) {
                     const opt = document.createElement('option');
                     opt.value = filename;
                     opt.textContent = filename;
                     apSelect.appendChild(opt);
-                } else if (filename.toLowerCase().includes('sm map')) {
+                } else if (normalizedName.includes('sm map')) {
                     const opt = document.createElement('option');
                     opt.value = filename;
                     opt.textContent = filename;
