@@ -103,11 +103,12 @@ class ProcessUpdateRequest(BaseModel):
 def get_latest_layer(prefix: str) -> Optional[Path]:
     layers = []
     for f in DATA_DIR.iterdir():
-        if f.is_file() and f.name.startswith(prefix) and f.name.endswith('.kml'):
+        # Case insensitive check if prefix is in the filename (e.g. "AP Map" in "ap map 20 03.kml" or "AP Map_whatever.kml")
+        if f.is_file() and prefix.lower() in f.name.lower() and f.name.endswith('.kml'):
             layers.append(f)
     if not layers:
         return None
-    # sort by name, which contains date so last is latest
+    # sort by name
     return sorted(layers)[-1]
 
 def download_file(url: str, dest: Path) -> bool:
