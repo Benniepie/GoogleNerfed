@@ -5,3 +5,5 @@ geopandas
 fiona
 shapely
 beautifulsoup4
+lxml
+pyogrio

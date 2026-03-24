@@ -198,7 +198,9 @@ def process_updates(req: ProcessUpdateRequest):
 
                             logger.info("Copying KML styles from base layer...")
                             copy_kml_styles(latest_old_ap, DATA_DIR / out_map_name)
-                            copy_kml_styles(latest_old_ap, DATA_DIR / out_pins_name)
+                            old_ap_pins = DATA_DIR / req.old_ap_filename.replace("Map", "Pins")
+                            if old_ap_pins.exists():
+                                copy_kml_styles(old_ap_pins, DATA_DIR / out_pins_name)
 
                             logger.info("AP Map update successful!")
                             results.append({"status": "success", "layer": "AP Map", "new_files": [out_map_name, out_pins_name]})
@@ -241,7 +243,9 @@ def process_updates(req: ProcessUpdateRequest):
 
                             logger.info("Copying KML styles from base layer...")
                             copy_kml_styles(latest_old_sm, DATA_DIR / out_map_name)
-                            copy_kml_styles(latest_old_sm, DATA_DIR / out_pins_name)
+                            old_sm_pins = DATA_DIR / req.old_sm_filename.replace("Map", "Pins")
+                            if old_sm_pins.exists():
+                                copy_kml_styles(old_sm_pins, DATA_DIR / out_pins_name)
 
                             logger.info("SM Map update successful!")
                             results.append({"status": "success", "layer": "SM Map", "new_files": [out_map_name, out_pins_name]})

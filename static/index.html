@@ -698,7 +698,9 @@
             saveStylesToServer();
             
             // Reload just this layer to apply style
-            fetchAndAddKML(currentStylingLayer);
+            fetchAndAddKML(currentStylingLayer).then(() => {
+                reorderActiveLayers();
+            });
             document.getElementById('colorModal').style.display = 'none';
         }
 
@@ -872,8 +874,21 @@
             if (availableDates.length > 0) {
                 slider.disabled = false;
                 slider.max = availableDates.length - 1;
-                slider.value = availableDates.length - 1; // Default to latest
-                display.textContent = availableDates[slider.value];
+
+                // If this is the very first time we're setting it, or if it was empty, default to latest.
+                // Otherwise, preserve the current selected date index if it's still valid.
+                let newIndex = slider.value;
+                const currentDate = display.textContent;
+                const foundIndex = availableDates.indexOf(currentDate);
+
+                if (currentDate === 'Latest' || foundIndex === -1) {
+                    newIndex = availableDates.length - 1;
+                } else {
+                    newIndex = foundIndex;
+                }
+
+                slider.value = newIndex;
+                display.textContent = availableDates[newIndex];
             } else {
                 slider.disabled = true;
                 slider.value = 0;
@@ -911,6 +926,9 @@
                     }
                 }
             }
+
+            // Reapply z-index ordering after layers are added/removed
+            reorderActiveLayers();
         });
 
         function openAutomateModal() {
