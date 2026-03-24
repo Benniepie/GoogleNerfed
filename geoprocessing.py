@@ -355,6 +355,13 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
         if not old_line_area.empty:
             old_line_area = gpd.overlay(old_line_area, crimea, how='difference')
 
+    # Apply slight tolerance to remove microscopic drawing differences
+    if not new_line_area.empty:
+        new_line_area = new_line_area[new_line_area.geometry.area > 1e-5]
+
+    if not old_line_area.empty:
+        old_line_area = old_line_area[old_line_area.geometry.area > 1e-5]
+
     if not old_line_area.empty:
         old_boundaries = old_line_area.copy()
         old_boundaries.geometry = old_boundaries.geometry.boundary
