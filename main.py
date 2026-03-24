@@ -38,7 +38,7 @@ async def get_layers():
     """Returns a list of all KML files in the data directory."""
     files = []
     for f in DATA_DIR.iterdir():
-        if f.is_file() and f.suffix.lower() == '.kml':
+        if f.is_file() and f.suffix.lower() == '.kml' and not f.name.startswith('ukraine-with-regions'):
             files.append(f.name)
     return {"layers": sorted(files)}
 

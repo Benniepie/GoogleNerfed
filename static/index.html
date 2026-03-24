@@ -63,7 +63,9 @@
         .layer-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
         .layer-list::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
-        .layer-item { display: flex; align-items: center; margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; }
+        .layer-item { display: flex; align-items: center; margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; cursor: grab; transition: background-color 0.2s, transform 0.2s; }
+        .layer-item.dragging { opacity: 0.5; background: rgba(255,255,255,0.1); transform: scale(0.98); }
+        .layer-item.drag-over { border-top: 2px solid var(--accent-color); }
         .layer-item input[type="checkbox"] { cursor: pointer; accent-color: var(--accent-color); }
         .layer-item label { margin-left: 8px; font-size: 0.9rem; word-break: break-all; cursor: pointer; flex-grow: 1; }
         
@@ -352,6 +354,7 @@
                     body: JSON.stringify(appSettings)
                 });
                 updateTimeline();
+                reorderActiveLayers();
                 // Force dispatch the event so the map actually updates to only show the latest
                 const slider = document.getElementById('timelineSlider');
                 slider.dispatchEvent(new Event('input'));
@@ -402,9 +405,66 @@
                     return;
                 }
 
-                                for (const filename of data.layers) {
+                                // Sort layers by user's saved order if it exists
+                let sortedLayers = data.layers;
+                if (appSettings.layerOrder && appSettings.layerOrder.length > 0) {
+                    sortedLayers.sort((a, b) => {
+                        const idxA = appSettings.layerOrder.indexOf(a);
+                        const idxB = appSettings.layerOrder.indexOf(b);
+                        if (idxA === -1 && idxB === -1) return 0;
+                        if (idxA === -1) return 1; // Unordered items go to bottom
+                        if (idxB === -1) return -1;
+                        return idxA - idxB;
+                    });
+                }
+
+                for (const filename of sortedLayers) {
                     const item = document.createElement('div');
                     item.className = 'layer-item';
+                    item.draggable = true;
+                    item.dataset.filename = filename;
+
+                    // Drag and Drop Events
+                    item.addEventListener('dragstart', (e) => {
+                        item.classList.add('dragging');
+                        e.dataTransfer.setData('text/plain', filename);
+                    });
+
+                    item.addEventListener('dragend', () => {
+                        item.classList.remove('dragging');
+                        document.querySelectorAll('.layer-item').forEach(el => el.classList.remove('drag-over'));
+                        saveLayerOrder(); // Save new order to backend
+                    });
+
+                    item.addEventListener('dragover', (e) => {
+                        e.preventDefault(); // Necessary to allow dropping
+                        item.classList.add('drag-over');
+                    });
+
+                    item.addEventListener('dragleave', () => {
+                        item.classList.remove('drag-over');
+                    });
+
+                    item.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        item.classList.remove('drag-over');
+                        const draggingFile = e.dataTransfer.getData('text/plain');
+                        if (draggingFile === filename) return;
+
+                        const draggingEl = document.querySelector(`.layer-item[data-filename="${draggingFile}"]`);
+                        const layerList = document.getElementById('layerList');
+
+                        // Determine whether to insert before or after
+                        const allItems = [...layerList.querySelectorAll('.layer-item')];
+                        const dropIdx = allItems.indexOf(item);
+                        const dragIdx = allItems.indexOf(draggingEl);
+
+                        if (dragIdx < dropIdx) {
+                            item.after(draggingEl);
+                        } else {
+                            item.before(draggingEl);
+                        }
+                    });
                     
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
@@ -440,6 +500,9 @@
                     item.appendChild(actionsDiv);
                     layerListEl.appendChild(item);
 
+                    // Initially hide the layer item until the timeline sorts it out
+                    item.style.display = 'none';
+
                     // Load KML
                     await fetchAndAddKML(filename);
 
@@ -453,6 +516,7 @@
                     });
                 }
                 updateTimeline();
+                reorderActiveLayers();
                 // Force dispatch the event so the map actually updates to only show the latest
                 const slider = document.getElementById('timelineSlider');
                 slider.dispatchEvent(new Event('input'));
@@ -753,6 +817,32 @@
         }
 
 
+
+
+        function reorderActiveLayers() {
+            const items = document.querySelectorAll('.layer-item');
+            const newOrder = [];
+            items.forEach(i => newOrder.push(i.dataset.filename));
+
+            for (let i = newOrder.length - 1; i >= 0; i--) {
+                const filename = newOrder[i];
+                if (activeLayers[filename] && map.hasLayer(activeLayers[filename])) {
+                    activeLayers[filename].bringToFront();
+                }
+            }
+        }
+
+        function saveLayerOrder() {
+            const items = document.querySelectorAll('.layer-item');
+            const newOrder = [];
+            items.forEach(item => newOrder.push(item.dataset.filename));
+
+            appSettings.layerOrder = newOrder;
+            saveStylesToServer(); // Persist to backend
+
+            reorderActiveLayers();
+        }
+
         // --- Timeline & Automation Logic ---
         let availableDates = [];
 
@@ -761,9 +851,9 @@
             const match = filename.match(/(\d{4}-\d{2}-\d{2})/);
             if (match) return match[1];
 
-            // Looks for DD MM (YY/YYYY) pattern
-            const altMatch = filename.match(/(\d{2})_?(\d{2})/); // Like 20 03
-            if (altMatch) return `2024-${altMatch[2]}-${altMatch[1]}`; // Approximation
+            // Looks for DD MM pattern
+            const altMatch = filename.match(/(\d{2})[ _]?(\d{2})/);
+            if (altMatch) return `2026-${altMatch[2]}-${altMatch[1]}`; // Default to 2026 per user
 
             return null;
         }
@@ -797,16 +887,25 @@
             const selectedDate = availableDates[idx];
             document.getElementById('currentDateDisplay').textContent = selectedDate;
 
-            // Toggle layer visibility
+            // Toggle layer map visibility AND UI list visibility
             for (const filename in activeLayers) {
                 const layerDate = extractDateFromFilename(filename);
-                const isChecked = document.getElementById('chk_' + filename)?.checked;
 
-                if (isChecked && layerDate && layerDate === selectedDate) {
-                    if (!map.hasLayer(activeLayers[filename])) {
+                // Find the UI container for this layer
+                const chk = document.getElementById('chk_' + filename);
+                const layerItemDiv = chk ? chk.closest('.layer-item') : null;
+
+                // If it matches the current timeline date (or lacks a parsable date)
+                if (!layerDate || layerDate === selectedDate) {
+                    if (layerItemDiv) layerItemDiv.style.display = 'flex'; // Show in UI list
+
+                    const isChecked = chk?.checked;
+                    if (isChecked && !map.hasLayer(activeLayers[filename])) {
                         map.addLayer(activeLayers[filename]);
                     }
                 } else {
+                    if (layerItemDiv) layerItemDiv.style.display = 'none'; // Hide from UI list
+
                     if (map.hasLayer(activeLayers[filename])) {
                         map.removeLayer(activeLayers[filename]);
                     }
