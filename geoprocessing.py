@@ -121,7 +121,7 @@ def copy_kml_styles(source_kml_path, target_kml_path):
     except Exception as e:
         print(f"Error copying styles from {source_kml_path} to {target_kml_path}: {e}")
 
-def generate_points_along_lines(lines_gdf, distance=0.006):
+def generate_points_along_lines(lines_gdf, distance=0.03):
     points = []
     if lines_gdf.empty:
         return gpd.GeoDataFrame(columns=['geometry'], crs=lines_gdf.crs)
@@ -248,8 +248,8 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     else:
         ru_boundaries = gpd.GeoDataFrame(geometry=[])
 
-    points_ukr = generate_points_along_lines(ukr_boundaries, 0.006)
-    points_ru = generate_points_along_lines(ru_boundaries, 0.006)
+    points_ukr = generate_points_along_lines(ukr_boundaries, 0.03)
+    points_ru = generate_points_along_lines(ru_boundaries, 0.03)
 
     # Erase country borders from pins to prevent artifacts around the edges
     if not ukr_prov_lines.empty:
@@ -260,8 +260,14 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
         if not points_ru.empty:
             points_ru = gpd.overlay(points_ru, ukr_prov_buffer, how='difference')
 
+    # User asked: "The Ukraine gains should indicate the position of the front line as it was on the older map"
+    # To get the pins to follow the OLD map line instead of the new one, we intersect them with the old buffer
+    # rather than differencing it out! (Because the ukr_gains_area boundary is made of both old and new lines).
     if not points_ukr.empty and not old_buffered.empty:
-        points_ukr = gpd.overlay(points_ukr, old_buffered, how='difference')
+        # Note: We must use a slight buffer to intersect properly
+        points_ukr = gpd.sjoin(points_ukr, old_buffered, how='inner', predicate='intersects')
+        if 'index_right' in points_ukr.columns:
+            points_ukr = points_ukr.drop(columns=['index_right'])
 
     if not points_ru.empty and not new_buffered.empty:
         points_ru = gpd.overlay(points_ru, new_buffered, how='difference')
@@ -357,10 +363,10 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
 
     # Apply slight tolerance to remove microscopic drawing differences
     if not new_line_area.empty:
-        new_line_area = new_line_area[new_line_area.geometry.area > 1e-5]
+        new_line_area = new_line_area[new_line_area.geometry.area > 1e-2]
 
     if not old_line_area.empty:
-        old_line_area = old_line_area[old_line_area.geometry.area > 1e-5]
+        old_line_area = old_line_area[old_line_area.geometry.area > 1e-2]
 
     if not old_line_area.empty:
         old_boundaries = old_line_area.copy()
@@ -374,8 +380,8 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     else:
         new_boundaries = gpd.GeoDataFrame(geometry=[])
 
-    points_ukr = generate_points_along_lines(old_boundaries, 0.006)
-    points_ru = generate_points_along_lines(new_boundaries, 0.006)
+    points_ukr = generate_points_along_lines(old_boundaries, 0.03)
+    points_ru = generate_points_along_lines(new_boundaries, 0.03)
 
     if not ukr_prov_lines.empty:
         ukr_prov_buffer = ukr_prov_lines.copy()
