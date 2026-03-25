@@ -180,6 +180,8 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     new_ru_polys = new_ru_polys[new_ru_polys.geometry.type.isin(['Polygon', 'MultiPolygon'])]
     new_ru_dissolved = new_ru_polys.dissolve()
     new_ru_dissolved.geometry = new_ru_dissolved.geometry.apply(fill_holes)
+    # Morphological closing to remove tiny internal gaps and holes
+    new_ru_dissolved.geometry = new_ru_dissolved.geometry.buffer(0.0005).buffer(-0.0005)
 
     # Create new Ukrainians map (Ukraine Provinces - New Russians)
     if ukr_prov_gdf is not None and not ukr_prov_gdf.empty:
@@ -202,6 +204,8 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
         old_ru_polys = old_ru_polys[old_ru_polys.geometry.type.isin(['Polygon', 'MultiPolygon'])]
         old_ru_dissolved = old_ru_polys.dissolve()
         old_ru_dissolved.geometry = old_ru_dissolved.geometry.apply(fill_holes)
+        # Morphological closing to remove tiny internal gaps and holes
+        old_ru_dissolved.geometry = old_ru_dissolved.geometry.buffer(0.0005).buffer(-0.0005)
         if ukr_prov_gdf is not None and not ukr_prov_gdf.empty:
             old_ukr_dissolved = gpd.overlay(ukr_dissolved, old_ru_dissolved, how='difference')
         else:
