@@ -1,3 +1,9 @@
 fastapi
 uvicorn
 python-multipart
+geopandas
+fiona
+shapely
+beautifulsoup4
+lxml
+pyogrio

@@ -63,7 +63,9 @@
         .layer-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
         .layer-list::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
-        .layer-item { display: flex; align-items: center; margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; }
+        .layer-item { display: flex; align-items: center; margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; cursor: grab; transition: background-color 0.2s, transform 0.2s; }
+        .layer-item.dragging { opacity: 0.5; background: rgba(255,255,255,0.1); transform: scale(0.98); }
+        .layer-item.drag-over { border-top: 2px solid var(--accent-color); }
         .layer-item input[type="checkbox"] { cursor: pointer; accent-color: var(--accent-color); }
         .layer-item label { margin-left: 8px; font-size: 0.9rem; word-break: break-all; cursor: pointer; flex-grow: 1; }
         
@@ -146,13 +148,61 @@
             <em style="font-size: 0.9rem; color: #94a3b8;">Loading layers...</em>
         </div>
 
+
         <div class="upload-section">
             <form id="uploadForm">
                 <input type="file" id="kmlFile" accept=".kml,.kmz" multiple required />
                 <button type="submit" id="uploadBtn" class="primary-btn">Upload KML / KMZ</button>
                 <div id="statusMsg" class="status-msg">Upload complete!</div>
             </form>
-            <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-top: 15px; background: var(--border-color);">⬇️ Export Displayed Data</button>
+            <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; margin-top: 10px; background: #8b5cf6;">🤖 Automate Map Update</button>
+            <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-top: 10px; background: var(--border-color);">⬇️ Export Displayed Data</button>
+        </div>
+
+        <div id="timelineContainer" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); text-align: center;">
+            <label style="font-size: 0.85rem; display: block; margin-bottom: 5px;">Map Timeline: <span id="currentDateDisplay" style="font-weight: bold; color: var(--accent-color);">Latest</span></label>
+            <input type="range" id="timelineSlider" min="0" max="0" value="0" style="width: 100%;" disabled>
+        </div>
+
+    </div>
+
+
+    <!-- Automate Update Modal -->
+    <div id="automateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="width: 350px;">
+            <h3 style="margin-top:0;">🤖 Automate Update</h3>
+            <p style="font-size:0.85rem; color:#cbd5e1; margin-bottom: 15px;">Run geoprocessing to calculate Ukraine/Russian gains automatically.</p>
+
+            <form id="automateForm">
+                <div style="text-align: left; margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight: bold; color: #a78bfa;">AP Maps Process</label>
+
+                    <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">Base AP Layer (Old):</label>
+                    <select id="oldApLayerSelect" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box; margin-bottom: 5px;">
+                        <option value="">-- Do not process AP Map --</option>
+                    </select>
+
+                    <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">New AP URL (.kml or .kmz):</label>
+                    <input type="url" id="newApUrl" placeholder="https://www.google.com/maps/d/kml?mid=...&forcekml=1" value="https://www.google.com/maps/d/kml?mid=1gO8X7RC8cUzc-1q7-s4-09X53HNIEJA&forcekml=1" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box;">
+                </div>
+
+                <div style="text-align: left; margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight: bold; color: #a78bfa;">SM Maps Process</label>
+
+                    <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">Base SM Layer (Old):</label>
+                    <select id="oldSmLayerSelect" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box; margin-bottom: 5px;">
+                        <option value="">-- Do not process SM Map --</option>
+                    </select>
+
+                    <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">New SM URL (.kml or .kmz):</label>
+                    <input type="url" id="newSmUrl" placeholder="https://www.google.com/maps/d/kml?mid=...&forcekml=1" value="https://www.google.com/maps/d/kml?mid=1V8NzjQkzMOhpuLhkktbiKgodOQ27X6IV&forcekml=1" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box;">
+                </div>
+
+                <div id="automateStatus" style="font-size: 0.85rem; margin-bottom: 10px; display: none; text-align: center;"></div>
+
+                <button type="submit" id="automateBtn" class="primary-btn" style="width:100%; margin-bottom:10px;">Run Update</button>
+                <button type="button" class="primary-btn" onclick="document.getElementById('automateModal').style.display='none'" style="width:100%; background:var(--border-color);">Cancel</button>
+            </form>
         </div>
     </div>
 
@@ -303,6 +353,11 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(appSettings)
                 });
+                updateTimeline();
+                reorderActiveLayers();
+                // Force dispatch the event so the map actually updates to only show the latest
+                const slider = document.getElementById('timelineSlider');
+                slider.dispatchEvent(new Event('input'));
             } catch (err) {
                 console.error('Error saving styles:', err);
             }
@@ -350,9 +405,66 @@
                     return;
                 }
 
-                data.layers.forEach(filename => {
+                                // Sort layers by user's saved order if it exists
+                let sortedLayers = data.layers;
+                if (appSettings.layerOrder && appSettings.layerOrder.length > 0) {
+                    sortedLayers.sort((a, b) => {
+                        const idxA = appSettings.layerOrder.indexOf(a);
+                        const idxB = appSettings.layerOrder.indexOf(b);
+                        if (idxA === -1 && idxB === -1) return 0;
+                        if (idxA === -1) return 1; // Unordered items go to bottom
+                        if (idxB === -1) return -1;
+                        return idxA - idxB;
+                    });
+                }
+
+                for (const filename of sortedLayers) {
                     const item = document.createElement('div');
                     item.className = 'layer-item';
+                    item.draggable = true;
+                    item.dataset.filename = filename;
+
+                    // Drag and Drop Events
+                    item.addEventListener('dragstart', (e) => {
+                        item.classList.add('dragging');
+                        e.dataTransfer.setData('text/plain', filename);
+                    });
+
+                    item.addEventListener('dragend', () => {
+                        item.classList.remove('dragging');
+                        document.querySelectorAll('.layer-item').forEach(el => el.classList.remove('drag-over'));
+                        saveLayerOrder(); // Save new order to backend
+                    });
+
+                    item.addEventListener('dragover', (e) => {
+                        e.preventDefault(); // Necessary to allow dropping
+                        item.classList.add('drag-over');
+                    });
+
+                    item.addEventListener('dragleave', () => {
+                        item.classList.remove('drag-over');
+                    });
+
+                    item.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        item.classList.remove('drag-over');
+                        const draggingFile = e.dataTransfer.getData('text/plain');
+                        if (draggingFile === filename) return;
+
+                        const draggingEl = document.querySelector(`.layer-item[data-filename="${draggingFile}"]`);
+                        const layerList = document.getElementById('layerList');
+
+                        // Determine whether to insert before or after
+                        const allItems = [...layerList.querySelectorAll('.layer-item')];
+                        const dropIdx = allItems.indexOf(item);
+                        const dragIdx = allItems.indexOf(draggingEl);
+
+                        if (dragIdx < dropIdx) {
+                            item.after(draggingEl);
+                        } else {
+                            item.before(draggingEl);
+                        }
+                    });
                     
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
@@ -388,8 +500,11 @@
                     item.appendChild(actionsDiv);
                     layerListEl.appendChild(item);
 
+                    // Initially hide the layer item until the timeline sorts it out
+                    item.style.display = 'none';
+
                     // Load KML
-                    fetchAndAddKML(filename);
+                    await fetchAndAddKML(filename);
 
                     // Toggle visibility
                     checkbox.addEventListener('change', (e) => {
@@ -399,7 +514,12 @@
                             if (activeLayers[filename]) map.removeLayer(activeLayers[filename]);
                         }
                     });
-                });
+                }
+                updateTimeline();
+                reorderActiveLayers();
+                // Force dispatch the event so the map actually updates to only show the latest
+                const slider = document.getElementById('timelineSlider');
+                slider.dispatchEvent(new Event('input'));
             } catch (err) {
                 console.error("Failed to load layers:", err);
             }
@@ -578,7 +698,9 @@
             saveStylesToServer();
             
             // Reload just this layer to apply style
-            fetchAndAddKML(currentStylingLayer);
+            fetchAndAddKML(currentStylingLayer).then(() => {
+                reorderActiveLayers();
+            });
             document.getElementById('colorModal').style.display = 'none';
         }
 
@@ -594,7 +716,7 @@
                         map.removeLayer(activeLayers[filename]);
                         delete activeLayers[filename];
                     }
-                    loadLayers(); // Refresh UI list
+                    loadLayers().then(() => updateTimeline()); // Refresh UI list
                 } else {
                     alert("Failed to delete. Have you added the DELETE route to main.py?");
                 }
@@ -696,8 +818,245 @@
             }
         }
 
+
+
+
+        function reorderActiveLayers() {
+            const items = document.querySelectorAll('.layer-item');
+            const newOrder = [];
+            items.forEach(i => newOrder.push(i.dataset.filename));
+
+            for (let i = newOrder.length - 1; i >= 0; i--) {
+                const filename = newOrder[i];
+                if (activeLayers[filename] && map.hasLayer(activeLayers[filename])) {
+                    activeLayers[filename].bringToFront();
+                }
+            }
+        }
+
+        function saveLayerOrder() {
+            const items = document.querySelectorAll('.layer-item');
+            const newOrder = [];
+            items.forEach(item => newOrder.push(item.dataset.filename));
+
+            appSettings.layerOrder = newOrder;
+            saveStylesToServer(); // Persist to backend
+
+            reorderActiveLayers();
+        }
+
+        // --- Timeline & Automation Logic ---
+        let availableDates = [];
+
+        function extractDateFromFilename(filename) {
+            // Looks for YYYY-MM-DD pattern
+            const match = filename.match(/(\d{4}-\d{2}-\d{2})/);
+            if (match) return match[1];
+
+            // Looks for DD MM pattern
+            const altMatch = filename.match(/(\d{2})[ _]?(\d{2})/);
+            if (altMatch) return `2026-${altMatch[2]}-${altMatch[1]}`; // Default to 2026 per user
+
+            return null;
+        }
+
+        function updateTimeline() {
+            const datesSet = new Set();
+            for (const filename in activeLayers) {
+                const d = extractDateFromFilename(filename);
+                if (d) datesSet.add(d);
+            }
+
+            availableDates = Array.from(datesSet).sort();
+            const slider = document.getElementById('timelineSlider');
+            const display = document.getElementById('currentDateDisplay');
+
+            if (availableDates.length > 0) {
+                slider.disabled = false;
+                slider.max = availableDates.length - 1;
+
+                // If this is the very first time we're setting it, or if it was empty, default to latest.
+                // Otherwise, preserve the current selected date index if it's still valid.
+                let newIndex = slider.value;
+                const currentDate = display.textContent;
+                const foundIndex = availableDates.indexOf(currentDate);
+
+                if (currentDate === 'Latest' || foundIndex === -1) {
+                    newIndex = availableDates.length - 1;
+                } else {
+                    newIndex = foundIndex;
+                }
+
+                slider.value = newIndex;
+                display.textContent = availableDates[newIndex];
+            } else {
+                slider.disabled = true;
+                slider.value = 0;
+                display.textContent = "Latest";
+            }
+        }
+
+        document.getElementById('timelineSlider').addEventListener('input', (e) => {
+            if (availableDates.length === 0) return;
+            const idx = e.target.value;
+            const selectedDate = availableDates[idx];
+            document.getElementById('currentDateDisplay').textContent = selectedDate;
+
+            // Toggle layer map visibility AND UI list visibility
+            for (const filename in activeLayers) {
+                const layerDate = extractDateFromFilename(filename);
+
+                // Find the UI container for this layer
+                const chk = document.getElementById('chk_' + filename);
+                const layerItemDiv = chk ? chk.closest('.layer-item') : null;
+
+                // If it matches the current timeline date (or lacks a parsable date)
+                if (!layerDate || layerDate === selectedDate) {
+                    if (layerItemDiv) layerItemDiv.style.display = 'flex'; // Show in UI list
+
+                    const isChecked = chk?.checked;
+                    if (isChecked && !map.hasLayer(activeLayers[filename])) {
+                        map.addLayer(activeLayers[filename]);
+                    }
+                } else {
+                    if (layerItemDiv) layerItemDiv.style.display = 'none'; // Hide from UI list
+
+                    if (map.hasLayer(activeLayers[filename])) {
+                        map.removeLayer(activeLayers[filename]);
+                    }
+                }
+            }
+
+            // Reapply z-index ordering after layers are added/removed
+            reorderActiveLayers();
+        });
+
+        function openAutomateModal() {
+            document.getElementById('automateStatus').style.display = 'none';
+
+            // Populate the dropdowns with currently loaded files from `activeLayers`
+            const apSelect = document.getElementById('oldApLayerSelect');
+            const smSelect = document.getElementById('oldSmLayerSelect');
+
+            // Clear current options except the "Do not process" one
+            apSelect.innerHTML = '<option value="">-- Do not process AP Map --</option>';
+            smSelect.innerHTML = '<option value="">-- Do not process SM Map --</option>';
+
+            const filenames = Object.keys(activeLayers).sort().reverse();
+
+            for (const filename of filenames) {
+                const normalizedName = filename.toLowerCase().replace(/_/g, ' ');
+                if (normalizedName.includes('ap map')) {
+                    const opt = document.createElement('option');
+                    opt.value = filename;
+                    opt.textContent = filename;
+                    apSelect.appendChild(opt);
+                } else if (normalizedName.includes('sm map')) {
+                    const opt = document.createElement('option');
+                    opt.value = filename;
+                    opt.textContent = filename;
+                    smSelect.appendChild(opt);
+                }
+            }
+
+            // Auto-select the first (latest) if available
+            if (apSelect.options.length > 1) apSelect.selectedIndex = 1;
+            if (smSelect.options.length > 1) smSelect.selectedIndex = 1;
+
+            document.getElementById('automateModal').style.display = 'flex';
+        }
+
+        document.getElementById('automateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const oldAp = document.getElementById('oldApLayerSelect').value;
+            const apUrl = document.getElementById('newApUrl').value;
+
+            const oldSm = document.getElementById('oldSmLayerSelect').value;
+            const smUrl = document.getElementById('newSmUrl').value;
+
+            if (!apUrl && !smUrl) {
+                alert('Please provide at least one URL');
+                return;
+            }
+
+            const btn = document.getElementById('automateBtn');
+            const status = document.getElementById('automateStatus');
+
+            btn.disabled = true;
+            btn.textContent = 'Processing (This may take a minute)...';
+            status.style.display = 'block';
+            status.style.color = '#e2e8f0';
+            status.textContent = 'Downloading and running QGIS models...';
+
+            try {
+                const response = await fetch('/api/process_updates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ new_ap_url: apUrl, new_sm_url: smUrl, old_ap_filename: oldAp, old_sm_filename: oldSm })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    let msg = "Success! Generated:<br>";
+
+                    // Copy existing styles to the newly generated layers locally before loading
+                    data.results.forEach(r => {
+                        if(r.status === 'success') {
+                            msg += r.new_files.join('<br>') + '<br>';
+
+                            // Extract filenames for mapping. new_files[0] = Map, new_files[1] = Pins
+                            const newMap = r.new_files[0];
+                            const newPins = r.new_files[1];
+
+                            if (r.layer === 'AP Map') {
+                                const oldApMap = document.getElementById('oldApLayerSelect').value;
+                                const oldApPins = oldApMap.replace('Map', 'Pins');
+
+                                if (layerStyles[oldApMap] && newMap) layerStyles[newMap] = JSON.parse(JSON.stringify(layerStyles[oldApMap]));
+                                if (layerStyles[oldApPins] && newPins) layerStyles[newPins] = JSON.parse(JSON.stringify(layerStyles[oldApPins]));
+                            } else if (r.layer === 'SM Map') {
+                                const oldSmMap = document.getElementById('oldSmLayerSelect').value;
+                                const oldSmPins = oldSmMap.replace('Map', 'Pins');
+
+                                if (layerStyles[oldSmMap] && newMap) layerStyles[newMap] = JSON.parse(JSON.stringify(layerStyles[oldSmMap]));
+                                if (layerStyles[oldSmPins] && newPins) layerStyles[newPins] = JSON.parse(JSON.stringify(layerStyles[oldSmPins]));
+                            }
+                        } else {
+                            msg += `<span style="color:var(--danger-color)">Error processing ${r.layer || ''}: ${r.message}</span><br>`;
+                        }
+                    });
+
+                    // Save copied styles to backend
+                    await saveStylesToServer();
+
+                    status.innerHTML = msg;
+                    status.style.color = 'var(--success-color)';
+
+                    // Reload layers to get the new maps with styles applied
+                    await loadLayers();
+
+                    setTimeout(() => {
+                        document.getElementById('automateModal').style.display = 'none';
+                    }, 4000);
+                } else {
+                    status.textContent = 'Error: ' + (data.detail || 'Unknown error');
+                    status.style.color = 'var(--danger-color)';
+                }
+            } catch (err) {
+                status.textContent = 'Network error communicating with server.';
+                status.style.color = 'var(--danger-color)';
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run Update';
+            }
+        });
+
         // Initial load
         loadSettingsAndInit();
     </script>
 </body>
 </html>
+<!-- Fix script end -->
