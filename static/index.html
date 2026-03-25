@@ -1000,17 +1000,41 @@
 
                 if (response.ok) {
                     let msg = "Success! Generated:<br>";
+
+                    // Copy existing styles to the newly generated layers locally before loading
                     data.results.forEach(r => {
                         if(r.status === 'success') {
                             msg += r.new_files.join('<br>') + '<br>';
+
+                            // Extract filenames for mapping. new_files[0] = Map, new_files[1] = Pins
+                            const newMap = r.new_files[0];
+                            const newPins = r.new_files[1];
+
+                            if (r.layer === 'AP Map') {
+                                const oldApMap = document.getElementById('oldApLayerSelect').value;
+                                const oldApPins = oldApMap.replace('Map', 'Pins');
+
+                                if (layerStyles[oldApMap] && newMap) layerStyles[newMap] = JSON.parse(JSON.stringify(layerStyles[oldApMap]));
+                                if (layerStyles[oldApPins] && newPins) layerStyles[newPins] = JSON.parse(JSON.stringify(layerStyles[oldApPins]));
+                            } else if (r.layer === 'SM Map') {
+                                const oldSmMap = document.getElementById('oldSmLayerSelect').value;
+                                const oldSmPins = oldSmMap.replace('Map', 'Pins');
+
+                                if (layerStyles[oldSmMap] && newMap) layerStyles[newMap] = JSON.parse(JSON.stringify(layerStyles[oldSmMap]));
+                                if (layerStyles[oldSmPins] && newPins) layerStyles[newPins] = JSON.parse(JSON.stringify(layerStyles[oldSmPins]));
+                            }
                         } else {
                             msg += `<span style="color:var(--danger-color)">Error processing ${r.layer || ''}: ${r.message}</span><br>`;
                         }
                     });
+
+                    // Save copied styles to backend
+                    await saveStylesToServer();
+
                     status.innerHTML = msg;
                     status.style.color = 'var(--success-color)';
 
-                    // Reload layers to get the new maps
+                    // Reload layers to get the new maps with styles applied
                     await loadLayers();
 
                     setTimeout(() => {

@@ -121,7 +121,7 @@ def copy_kml_styles(source_kml_path, target_kml_path):
     except Exception as e:
         print(f"Error copying styles from {source_kml_path} to {target_kml_path}: {e}")
 
-def generate_points_along_lines(lines_gdf, distance=0.03):
+def generate_points_along_lines(lines_gdf, distance=0.003):
     points = []
     if lines_gdf.empty:
         return gpd.GeoDataFrame(columns=['geometry'], crs=lines_gdf.crs)
@@ -193,7 +193,7 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
         new_ukr_dissolved = new_ru_dissolved.copy()
 
     if not new_ukr_dissolved.empty:
-        new_ukr_dissolved = new_ukr_dissolved[new_ukr_dissolved.geometry.area > 1e-4]
+        new_ukr_dissolved = new_ukr_dissolved[new_ukr_dissolved.geometry.area > 1e-2]
 
     # Calculate old Ukrainians position
 
@@ -212,7 +212,7 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
         old_ukr_dissolved.geometry = old_ukr_dissolved.geometry.apply(fill_holes)
 
     if not old_ukr_dissolved.empty:
-        old_ukr_dissolved = old_ukr_dissolved[old_ukr_dissolved.geometry.area > 1e-4]
+        old_ukr_dissolved = old_ukr_dissolved[old_ukr_dissolved.geometry.area > 1e-2]
 
     old_buffered = old_ukr_dissolved.copy()
     old_buffered.geometry = old_buffered.buffer(0.0002)
@@ -248,8 +248,8 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     else:
         ru_boundaries = gpd.GeoDataFrame(geometry=[])
 
-    points_ukr = generate_points_along_lines(ukr_boundaries, 0.03)
-    points_ru = generate_points_along_lines(ru_boundaries, 0.03)
+    points_ukr = generate_points_along_lines(ukr_boundaries, 0.003)
+    points_ru = generate_points_along_lines(ru_boundaries, 0.003)
 
     # Erase country borders from pins to prevent artifacts around the edges
     if not ukr_prov_lines.empty:
@@ -380,8 +380,8 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     else:
         new_boundaries = gpd.GeoDataFrame(geometry=[])
 
-    points_ukr = generate_points_along_lines(old_boundaries, 0.03)
-    points_ru = generate_points_along_lines(new_boundaries, 0.03)
+    points_ukr = generate_points_along_lines(old_boundaries, 0.003)
+    points_ru = generate_points_along_lines(new_boundaries, 0.003)
 
     if not ukr_prov_lines.empty:
         ukr_prov_buffer = ukr_prov_lines.copy()
