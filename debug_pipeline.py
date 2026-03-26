@@ -1,187 +1,68 @@
-import geopandas as gpd
-import fiona
-from shapely.geometry import Polygon, MultiPolygon, MultiLineString, LineString, Point
-import shapely
-from shapely.validation import make_valid
-import warnings
-import os
-from bs4 import BeautifulSoup
-import pyogrio
+import json
+import logging
 import pandas as pd
+import geopandas as gpd
+from pathlib import Path
+from geoprocessing import load_kml, save_kml, fill_holes, generate_points_along_lines
 
-warnings.filterwarnings('ignore', message='.*KML.*')
-warnings.filterwarnings('ignore', message='.*Self-intersection.*')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('debug_pipeline')
 
-fiona.drvsupport.supported_drivers['KML'] = 'rw'
-fiona.drvsupport.supported_drivers['LIBKML'] = 'rw'
+# Load configuration
+try:
+    with open('debug_config.json', 'r') as f:
+        config = json.load(f)
+except Exception as e:
+    logger.error(f"Failed to load debug_config.json: {e}")
+    config = {
+        "point_distance": 0.003,
+        "morph_buffer": 0.0001,
+        "ap_area_threshold": 1e-05,
+        "sm_area_threshold": 1e-05
+    }
 
-def snap_to_grid(gdf, precision=1e-7):
-    # The QGIS script uses round(x, 7). 1e-7 matches that precision exactly.
-    if gdf.empty: return gdf
-    gdf = gdf.copy()
-    gdf.geometry = shapely.set_precision(gdf.geometry, grid_size=precision)
-    return gdf
+DATA_DIR = Path("/app/data")
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-def load_kml(filepath):
-    try:
-        layers = pyogrio.list_layers(filepath)
-        gdfs = []
-        for layer_info in layers:
-            layer_name = layer_info[0]
-            try:
-                gdf = gpd.read_file(filepath, layer=layer_name, driver='KML')
-                if not gdf.empty:
-                    gdf['LayerName'] = layer_name
-                    gdfs.append(gdf)
-            except:
-                pass
 
-        if not gdfs:
-            return gpd.GeoDataFrame()
+def save_debug_kml(gdf, filename):
+    if not gdf.empty:
+        logger.info(f"Saving debug file: {filename} (features: {len(gdf)})")
+        save_kml(gdf, DATA_DIR / filename)
 
-        gdf = gpd.GeoDataFrame(pd.concat(gdfs, ignore_index=True), crs=gdfs[0].crs)
 
-        if 'Name' in gdf.columns:
-            gdf['Name'] = gdf['Name'].fillna('')
-        else:
-            gdf['Name'] = ''
+def run_debug_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
+    logger.info("--- Starting Debug AP Model ---")
 
-        if not gdf.empty and 'geometry' in gdf.columns:
-            gdf.geometry = gdf.geometry.apply(lambda geom: make_valid(geom) if geom is not None else geom)
-
-        # Apply the explicit QGIS coordinate rounding (7 decimal places)
-        gdf = snap_to_grid(gdf, precision=1e-7)
-        return gdf
-    except Exception as e:
-        print(f"Error loading KML {filepath}: {e}")
-        return gpd.GeoDataFrame()
-
-def save_kml(gdf, filepath, name_col='Name'):
-    if gdf.empty:
-        with open(filepath, 'w') as f:
-            f.write('<?xml version="1.0" encoding="utf-8" ?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document id="root_doc">\n<Folder><name>empty</name></Folder>\n</Document>\n</kml>')
-        return
-
-    def force_3d_and_valid(geom):
-        if geom is None or geom.is_empty:
-            return geom
-        geom = make_valid(geom)
-        if geom.geom_type == 'GeometryCollection':
-            parts = [p for p in geom.geoms if p.geom_type in ['Polygon', 'MultiPolygon', 'LineString', 'MultiLineString', 'Point']]
-            if parts:
-                geom = parts[0]
-        return shapely.force_3d(geom)
-
-    gdf = gdf.copy()
-    gdf.geometry = gdf.geometry.apply(force_3d_and_valid)
-    gdf = gdf[~gdf.geometry.is_empty]
-
-    if name_col != 'Name' and name_col in gdf.columns:
-        gdf['Name'] = gdf[name_col]
-
-    cols_to_keep = ['Name', 'geometry']
-    if 'description' in gdf.columns:
-        cols_to_keep.append('description')
-
-    gdf = gdf[[c for c in cols_to_keep if c in gdf.columns]]
-
-    try:
-        if os.path.exists(filepath):
-            os.remove(filepath)
-        gdf.to_file(filepath, driver="KML")
-    except Exception as e:
-        print(f"Error writing to KML, falling back to GeoJSON for debug: {e}")
-        gdf.to_file(filepath + ".geojson", driver="GeoJSON")
-
-def copy_kml_styles(source_kml_path, target_kml_path):
-    try:
-        with open(source_kml_path, 'r', encoding='utf-8') as f:
-            # Revert to 'xml' because the container definitely has lxml globally installed now
-            # And bs4 falls back gracefully
-            source_soup = BeautifulSoup(f.read(), 'xml')
-
-        with open(target_kml_path, 'r', encoding='utf-8') as f:
-            target_soup = BeautifulSoup(f.read(), 'xml')
-
-        styles = source_soup.find_all('Style')
-        style_maps = source_soup.find_all('StyleMap')
-
-        target_doc = target_soup.find('Document')
-        if not target_doc:
-            return
-
-        for sm in reversed(style_maps):
-            target_doc.insert(0, sm)
-        for s in reversed(styles):
-            target_doc.insert(0, s)
-
-        with open(target_kml_path, 'w', encoding='utf-8') as f:
-            f.write(str(target_soup))
-
-    except Exception as e:
-        print(f"Error copying styles from {source_kml_path} to {target_kml_path}: {e}")
-
-def generate_points_along_lines(lines_gdf, distance=0.003):
-    points = []
-    if lines_gdf.empty:
-        return gpd.GeoDataFrame(columns=['geometry'], crs=lines_gdf.crs)
-
-    lines = lines_gdf.explode(index_parts=False)
-
-    for idx, row in lines.iterrows():
-        line = row.geometry
-        if line is None or line.is_empty:
-            continue
-        if line.geom_type not in ['LineString', 'MultiLineString']:
-            if line.geom_type in ['Polygon', 'MultiPolygon']:
-                line = line.boundary
-            else:
-                continue
-
-        length = line.length
-        current_dist = 0
-        while current_dist <= length:
-            points.append(line.interpolate(current_dist))
-            current_dist += distance
-
-    points_gdf = gpd.GeoDataFrame(geometry=points, crs=lines_gdf.crs)
-    return points_gdf
-
-def fill_holes(geom):
-    # This acts identically to native:deleteholes by extracting only exterior boundaries
-    if geom is None: return geom
-    if geom.type == 'Polygon':
-        return Polygon(geom.exterior)
-    elif geom.type == 'MultiPolygon':
-        return MultiPolygon([Polygon(p.exterior) for p in geom.geoms])
-    return geom
-
-def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     if ukr_prov_gdf is None or ukr_prov_gdf.empty:
         ukr_prov_lines = gpd.GeoDataFrame(geometry=[])
     else:
-        # Dissolve into a single country boundary so we don't erase frontline pins crossing internal province borders
         ukr_country = ukr_prov_gdf.dissolve()
         ukr_prov_lines = ukr_country.copy()
         ukr_prov_lines.geometry = ukr_prov_lines.geometry.boundary
 
-    # Identify Russian layer to subtract from Ukraine map
+    # Identify Russian layer
     if 'LayerName' in new_ap_gdf.columns and any(new_ap_gdf['LayerName'].str.contains('Russian', case=False, na=False)):
         new_ru_polys = new_ap_gdf[new_ap_gdf['LayerName'].str.contains('Russian', case=False, na=False)].copy()
     else:
         new_ru_polys = new_ap_gdf.copy()
 
+    save_debug_kml(new_ru_polys, 'ap_step1_new_ru_polys.kml')
+
     if 'LayerName' in old_ap_gdf.columns and any(old_ap_gdf['LayerName'].str.contains('Russian', case=False, na=False)):
         old_ru_polys = old_ap_gdf[old_ap_gdf['LayerName'].str.contains('Russian', case=False, na=False)].copy()
     else:
-        # If no explicit Russian layer, assume we uploaded an already-generated Ukrainians map
         old_ru_polys = None
+
+    if old_ru_polys is not None:
+        save_debug_kml(old_ru_polys, 'ap_step2_old_ru_polys.kml')
 
     new_ru_polys = new_ru_polys[new_ru_polys.geometry.type.isin(['Polygon', 'MultiPolygon'])]
     new_ru_dissolved = new_ru_polys.dissolve()
     new_ru_dissolved.geometry = new_ru_dissolved.geometry.apply(fill_holes)
+    save_debug_kml(new_ru_dissolved, 'ap_step3_new_ru_dissolved.kml')
 
-    # Create new Ukrainians map (Ukraine Provinces - New Russians)
+    # Create new Ukrainians map
     if ukr_prov_gdf is not None and not ukr_prov_gdf.empty:
         ukr_dissolved = ukr_prov_gdf.dissolve()
         ukr_dissolved.geometry = ukr_dissolved.geometry.apply(fill_holes)
@@ -195,7 +76,7 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     if not new_ukr_dissolved.empty:
         new_ukr_dissolved = new_ukr_dissolved[new_ukr_dissolved.geometry.area > 1e-2]
 
-    # Calculate old Ukrainians position
+    save_debug_kml(new_ukr_dissolved, 'ap_step4_new_ukr_dissolved.kml')
 
     # Create old Ukrainians map
     if old_ru_polys is not None:
@@ -214,12 +95,17 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     if not old_ukr_dissolved.empty:
         old_ukr_dissolved = old_ukr_dissolved[old_ukr_dissolved.geometry.area > 1e-2]
 
+    save_debug_kml(old_ukr_dissolved, 'ap_step5_old_ukr_dissolved.kml')
+
     # Apply Morphological Closing
-    mb = 0.0001
+    mb = config.get("morph_buffer", 0.0001)
     if not new_ukr_dissolved.empty:
         new_ukr_dissolved.geometry = new_ukr_dissolved.buffer(mb).buffer(-mb)
     if not old_ukr_dissolved.empty:
         old_ukr_dissolved.geometry = old_ukr_dissolved.buffer(mb).buffer(-mb)
+
+    save_debug_kml(new_ukr_dissolved, 'ap_step6_new_ukr_morph.kml')
+    save_debug_kml(old_ukr_dissolved, 'ap_step7_old_ukr_morph.kml')
 
     old_buffered = old_ukr_dissolved.copy()
     old_buffered.geometry = old_buffered.buffer(0.0002)
@@ -243,12 +129,18 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     else:
         ru_gains_area = gpd.GeoDataFrame(geometry=[])
 
-    # Filter by area threshold to remove micro-slivers
-    area_thresh = 1e-5
+    save_debug_kml(ukr_gains_area, 'ap_step8_ukr_gains_area_raw.kml')
+    save_debug_kml(ru_gains_area, 'ap_step9_ru_gains_area_raw.kml')
+
+    # Filter by area threshold
+    area_thresh = config.get("ap_area_threshold", 1e-5)
     if not ukr_gains_area.empty:
         ukr_gains_area = ukr_gains_area[ukr_gains_area.geometry.area > area_thresh]
     if not ru_gains_area.empty:
         ru_gains_area = ru_gains_area[ru_gains_area.geometry.area > area_thresh]
+
+    save_debug_kml(ukr_gains_area, 'ap_step10_ukr_gains_area_filtered.kml')
+    save_debug_kml(ru_gains_area, 'ap_step11_ru_gains_area_filtered.kml')
 
     if not ukr_gains_area.empty:
         ukr_boundaries = ukr_gains_area.copy()
@@ -262,10 +154,11 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     else:
         ru_boundaries = gpd.GeoDataFrame(geometry=[])
 
-    points_ukr = generate_points_along_lines(ukr_boundaries, 0.003)
-    points_ru = generate_points_along_lines(ru_boundaries, 0.003)
+    pd_dist = config.get("point_distance", 0.003)
+    points_ukr = generate_points_along_lines(ukr_boundaries, pd_dist)
+    points_ru = generate_points_along_lines(ru_boundaries, pd_dist)
 
-    # Erase country borders from pins to prevent artifacts around the edges
+    # Erase country borders
     if not ukr_prov_lines.empty:
         ukr_prov_buffer = ukr_prov_lines.copy()
         ukr_prov_buffer.geometry = ukr_prov_buffer.buffer(0.01)
@@ -274,11 +167,7 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
         if not points_ru.empty:
             points_ru = gpd.overlay(points_ru, ukr_prov_buffer, how='difference')
 
-    # User asked: "The Ukraine gains should indicate the position of the front line as it was on the older map"
-    # To get the pins to follow the OLD map line instead of the new one, we intersect them with the old buffer
-    # rather than differencing it out! (Because the ukr_gains_area boundary is made of both old and new lines).
     if not points_ukr.empty and not old_buffered.empty:
-        # Note: We must use a slight buffer to intersect properly
         points_ukr = gpd.sjoin(points_ukr, old_buffered, how='inner', predicate='intersects')
         if 'index_right' in points_ukr.columns:
             points_ukr = points_ukr.drop(columns=['index_right'])
@@ -286,12 +175,6 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     if not points_ru.empty and not new_buffered.empty:
         points_ru = gpd.overlay(points_ru, new_buffered, how='difference')
 
-    # The user said: "AP Pins - Ru gains are shown as Ukr gains and vice versa".
-    # If Ukraine Gained territory, the points would be generated from `ukr_gains_area` which is `new - old`.
-    # Therefore points_ukr should literally be Ukr Gains. If they were previously flipped by the user's manual inspection,
-    # and they still said it's wrong, we will explicitly name them so the user knows they are accurate.
-    # points_ukr => Area Ukraine has now that it didn't have before => Ukr gains
-    # points_ru => Area Russia has now that it didn't have before (i.e. Ukraine shrunk) => Ru gains
     if not points_ukr.empty:
         points_ukr['Name'] = 'Ukr gains'
     else:
@@ -309,15 +192,21 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     else:
         pins_out = gpd.GeoDataFrame(columns=['Name', 'geometry'], crs=points_ukr.crs)
 
-    # Strip original attributes to prevent things like 'Crimea' showing up randomly
+    save_debug_kml(pins_out, 'ap_step12_final_pins.kml')
+
     map_out = new_ukr_dissolved.copy()
     map_out = map_out[['geometry']]
     map_out['Name'] = 'Ukrainians'
 
+    save_debug_kml(map_out, 'ap_step13_final_map.kml')
+
+    logger.info("--- Finished Debug AP Model ---")
     return map_out, pins_out
 
 
-def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
+def run_debug_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
+    logger.info("--- Starting Debug SM Model ---")
+
     old_sm_gdf['Name'] = old_sm_gdf['Name'].fillna('')
     new_sm_gdf['Name'] = new_sm_gdf['Name'].fillna('')
 
@@ -340,16 +229,21 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
 
     old_dissolved = old_sm.dissolve()
     old_dissolved.geometry = old_dissolved.geometry.apply(fill_holes)
+    save_debug_kml(old_dissolved, 'sm_step1_old_dissolved.kml')
 
     new_dissolved = new_sm.dissolve()
     new_dissolved.geometry = new_dissolved.geometry.apply(fill_holes)
+    save_debug_kml(new_dissolved, 'sm_step2_new_dissolved.kml')
 
-    # Apply Morphological Closing
-    mb = 0.0001
+    # Morphological Closing
+    mb = config.get("morph_buffer", 0.0001)
     if not old_dissolved.empty:
         old_dissolved.geometry = old_dissolved.buffer(mb).buffer(-mb)
     if not new_dissolved.empty:
         new_dissolved.geometry = new_dissolved.buffer(mb).buffer(-mb)
+
+    save_debug_kml(old_dissolved, 'sm_step3_old_morph.kml')
+    save_debug_kml(new_dissolved, 'sm_step4_new_morph.kml')
 
     old_buffered = old_dissolved.copy()
     old_buffered.geometry = old_buffered.buffer(0.0002)
@@ -359,8 +253,6 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     new_buffered.geometry = new_buffered.buffer(0.0002)
     new_buffered = new_buffered.dissolve()
 
-    # The SM map contains polygons of RUSSIAN Armed forces.
-    # Therefore, new_dissolved - old_dissolved is area RUSSIA Gained.
     if not new_dissolved.empty and not old_dissolved.empty:
         new_line_area = gpd.overlay(new_dissolved, old_dissolved, how='difference')
     elif not new_dissolved.empty:
@@ -368,7 +260,6 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     else:
         new_line_area = gpd.GeoDataFrame(geometry=[])
 
-    # old_dissolved - new_dissolved is area UKRAINE Gained (Russia shrunk).
     if not old_dissolved.empty and not new_dissolved.empty:
         old_line_area = gpd.overlay(old_dissolved, new_dissolved, how='difference')
     elif not old_dissolved.empty:
@@ -376,19 +267,23 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     else:
         old_line_area = gpd.GeoDataFrame(geometry=[])
 
+    save_debug_kml(new_line_area, 'sm_step5_new_line_area_raw.kml')
+    save_debug_kml(old_line_area, 'sm_step6_old_line_area_raw.kml')
+
     if not crimea.empty:
         if not new_line_area.empty:
             new_line_area = gpd.overlay(new_line_area, crimea, how='difference')
         if not old_line_area.empty:
             old_line_area = gpd.overlay(old_line_area, crimea, how='difference')
 
-    # Filter by area threshold to remove micro-slivers
-    area_thresh = 1e-5
+    area_thresh = config.get("sm_area_threshold", 1e-5)
     if not new_line_area.empty:
         new_line_area = new_line_area[new_line_area.geometry.area > area_thresh]
-
     if not old_line_area.empty:
         old_line_area = old_line_area[old_line_area.geometry.area > area_thresh]
+
+    save_debug_kml(new_line_area, 'sm_step7_new_line_area_filtered.kml')
+    save_debug_kml(old_line_area, 'sm_step8_old_line_area_filtered.kml')
 
     if not old_line_area.empty:
         old_boundaries = old_line_area.copy()
@@ -402,8 +297,9 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     else:
         new_boundaries = gpd.GeoDataFrame(geometry=[])
 
-    points_ukr = generate_points_along_lines(old_boundaries, 0.003)
-    points_ru = generate_points_along_lines(new_boundaries, 0.003)
+    pd_dist = config.get("point_distance", 0.003)
+    points_ukr = generate_points_along_lines(old_boundaries, pd_dist)
+    points_ru = generate_points_along_lines(new_boundaries, pd_dist)
 
     if not ukr_prov_lines.empty:
         ukr_prov_buffer = ukr_prov_lines.copy()
@@ -421,13 +317,11 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
         if 'index_right' in points_ru.columns:
             points_ru = points_ru.drop(columns=['index_right'])
 
-    # Old area missing in new area = Ukr Gains (Russia lost it)
     if not points_ukr.empty:
         points_ukr['Name'] = 'Ukr gains'
     else:
         points_ukr = gpd.GeoDataFrame(columns=['Name', 'geometry'], crs=points_ukr.crs if not points_ukr.empty else None)
 
-    # New area added = Ru Gains (Russia grew)
     if not points_ru.empty:
         points_ru['Name'] = 'Ru gains'
     else:
@@ -440,7 +334,8 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     else:
         pins_out = gpd.GeoDataFrame(columns=['Name', 'geometry'], crs=points_ukr.crs)
 
-    # Do not drop Crimea from the map, append it explicitly since we filtered out non-Russian areas which may omit it
+    save_debug_kml(pins_out, 'sm_step9_final_pins.kml')
+
     map_out = new_sm.copy()
     if not crimea.empty:
         crimea_cleaned = crimea[['geometry']].copy()
@@ -451,4 +346,23 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     if 'Name' not in map_out.columns:
         map_out['Name'] = ''
 
+    save_debug_kml(map_out, 'sm_step10_final_map.kml')
+
+    logger.info("--- Finished Debug SM Model ---")
     return map_out, pins_out
+
+
+if __name__ == '__main__':
+    from shapely.geometry import Polygon
+
+    # Create mock test data to see if script executes
+    logger.info("Generating mock data for testing...")
+    poly1 = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+    poly2 = Polygon([(0.5, 0), (1.5, 0), (1.5, 1), (0.5, 1)])
+
+    mock_old = gpd.GeoDataFrame({'Name': ['Test', 'Russian'], 'LayerName': ['Test', 'Russian'], 'geometry': [poly1, poly1]}, crs="EPSG:4326")
+    mock_new = gpd.GeoDataFrame({'Name': ['Test', 'Russian'], 'LayerName': ['Test', 'Russian'], 'geometry': [poly1, poly2]}, crs="EPSG:4326")
+
+    run_debug_ap_model(mock_old, mock_new)
+    run_debug_sm_model(mock_old, mock_new)
+    logger.info("Debug pipeline test completed successfully.")
