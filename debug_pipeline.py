@@ -353,16 +353,62 @@ def run_debug_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
 
 
 if __name__ == '__main__':
-    from shapely.geometry import Polygon
+    import argparse
+    import sys
 
-    # Create mock test data to see if script executes
-    logger.info("Generating mock data for testing...")
-    poly1 = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
-    poly2 = Polygon([(0.5, 0), (1.5, 0), (1.5, 1), (0.5, 1)])
+    parser = argparse.ArgumentParser(
+        description="Run geoprocessing models step-by-step for debugging.",
+        formatter_class=argparse.RawTextHelpFormatter,
+        epilog="""
+Example Usage (Inside Docker):
+  python debug_pipeline.py --ap-old "/app/data/AP Base.kml" --ap-new "/app/data/AP Update.kml"
+  python debug_pipeline.py --sm-old "/app/data/SM Base.kml" --sm-new "/app/data/SM Update.kml"
 
-    mock_old = gpd.GeoDataFrame({'Name': ['Test', 'Russian'], 'LayerName': ['Test', 'Russian'], 'geometry': [poly1, poly1]}, crs="EPSG:4326")
-    mock_new = gpd.GeoDataFrame({'Name': ['Test', 'Russian'], 'LayerName': ['Test', 'Russian'], 'geometry': [poly1, poly2]}, crs="EPSG:4326")
+You can run both models at the same time by providing all four arguments.
+Make sure your files are located in the /app/data directory.
+"""
+    )
 
-    run_debug_ap_model(mock_old, mock_new)
-    run_debug_sm_model(mock_old, mock_new)
-    logger.info("Debug pipeline test completed successfully.")
+    parser.add_argument("--ap-old", type=str, help="Path to the Old/Base AP Map KML file")
+    parser.add_argument("--ap-new", type=str, help="Path to the New AP Map KML file")
+    parser.add_argument("--sm-old", type=str, help="Path to the Old/Base SM Map KML file")
+    parser.add_argument("--sm-new", type=str, help="Path to the New SM Map KML file")
+    parser.add_argument("--ukr-prov", type=str, default="/app/data/ukraine-with-regions_1530.kml", help="Path to Ukraine Provinces boundary file")
+
+    args = parser.parse_args()
+
+    if not (args.ap_old and args.ap_new) and not (args.sm_old and args.sm_new):
+        parser.print_help()
+        logger.error("\nYou must provide both Old and New files for at least one model (AP or SM).")
+        sys.exit(1)
+
+    ukr_prov_gdf = None
+    if Path(args.ukr_prov).exists():
+        logger.info(f"Loading Ukraine Provinces boundary from {args.ukr_prov}")
+        ukr_prov_gdf = load_kml(args.ukr_prov)
+    else:
+        logger.warning(f"Ukraine Provinces boundary not found at {args.ukr_prov}. Proceeding without country border clipping.")
+
+    if args.ap_old and args.ap_new:
+        logger.info(f"Loading AP Old: {args.ap_old}")
+        ap_old_gdf = load_kml(args.ap_old)
+        logger.info(f"Loading AP New: {args.ap_new}")
+        ap_new_gdf = load_kml(args.ap_new)
+
+        if ap_old_gdf.empty or ap_new_gdf.empty:
+            logger.error("Failed to load one or both AP maps. Check the file paths.")
+        else:
+            run_debug_ap_model(ap_old_gdf, ap_new_gdf, ukr_prov_gdf)
+
+    if args.sm_old and args.sm_new:
+        logger.info(f"Loading SM Old: {args.sm_old}")
+        sm_old_gdf = load_kml(args.sm_old)
+        logger.info(f"Loading SM New: {args.sm_new}")
+        sm_new_gdf = load_kml(args.sm_new)
+
+        if sm_old_gdf.empty or sm_new_gdf.empty:
+            logger.error("Failed to load one or both SM maps. Check the file paths.")
+        else:
+            run_debug_sm_model(sm_old_gdf, sm_new_gdf, ukr_prov_gdf)
+
+    logger.info("Debug pipeline execution completed.")
