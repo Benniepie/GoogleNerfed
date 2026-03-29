@@ -375,9 +375,9 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     old_buffered.geometry = old_buffered.buffer(0.0002)
     old_buffered = old_buffered.dissolve()
 
-    #new_dissolved = new_sm.dissolve()
-    #new_dissolved.geometry = new_dissolved.geometry.apply(fill_holes)
-    #new_dissolved.geometry = new_dissolved.geometry.buffer(0.005).buffer(-0.005)
+    new_dissolved = new_sm.dissolve()
+    new_dissolved.geometry = new_dissolved.geometry.apply(fill_holes)
+    new_dissolved.geometry = new_dissolved.geometry.buffer(0.005).buffer(-0.005)
 
     new_buffered = new_dissolved.copy()
     new_buffered.geometry = new_buffered.buffer(0.0002)
