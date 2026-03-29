@@ -50,7 +50,7 @@ def load_kml(filepath):
             gdf.geometry = gdf.geometry.apply(lambda geom: make_valid(geom) if geom is not None else geom)
 
         # Apply the explicit QGIS coordinate rounding (7 decimal places)
-        gdf = snap_to_grid(gdf, precision=1e-7)
+        # gdf = snap_to_grid(gdf, precision=1e-7)
         return gdf
     except Exception as e:
         print(f"Error loading KML {filepath}: {e}")
@@ -317,7 +317,8 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     map_out = new_ukr_dissolved.copy()
     map_out = map_out[['geometry']]
     map_out['Name'] = 'Ukrainians'
-
+    map_out = snap_to_grid(map_out, precision=1e-7)
+    pins_out = snap_to_grid(pins_out, precision=1e-7)
     return map_out, pins_out
 
 
@@ -465,5 +466,6 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
 
     if 'Name' not in map_out.columns:
         map_out['Name'] = ''
-
+    map_out = snap_to_grid(map_out, precision=1e-7)
+    pins_out = snap_to_grid(pins_out, precision=1e-7)
     return map_out, pins_out
