@@ -135,12 +135,21 @@
             </div>
         </h2>
 
-        <div class="basemap-switcher">
+        <div class="basemap-switcher" style="flex-wrap: wrap;">
             <label>
                 <input type="radio" name="basemap" value="dark" checked> Dark Map
             </label>
             <label>
                 <input type="radio" name="basemap" value="satellite"> Satellite
+            </label>
+            <label>
+                <input type="radio" name="basemap" value="hybrid"> Hybrid
+            </label>
+            <label>
+                <input type="radio" name="basemap" value="firefly"> Firefly
+            </label>
+            <label>
+                <input type="radio" name="basemap" value="fireflyHybrid"> Firefly Hybrid
             </label>
         </div>
 
@@ -231,6 +240,9 @@
                 <select id="defaultBasemap" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;">
                     <option value="dark">Dark Map</option>
                     <option value="satellite">Satellite</option>
+                    <option value="hybrid">Hybrid</option>
+                    <option value="firefly">Firefly</option>
+                    <option value="fireflyHybrid">Firefly Hybrid</option>
                 </select>
             </div>
             <div style="margin-bottom: 15px;">
@@ -281,26 +293,44 @@
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         // 2. Base Maps Setup
+        const esriAttribution = 'Tiles &copy; Esri - Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
+        const esriLabelAttribution = '&copy; Esri - National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC';
+
         const baseMaps = {
             dark: L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/dark',
                 attribution: '&copy; <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a>'
             }),
             satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                attribution: esriAttribution
+            }),
+            firefly: L.tileLayer('https://fly.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Firefly/MapServer/tile/{z}/{y}/{x}', {
+                attribution: esriAttribution
             })
         };
+
+        // Create the transparent labels overlay
+        const labelsLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+            attribution: esriLabelAttribution,
+            pane: 'tooltipPane' // This forces labels to render on top of polygons!
+        });
+
+        // Bundle the base maps with the labels to create 'Hybrid' options
+        baseMaps.hybrid = L.layerGroup([baseMaps.satellite, labelsLayer]);
+        baseMaps.fireflyHybrid = L.layerGroup([baseMaps.firefly, labelsLayer]);
 
         // Handle Base Map Switching
         document.querySelectorAll('input[name="basemap"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
-                if (e.target.value === 'dark') {
-                    map.removeLayer(baseMaps.satellite);
-                    baseMaps.dark.addTo(map);
-                } else {
-                    map.removeLayer(baseMaps.dark);
-                    baseMaps.satellite.addTo(map);
-                }
+                // Clear all active base layers and hybrid groups safely
+                Object.values(baseMaps).forEach(layer => {
+                    if (map.hasLayer(layer)) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                // Add the newly selected map option
+                baseMaps[e.target.value].addTo(map);
             });
         });
 
@@ -384,11 +414,13 @@
                 map.setView([defaultLat, defaultLng], defaultZoom);
 
                 const defaultBasemap = appSettings.defaultBasemap ?? 'dark';
-                document.querySelector(`input[name="basemap"][value="${defaultBasemap}"]`).checked = true;
-                if (defaultBasemap === 'dark') {
-                    baseMaps.dark.addTo(map);
+                const radioInput = document.querySelector(`input[name="basemap"][value="${defaultBasemap}"]`);
+                if (radioInput) radioInput.checked = true;
+
+                if (baseMaps[defaultBasemap]) {
+                    baseMaps[defaultBasemap].addTo(map);
                 } else {
-                    baseMaps.satellite.addTo(map);
+                    baseMaps.dark.addTo(map);
                 }
 
             } catch (err) {
