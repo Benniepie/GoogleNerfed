@@ -335,14 +335,11 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
         ukr_prov_gdf['Name'] = ukr_prov_gdf['Name'].fillna('')
 
         # In the new Ukraine-Regions.kml, Crimea is identified in the description field
+        crimea_mask = ukr_prov_gdf['Name'].str.contains('Crimea', case=False, na=False) | ukr_prov_gdf['Name'].isin(['01', '85'])
         if 'description' in ukr_prov_gdf.columns:
             ukr_prov_gdf['description'] = ukr_prov_gdf['description'].fillna('')
-            crimea = ukr_prov_gdf[
-                ukr_prov_gdf['Name'].str.contains('Crimea', case=False, na=False) |
-                ukr_prov_gdf['description'].str.contains('Krym', case=False, na=False)
-            ].copy()
-        else:
-            crimea = ukr_prov_gdf[ukr_prov_gdf['Name'].str.contains('Crimea', case=False, na=False)].copy()
+            crimea_mask = crimea_mask | ukr_prov_gdf['description'].str.contains('Krym', case=False, na=False)
+        crimea = ukr_prov_gdf[crimea_mask].copy()
 
         ukr_country = ukr_prov_gdf.dissolve()
         ukr_prov_lines = ukr_country.copy()
