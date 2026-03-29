@@ -199,7 +199,7 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
         new_ukr_dissolved = new_ukr_dissolved.explode(index_parts=False)
     
         # 2. Replicate QGIS 'Extract by Expression: $area > 1'
-        new_ukr_dissolved = new_ukr_dissolved[new_ukr_dissolved.geometry.area > 1]1e-2]
+        new_ukr_dissolved = new_ukr_dissolved[new_ukr_dissolved.geometry.area > 1]
 
     # Calculate old Ukrainians position
 
