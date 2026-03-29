@@ -220,11 +220,10 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
 
     # Apply Morphological Closing
     mb = 0.0001
-    if not new_ukr_dissolved.empty:
+    # if not new_ukr_dissolved.empty:
         # new_ukr_dissolved.geometry = new_ukr_dissolved.buffer(mb).buffer(-mb)
-    if not old_ukr_dissolved.empty:
+    # if not old_ukr_dissolved.empty:
         # old_ukr_dissolved.geometry = old_ukr_dissolved.buffer(mb).buffer(-mb)
-
     old_buffered = old_ukr_dissolved.copy()
     old_buffered.geometry = old_buffered.buffer(0.0002)
 
