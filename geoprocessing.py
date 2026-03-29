@@ -155,40 +155,33 @@ def fill_holes(geom):
     elif geom.type == 'MultiPolygon':
         return MultiPolygon([Polygon(p.exterior) for p in geom.geoms])
     return geom
+
+
 def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     if ukr_prov_gdf is None or ukr_prov_gdf.empty:
         ukr_prov_lines = gpd.GeoDataFrame(geometry=[])
+        ukr_dissolved = gpd.GeoDataFrame(geometry=[])
     else:
         ukr_country = ukr_prov_gdf.dissolve()
         ukr_prov_lines = ukr_country.copy()
         ukr_prov_lines.geometry = ukr_prov_lines.geometry.boundary
+        ukr_dissolved = ukr_country.copy()
+        ukr_dissolved.geometry = ukr_dissolved.geometry.apply(fill_holes)
 
-    # Identify Russian layer for NEW map
+    # ---------------------------------------------------------
+    # 1. PROCESS NEW MAP (Always contains Russians)
+    # ---------------------------------------------------------
     if 'LayerName' in new_ap_gdf.columns and any(new_ap_gdf['LayerName'].str.contains('Russian', case=False, na=False)):
         new_ru_polys = new_ap_gdf[new_ap_gdf['LayerName'].str.contains('Russian', case=False, na=False)].copy()
     else:
         new_ru_polys = new_ap_gdf.copy()
 
-    # Identify Russian layer for OLD map
-    if 'LayerName' in old_ap_gdf.columns and any(old_ap_gdf['LayerName'].str.contains('Russian', case=False, na=False)):
-        old_ru_polys = old_ap_gdf[old_ap_gdf['LayerName'].str.contains('Russian', case=False, na=False)].copy()
-    else:
-        old_ru_polys = old_ap_gdf.copy()
-
-    # Process NEW Russian Polygons
     new_ru_polys = new_ru_polys[new_ru_polys.geometry.type.isin(['Polygon', 'MultiPolygon'])]
     new_ru_dissolved = new_ru_polys.dissolve()
     new_ru_dissolved.geometry = new_ru_dissolved.geometry.apply(fill_holes)
 
-    # Process OLD Russian Polygons
-    old_ru_polys = old_ru_polys[old_ru_polys.geometry.type.isin(['Polygon', 'MultiPolygon'])]
-    old_ru_dissolved = old_ru_polys.dissolve()
-    old_ru_dissolved.geometry = old_ru_dissolved.geometry.apply(fill_holes)
-
-    # Create new Ukrainians map (Ukraine Provinces - New Russians) for Final Output
-    if ukr_prov_gdf is not None and not ukr_prov_gdf.empty:
-        ukr_dissolved = ukr_prov_gdf.dissolve()
-        ukr_dissolved.geometry = ukr_dissolved.geometry.apply(fill_holes)
+    # Create New Ukrainians map
+    if not ukr_dissolved.empty:
         if not new_ru_dissolved.empty:
             new_ukr_dissolved = gpd.overlay(ukr_dissolved, new_ru_dissolved, how='difference')
         else:
@@ -196,28 +189,62 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     else:
         new_ukr_dissolved = new_ru_dissolved.copy()
 
-    # Filter out coastal slivers from final Ukraine map (Replicating QGIS $area > 1)
     if not new_ukr_dissolved.empty:
         new_ukr_dissolved = new_ukr_dissolved.explode(index_parts=False)
         new_ukr_dissolved = new_ukr_dissolved[new_ukr_dissolved.geometry.area > 1]
-
-    # --- CALCULATE GAINS DIRECTLY FROM RUSSIAN MAPS TO AVOID INTERNATIONAL BORDER PINS ---
     
-    # Difference: New Russians - Old Russians = Russian Gains
-    if not new_ru_dissolved.empty and not old_ru_dissolved.empty:
-        ru_gains_area = gpd.overlay(new_ru_dissolved, old_ru_dissolved, how='difference')
-    elif not new_ru_dissolved.empty:
-        ru_gains_area = new_ru_dissolved.copy()
-    else:
-        ru_gains_area = gpd.GeoDataFrame(geometry=[])
+    # SNAP to grid immediately so the international borders freeze mathematically
+    new_ukr_dissolved = snap_to_grid(new_ukr_dissolved, precision=1e-7)
 
-    # Difference: Old Russians - New Russians = Ukrainian Gains (Russia lost it)
-    if not old_ru_dissolved.empty and not new_ru_dissolved.empty:
-        ukr_gains_area = gpd.overlay(old_ru_dissolved, new_ru_dissolved, how='difference')
-    elif not old_ru_dissolved.empty:
-        ukr_gains_area = old_ru_dissolved.copy()
+    # ---------------------------------------------------------
+    # 2. PROCESS OLD MAP (Smart Parser: Is it Russians or Ukrainians?)
+    # ---------------------------------------------------------
+    is_old_ukraine = False
+    if 'Name' in old_ap_gdf.columns and any(old_ap_gdf['Name'].str.contains('Ukrainian', case=False, na=False)):
+        is_old_ukraine = True
+    elif 'LayerName' in old_ap_gdf.columns and any(old_ap_gdf['LayerName'].str.contains('Ukrainian', case=False, na=False)):
+        is_old_ukraine = True
+
+    if is_old_ukraine:
+        # User provided the previous output map (Apples to Apples)
+        old_ukr_polys = old_ap_gdf[old_ap_gdf.geometry.type.isin(['Polygon', 'MultiPolygon'])].copy()
+        old_ukr_dissolved = old_ukr_polys.dissolve()
+        old_ukr_dissolved.geometry = old_ukr_dissolved.geometry.apply(fill_holes)
+    else:
+        # User provided a raw map with Russians (Convert to Ukrainians)
+        if 'LayerName' in old_ap_gdf.columns and any(old_ap_gdf['LayerName'].str.contains('Russian', case=False, na=False)):
+            old_ru_polys = old_ap_gdf[old_ap_gdf['LayerName'].str.contains('Russian', case=False, na=False)].copy()
+        else:
+            old_ru_polys = old_ap_gdf.copy()
+        
+        old_ru_polys = old_ru_polys[old_ru_polys.geometry.type.isin(['Polygon', 'MultiPolygon'])]
+        old_ru_dissolved = old_ru_polys.dissolve()
+        old_ru_dissolved.geometry = old_ru_dissolved.geometry.apply(fill_holes)
+
+        if not ukr_dissolved.empty:
+            if not old_ru_dissolved.empty:
+                old_ukr_dissolved = gpd.overlay(ukr_dissolved, old_ru_dissolved, how='difference')
+            else:
+                old_ukr_dissolved = ukr_dissolved.copy()
+        else:
+            old_ukr_dissolved = old_ru_dissolved.copy()
+        
+        if not old_ukr_dissolved.empty:
+            old_ukr_dissolved = old_ukr_dissolved.explode(index_parts=False)
+            old_ukr_dissolved = old_ukr_dissolved[old_ukr_dissolved.geometry.area > 1]
+
+    # SNAP to grid immediately to ensure the old borders match the new borders perfectly
+    old_ukr_dissolved = snap_to_grid(old_ukr_dissolved, precision=1e-7)
+
+    # ---------------------------------------------------------
+    # 3. CALCULATE GAINS (Using matched Ukraine maps)
+    # ---------------------------------------------------------
+    if not new_ukr_dissolved.empty and not old_ukr_dissolved.empty:
+        ukr_gains_area = gpd.overlay(new_ukr_dissolved, old_ukr_dissolved, how='difference')
+        ru_gains_area = gpd.overlay(old_ukr_dissolved, new_ukr_dissolved, how='difference')
     else:
         ukr_gains_area = gpd.GeoDataFrame(geometry=[])
+        ru_gains_area = gpd.GeoDataFrame(geometry=[])
 
     # Filter by area threshold to remove micro-slivers
     area_thresh = 1e-5
@@ -243,26 +270,26 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     points_ukr = generate_points_along_lines(ukr_boundaries, 0.003)
     points_ru = generate_points_along_lines(ru_boundaries, 0.003)
 
-    # Buffers strictly for filtering pins to the correct side of the frontline
-    old_ru_buffered = old_ru_dissolved.copy()
-    if not old_ru_buffered.empty:
-        old_ru_buffered.geometry = old_ru_buffered.buffer(0.0002)
+    # ---------------------------------------------------------
+    # 4. FILTER PINS TO TRACE THE *PREVIOUS* LINE
+    # ---------------------------------------------------------
+    old_ukr_buffered = old_ukr_dissolved.copy()
+    if not old_ukr_buffered.empty:
+        old_ukr_buffered.geometry = old_ukr_buffered.buffer(0.0002)
 
-    new_ru_buffered = new_ru_dissolved.copy()
-    if not new_ru_buffered.empty:
-        new_ru_buffered.geometry = new_ru_buffered.buffer(0.0002)
+    new_ukr_buffered = new_ukr_dissolved.copy()
+    if not new_ukr_buffered.empty:
+        new_ukr_buffered.geometry = new_ukr_buffered.buffer(0.0002)
 
-    # --- FILTER PINS TO TRACE THE *PREVIOUS* LINE ---
-    
-    # Ukr Gains (Russia retreated): Remove pins touching the NEW Russian frontline
-    if not points_ukr.empty and not new_ru_buffered.empty:
-        points_ukr = gpd.overlay(points_ukr, new_ru_buffered, how='difference')
+    # Ukr Gains (Russia retreated): Keep ONLY pins touching the OLD Ukraine frontline
+    if not points_ukr.empty and not old_ukr_buffered.empty:
+        points_ukr = gpd.sjoin(points_ukr, old_ukr_buffered, how='inner', predicate='intersects')
+        if 'index_right' in points_ukr.columns:
+            points_ukr = points_ukr.drop(columns=['index_right'])
 
-    # Ru Gains (Russia advanced): Keep ONLY pins touching the OLD Russian frontline
-    if not points_ru.empty and not old_ru_buffered.empty:
-        points_ru = gpd.sjoin(points_ru, old_ru_buffered, how='inner', predicate='intersects')
-        if 'index_right' in points_ru.columns:
-            points_ru = points_ru.drop(columns=['index_right'])
+    # Ru Gains (Russia advanced): Remove pins touching the NEW Ukraine frontline
+    if not points_ru.empty and not new_ukr_buffered.empty:
+        points_ru = gpd.overlay(points_ru, new_ukr_buffered, how='difference')
 
     # Label Pins
     if not points_ukr.empty:
@@ -283,16 +310,12 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     else:
         pins_out = gpd.GeoDataFrame(columns=['Name', 'geometry'], crs=points_ukr.crs)
 
-    # Compile Final Map Output
+    # Compile Map Output
     map_out = new_ukr_dissolved.copy()
     map_out = map_out[['geometry']]
     map_out['Name'] = 'Ukrainians'
     
-    # Snap to grid at the very end to match QGIS precision exactly
-    map_out = snap_to_grid(map_out, precision=1e-7)
-    pins_out = snap_to_grid(pins_out, precision=1e-7)
     return map_out, pins_out
-
 
 def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     old_sm_gdf['Name'] = old_sm_gdf['Name'].fillna('')
