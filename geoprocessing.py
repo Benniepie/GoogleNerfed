@@ -195,7 +195,11 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
         new_ukr_dissolved = new_ru_dissolved.copy()
 
     if not new_ukr_dissolved.empty:
-        new_ukr_dissolved = new_ukr_dissolved[new_ukr_dissolved.geometry.area > 1e-2]
+        # 1. Replicate QGIS 'Multipart to Singleparts'
+        new_ukr_dissolved = new_ukr_dissolved.explode(index_parts=False)
+    
+        # 2. Replicate QGIS 'Extract by Expression: $area > 1'
+        new_ukr_dissolved = new_ukr_dissolved[new_ukr_dissolved.geometry.area > 1]1e-2]
 
     # Calculate old Ukrainians position
 
@@ -216,7 +220,9 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
         old_ukr_dissolved.geometry = old_ukr_dissolved.geometry.apply(fill_holes)
 
     if not old_ukr_dissolved.empty:
-        old_ukr_dissolved = old_ukr_dissolved[old_ukr_dissolved.geometry.area > 1e-2]
+        old_ukr_dissolved = old_ukr_dissolved.explode(index_parts=False)
+
+        old_ukr_dissolved = old_ukr_dissolved[old_ukr_dissolved.geometry.area > 1]
 
     # Apply Morphological Closing
     mb = 0.0001
