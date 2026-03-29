@@ -38,7 +38,7 @@ async def get_layers():
     """Returns a list of all KML files in the data directory."""
     files = []
     for f in DATA_DIR.iterdir():
-        if f.is_file() and f.suffix.lower() == '.kml' and not f.name.startswith('ukraine-with-regions'):
+        if f.is_file() and f.suffix.lower() == '.kml' and not f.name.startswith('Ukraine-Regions'):
             files.append(f.name)
     return {"layers": sorted(files)}
 
@@ -151,10 +151,10 @@ def process_updates(req: ProcessUpdateRequest):
         tmp_path = Path(tmpdir)
 
         # Ensure ukraine_provinces exists
-        prov_path = DATA_DIR / "ukraine-with-regions_1530.kml"
+        prov_path = DATA_DIR / "Ukraine-Regions.kml"
         if not prov_path.exists():
-            logger.info("Downloading missing ukraine_provinces KML for geoprocessing boundaries...")
-            download_file("https://raw.githubusercontent.com/Benniepie/GoogleNerfed/main/static/ukraine-with-regions_1530%20(1).kml", prov_path)
+            logger.info("Copying missing ukraine_provinces KML for geoprocessing boundaries...")
+            shutil.copy("static/Ukraine-Regions.kml", prov_path)
 
         if prov_path.exists():
             ukr_prov_gdf = load_kml(prov_path)
