@@ -175,6 +175,11 @@
 
             <form id="automateForm">
                 <div style="text-align: left; margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight: bold; color: #a78bfa;">Layer Date</label>
+                    <input type="date" id="updateDate" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px;">
+                </div>
+
+                <div style="text-align: left; margin-bottom: 15px;">
                     <label style="display:block; margin-bottom:5px; font-weight: bold; color: #a78bfa;">AP Maps Process</label>
 
                     <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">Base AP Layer (Old):</label>
@@ -182,8 +187,9 @@
                         <option value="">-- Do not process AP Map --</option>
                     </select>
 
-                    <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">New AP URL (.kml or .kmz):</label>
-                    <input type="url" id="newApUrl" placeholder="https://www.google.com/maps/d/kml?mid=...&forcekml=1" value="https://www.google.com/maps/d/kml?mid=1gO8X7RC8cUzc-1q7-s4-09X53HNIEJA&forcekml=1" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box;">
+                    <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">New AP URL (.kml or .kmz) OR Upload:</label>
+                    <input type="url" id="newApUrl" placeholder="https://www.google.com/maps/d/kml?mid=...&forcekml=1" value="https://www.google.com/maps/d/kml?mid=1gO8X7RC8cUzc-1q7-s4-09X53HNIEJA&forcekml=1" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box; margin-bottom: 5px;">
+                    <input type="file" id="newApFile" accept=".kml,.kmz" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box;">
                 </div>
 
                 <div style="text-align: left; margin-bottom: 15px;">
@@ -194,8 +200,9 @@
                         <option value="">-- Do not process SM Map --</option>
                     </select>
 
-                    <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">New SM URL (.kml or .kmz):</label>
-                    <input type="url" id="newSmUrl" placeholder="https://www.google.com/maps/d/kml?mid=...&forcekml=1" value="https://www.google.com/maps/d/kml?mid=1V8NzjQkzMOhpuLhkktbiKgodOQ27X6IV&forcekml=1" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box;">
+                    <label style="display:block; margin-bottom:3px; font-size: 0.8rem; color: #94a3b8;">New SM URL (.kml or .kmz) OR Upload:</label>
+                    <input type="url" id="newSmUrl" placeholder="https://www.google.com/maps/d/kml?mid=...&forcekml=1" value="https://www.google.com/maps/d/kml?mid=1V8NzjQkzMOhpuLhkktbiKgodOQ27X6IV&forcekml=1" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box; margin-bottom: 5px;">
+                    <input type="file" id="newSmFile" accept=".kml,.kmz" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 8px; border-radius: 4px; box-sizing: border-box;">
                 </div>
 
                 <div id="automateStatus" style="font-size: 0.85rem; margin-bottom: 10px; display: none; text-align: center;"></div>
@@ -934,6 +941,13 @@
         function openAutomateModal() {
             document.getElementById('automateStatus').style.display = 'none';
 
+            // Set default date to today
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            document.getElementById('updateDate').value = `${year}-${month}-${day}`;
+
             // Populate the dropdowns with currently loaded files from `activeLayers`
             const apSelect = document.getElementById('oldApLayerSelect');
             const smSelect = document.getElementById('oldSmLayerSelect');
@@ -971,12 +985,16 @@
 
             const oldAp = document.getElementById('oldApLayerSelect').value;
             const apUrl = document.getElementById('newApUrl').value;
+            const apFile = document.getElementById('newApFile').files[0];
 
             const oldSm = document.getElementById('oldSmLayerSelect').value;
             const smUrl = document.getElementById('newSmUrl').value;
+            const smFile = document.getElementById('newSmFile').files[0];
 
-            if (!apUrl && !smUrl) {
-                alert('Please provide at least one URL');
+            const updateDate = document.getElementById('updateDate').value;
+
+            if (!apUrl && !smUrl && !apFile && !smFile) {
+                alert('Please provide at least one URL or File');
                 return;
             }
 
@@ -989,11 +1007,19 @@
             status.style.color = '#e2e8f0';
             status.textContent = 'Downloading and running QGIS models...';
 
+            const formData = new FormData();
+            formData.append('new_ap_url', apUrl);
+            formData.append('new_sm_url', smUrl);
+            formData.append('old_ap_filename', oldAp);
+            formData.append('old_sm_filename', oldSm);
+            formData.append('update_date', updateDate);
+            if (apFile) formData.append('new_ap_file', apFile);
+            if (smFile) formData.append('new_sm_file', smFile);
+
             try {
                 const response = await fetch('/api/process_updates', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ new_ap_url: apUrl, new_sm_url: smUrl, old_ap_filename: oldAp, old_sm_filename: oldSm })
+                    body: formData
                 });
 
                 const data = await response.json();

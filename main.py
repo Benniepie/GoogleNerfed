@@ -139,11 +139,19 @@ def download_file(url: str, dest: Path) -> bool:
         return False
 
 @app.post("/api/process_updates")
-def process_updates(req: ProcessUpdateRequest):
-    if not req.new_ap_url and not req.new_sm_url:
-        raise HTTPException(status_code=400, detail="Must provide at least one URL")
+def process_updates(
+    new_ap_url: str = Form(""),
+    new_sm_url: str = Form(""),
+    old_ap_filename: str = Form(""),
+    old_sm_filename: str = Form(""),
+    update_date: str = Form(""),
+    new_ap_file: Optional[UploadFile] = File(None),
+    new_sm_file: Optional[UploadFile] = File(None)
+):
+    if not new_ap_url and not new_sm_url and not new_ap_file and not new_sm_file:
+        raise HTTPException(status_code=400, detail="Must provide at least one URL or file")
 
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    date_str = update_date if update_date else datetime.now().strftime("%Y-%m-%d")
     results = []
 
 
@@ -163,22 +171,47 @@ def process_updates(req: ProcessUpdateRequest):
             ukr_prov_gdf = None
 
         # Process AP Map
-        if req.new_ap_url:
+        if new_ap_url or (new_ap_file and new_ap_file.filename):
             logger.info("--- Processing AP Map ---")
-            if not req.old_ap_filename:
+            if not old_ap_filename:
                 logger.error("No base AP Map filename provided.")
                 results.append({"status": "error", "layer": "AP Map", "message": "No base AP Map selected in UI."})
             else:
-                latest_old_ap = DATA_DIR / req.old_ap_filename
+                latest_old_ap = DATA_DIR / old_ap_filename
                 if not latest_old_ap.exists():
                     logger.error(f"Base AP Map {latest_old_ap} does not exist on disk.")
-                    results.append({"status": "error", "layer": "AP Map", "message": f"Selected base file {req.old_ap_filename} not found."})
+                    results.append({"status": "error", "layer": "AP Map", "message": f"Selected base file {old_ap_filename} not found."})
                 else:
                     new_ap_path = tmp_path / "new_ap.kml"
-                    if download_file(req.new_ap_url, new_ap_path):
+                    success = False
+
+                    if new_ap_file and new_ap_file.filename:
+                        # Save uploaded file
+                        logger.info("Saving uploaded AP file...")
+                        file_ext = new_ap_file.filename.lower().split('.')[-1]
+                        dest_path = new_ap_path if file_ext == 'kml' else tmp_path / "new_ap.kmz"
+                        with open(dest_path, "wb") as buffer:
+                            shutil.copyfileobj(new_ap_file.file, buffer)
+
+                        if file_ext == 'kmz':
+                            try:
+                                with zipfile.ZipFile(dest_path, 'r') as zip_ref:
+                                    kml_files = [f for f in zip_ref.namelist() if f.lower().endswith('.kml')]
+                                    if kml_files:
+                                        extracted_path = zip_ref.extract(kml_files[0], path=tmp_path)
+                                        shutil.move(extracted_path, new_ap_path)
+                                        success = True
+                            except zipfile.BadZipFile:
+                                logger.error("Invalid AP KMZ file uploaded")
+                        else:
+                            success = True
+                    else:
+                        success = download_file(new_ap_url, new_ap_path)
+
+                    if success:
                         logger.info(f"Loading base AP Map: {latest_old_ap}")
                         old_ap_gdf = load_kml(latest_old_ap)
-                        logger.info("Loading downloaded new AP Map")
+                        logger.info("Loading new AP Map")
                         new_ap_gdf = load_kml(new_ap_path)
 
                         if old_ap_gdf.empty or new_ap_gdf.empty:
@@ -198,32 +231,57 @@ def process_updates(req: ProcessUpdateRequest):
 
                             logger.info("Copying KML styles from base layer...")
                             copy_kml_styles(latest_old_ap, DATA_DIR / out_map_name)
-                            old_ap_pins = DATA_DIR / req.old_ap_filename.replace("Map", "Pins")
+                            old_ap_pins = DATA_DIR / old_ap_filename.replace("Map", "Pins")
                             if old_ap_pins.exists():
                                 copy_kml_styles(old_ap_pins, DATA_DIR / out_pins_name)
 
                             logger.info("AP Map update successful!")
                             results.append({"status": "success", "layer": "AP Map", "new_files": [out_map_name, out_pins_name]})
                     else:
-                        results.append({"status": "error", "layer": "AP Map", "message": "Failed to download AP Map from URL."})
+                        results.append({"status": "error", "layer": "AP Map", "message": "Failed to acquire new AP Map (URL download or file upload failed)."})
 
         # Process SM Map
-        if req.new_sm_url:
+        if new_sm_url or (new_sm_file and new_sm_file.filename):
             logger.info("--- Processing SM Map ---")
-            if not req.old_sm_filename:
+            if not old_sm_filename:
                 logger.error("No base SM Map filename provided.")
                 results.append({"status": "error", "layer": "SM Map", "message": "No base SM Map selected in UI."})
             else:
-                latest_old_sm = DATA_DIR / req.old_sm_filename
+                latest_old_sm = DATA_DIR / old_sm_filename
                 if not latest_old_sm.exists():
                     logger.error(f"Base SM Map {latest_old_sm} does not exist on disk.")
-                    results.append({"status": "error", "layer": "SM Map", "message": f"Selected base file {req.old_sm_filename} not found."})
+                    results.append({"status": "error", "layer": "SM Map", "message": f"Selected base file {old_sm_filename} not found."})
                 else:
                     new_sm_path = tmp_path / "new_sm.kml"
-                    if download_file(req.new_sm_url, new_sm_path):
+                    success = False
+
+                    if new_sm_file and new_sm_file.filename:
+                        # Save uploaded file
+                        logger.info("Saving uploaded SM file...")
+                        file_ext = new_sm_file.filename.lower().split('.')[-1]
+                        dest_path = new_sm_path if file_ext == 'kml' else tmp_path / "new_sm.kmz"
+                        with open(dest_path, "wb") as buffer:
+                            shutil.copyfileobj(new_sm_file.file, buffer)
+
+                        if file_ext == 'kmz':
+                            try:
+                                with zipfile.ZipFile(dest_path, 'r') as zip_ref:
+                                    kml_files = [f for f in zip_ref.namelist() if f.lower().endswith('.kml')]
+                                    if kml_files:
+                                        extracted_path = zip_ref.extract(kml_files[0], path=tmp_path)
+                                        shutil.move(extracted_path, new_sm_path)
+                                        success = True
+                            except zipfile.BadZipFile:
+                                logger.error("Invalid SM KMZ file uploaded")
+                        else:
+                            success = True
+                    else:
+                        success = download_file(new_sm_url, new_sm_path)
+
+                    if success:
                         logger.info(f"Loading base SM Map: {latest_old_sm}")
                         old_sm_gdf = load_kml(latest_old_sm)
-                        logger.info("Loading downloaded new SM Map")
+                        logger.info("Loading new SM Map")
                         new_sm_gdf = load_kml(new_sm_path)
 
                         if old_sm_gdf.empty or new_sm_gdf.empty:
@@ -243,14 +301,14 @@ def process_updates(req: ProcessUpdateRequest):
 
                             logger.info("Copying KML styles from base layer...")
                             copy_kml_styles(latest_old_sm, DATA_DIR / out_map_name)
-                            old_sm_pins = DATA_DIR / req.old_sm_filename.replace("Map", "Pins")
+                            old_sm_pins = DATA_DIR / old_sm_filename.replace("Map", "Pins")
                             if old_sm_pins.exists():
                                 copy_kml_styles(old_sm_pins, DATA_DIR / out_pins_name)
 
                             logger.info("SM Map update successful!")
                             results.append({"status": "success", "layer": "SM Map", "new_files": [out_map_name, out_pins_name]})
                     else:
-                        results.append({"status": "error", "layer": "SM Map", "message": "Failed to download SM Map from URL."})
+                        results.append({"status": "error", "layer": "SM Map", "message": "Failed to acquire new SM Map (URL download or file upload failed)."})
 
     return {"results": results}
 
