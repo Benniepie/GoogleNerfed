@@ -153,6 +153,14 @@
             </label>
         </div>
 
+        <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">
+            <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: var(--text-color);">Live Data</h3>
+            <div class="layer-item" style="border-left: 3px solid #ef4444;">
+                <input type="checkbox" id="nasaFirmsToggle">
+                <label for="nasaFirmsToggle" style="font-weight: bold; color: #fca5a5;">🔥 NASA Active Fires (VIIRS)</label>
+            </div>
+        </div>
+
         <div class="layer-list" id="layerList">
             <em style="font-size: 0.9rem; color: #94a3b8;">Loading layers...</em>
         </div>
@@ -318,6 +326,25 @@
         // Bundle the base maps with the labels to create 'Hybrid' options
         baseMaps.hybrid = L.layerGroup([baseMaps.satellite, labelsLayer]);
         baseMaps.fireflyHybrid = L.layerGroup([baseMaps.firefly, labelsLayer]);
+
+        // --- LIVE DATA: NASA FIRMS (GIBS WMS) ---
+        // Using the high-resolution VIIRS sensor for thermal anomalies
+        const nasaFiresLayer = L.tileLayer.wms("https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi", {
+            layers: 'VIIRS_SNPP_Thermal_Anomalies_375m_All',
+            format: 'image/png',
+            transparent: true,
+            attribution: '&copy; <a href="https://earthdata.nasa.gov/gibs" target="_blank">NASA EOSDIS GIBS</a>',
+            zIndex: 100 // Ensures fires render on top of the base maps
+        });
+
+        // Listen for the toggle checkbox
+        document.getElementById('nasaFirmsToggle').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                nasaFiresLayer.addTo(map);
+            } else {
+                map.removeLayer(nasaFiresLayer);
+            }
+        });
 
         // Handle Base Map Switching
         document.querySelectorAll('input[name="basemap"]').forEach(radio => {
