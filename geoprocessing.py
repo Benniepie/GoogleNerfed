@@ -275,13 +275,13 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     points_ru = generate_points_along_lines(ru_boundaries, 0.003)
 
     # Erase country borders from pins to prevent artifacts around the edges
-    if not ukr_prov_lines.empty:
-        ukr_prov_buffer = ukr_prov_lines.copy()
-        ukr_prov_buffer.geometry = ukr_prov_buffer.buffer(0.01)
-        if not points_ukr.empty:
-            points_ukr = gpd.overlay(points_ukr, ukr_prov_buffer, how='difference')
-        if not points_ru.empty:
-            points_ru = gpd.overlay(points_ru, ukr_prov_buffer, how='difference')
+#    if not ukr_prov_lines.empty:
+#        ukr_prov_buffer = ukr_prov_lines.copy()
+#        ukr_prov_buffer.geometry = ukr_prov_buffer.buffer(0.01)
+#        if not points_ukr.empty:
+#            points_ukr = gpd.overlay(points_ukr, ukr_prov_buffer, how='difference')
+#        if not points_ru.empty:
+#            points_ru = gpd.overlay(points_ru, ukr_prov_buffer, how='difference')
 
     # User asked: "The Ukraine gains should indicate the position of the front line as it was on the older map"
     # To get the pins to follow the OLD map line instead of the new one, we intersect them with the old buffer
@@ -426,13 +426,13 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     points_ukr = generate_points_along_lines(old_boundaries, 0.003)
     points_ru = generate_points_along_lines(new_boundaries, 0.003)
 
-    if not ukr_prov_lines.empty:
-        ukr_prov_buffer = ukr_prov_lines.copy()
-        ukr_prov_buffer.geometry = ukr_prov_buffer.buffer(0.01)
-        if not points_ukr.empty:
-            points_ukr = gpd.overlay(points_ukr, ukr_prov_buffer, how='difference')
-        if not points_ru.empty:
-            points_ru = gpd.overlay(points_ru, ukr_prov_buffer, how='difference')
+#    if not ukr_prov_lines.empty:
+#        ukr_prov_buffer = ukr_prov_lines.copy()
+#        ukr_prov_buffer.geometry = ukr_prov_buffer.buffer(0.01)
+#        if not points_ukr.empty:
+#            points_ukr = gpd.overlay(points_ukr, ukr_prov_buffer, how='difference')
+#        if not points_ru.empty:
+#            points_ru = gpd.overlay(points_ru, ukr_prov_buffer, how='difference')
 
     if not points_ukr.empty and not new_buffered.empty:
         points_ukr = gpd.overlay(points_ukr, new_buffered, how='difference')
