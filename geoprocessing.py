@@ -180,6 +180,8 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
     new_ru_polys = new_ru_polys[new_ru_polys.geometry.type.isin(['Polygon', 'MultiPolygon'])]
     new_ru_dissolved = new_ru_polys.dissolve()
     new_ru_dissolved.geometry = new_ru_dissolved.geometry.apply(fill_holes)
+    # Morphological closing to remove internal gaps and holes (increased size for larger battle-line holes)
+    new_ru_dissolved.geometry = new_ru_dissolved.geometry.buffer(0.005).buffer(-0.005)
 
     # Create new Ukrainians map (Ukraine Provinces - New Russians)
     if ukr_prov_gdf is not None and not ukr_prov_gdf.empty:
@@ -202,6 +204,8 @@ def run_ap_model(old_ap_gdf, new_ap_gdf, ukr_prov_gdf=None):
         old_ru_polys = old_ru_polys[old_ru_polys.geometry.type.isin(['Polygon', 'MultiPolygon'])]
         old_ru_dissolved = old_ru_polys.dissolve()
         old_ru_dissolved.geometry = old_ru_dissolved.geometry.apply(fill_holes)
+        # Morphological closing to remove internal gaps and holes (increased size for larger battle-line holes)
+        old_ru_dissolved.geometry = old_ru_dissolved.geometry.buffer(0.005).buffer(-0.005)
         if ukr_prov_gdf is not None and not ukr_prov_gdf.empty:
             old_ukr_dissolved = gpd.overlay(ukr_dissolved, old_ru_dissolved, how='difference')
         else:
@@ -315,7 +319,16 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
 
     if ukr_prov_gdf is not None and not ukr_prov_gdf.empty:
         ukr_prov_gdf['Name'] = ukr_prov_gdf['Name'].fillna('')
-        crimea = ukr_prov_gdf[ukr_prov_gdf['Name'].str.contains('Crimea', case=False, na=False)].copy()
+
+        # In the new Ukraine-Regions.kml, Crimea is identified in the description field
+        if 'description' in ukr_prov_gdf.columns:
+            ukr_prov_gdf['description'] = ukr_prov_gdf['description'].fillna('')
+            crimea = ukr_prov_gdf[
+                ukr_prov_gdf['Name'].str.contains('Crimea', case=False, na=False) |
+                ukr_prov_gdf['description'].str.contains('Krym', case=False, na=False)
+            ].copy()
+        else:
+            crimea = ukr_prov_gdf[ukr_prov_gdf['Name'].str.contains('Crimea', case=False, na=False)].copy()
 
         ukr_country = ukr_prov_gdf.dissolve()
         ukr_prov_lines = ukr_country.copy()
@@ -326,6 +339,7 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
 
     old_dissolved = old_sm.dissolve()
     old_dissolved.geometry = old_dissolved.geometry.apply(fill_holes)
+    old_dissolved.geometry = old_dissolved.geometry.buffer(0.005).buffer(-0.005)
 
     old_buffered = old_dissolved.copy()
     old_buffered.geometry = old_buffered.buffer(0.0002)
@@ -333,6 +347,7 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
 
     new_dissolved = new_sm.dissolve()
     new_dissolved.geometry = new_dissolved.geometry.apply(fill_holes)
+    new_dissolved.geometry = new_dissolved.geometry.buffer(0.005).buffer(-0.005)
 
     new_buffered = new_dissolved.copy()
     new_buffered.geometry = new_buffered.buffer(0.0002)
