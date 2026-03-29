@@ -334,6 +334,9 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     old_sm = old_sm_gdf[~old_sm_gdf['Name'].str.contains('Ukrainian Armed Forces', case=False, na=False)].copy()
     new_sm = new_sm_gdf[~new_sm_gdf['Name'].str.contains('Ukrainian Armed Forces', case=False, na=False)].copy()
 
+    old_sm = old_sm[~old_sm['Name'].str.contains('Crimea', case=False, na=False)]
+    new_sm = new_sm[~new_sm['Name'].str.contains('Crimea', case=False, na=False)]
+    
     old_sm = old_sm[old_sm.geometry.type.isin(['Polygon', 'MultiPolygon'])]
     new_sm = new_sm[new_sm.geometry.type.isin(['Polygon', 'MultiPolygon'])]
 
@@ -363,18 +366,18 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
 
     # Apply Morphological Closing
     mb = 0.0001
-    if not old_dissolved.empty:
-        old_dissolved.geometry = old_dissolved.buffer(mb).buffer(-mb)
-    if not new_dissolved.empty:
-        new_dissolved.geometry = new_dissolved.buffer(mb).buffer(-mb)
+    #if not old_dissolved.empty:
+    #    old_dissolved.geometry = old_dissolved.buffer(mb).buffer(-mb)
+    #if not new_dissolved.empty:
+    #    new_dissolved.geometry = new_dissolved.buffer(mb).buffer(-mb)
 
     old_buffered = old_dissolved.copy()
     old_buffered.geometry = old_buffered.buffer(0.0002)
     old_buffered = old_buffered.dissolve()
 
-    new_dissolved = new_sm.dissolve()
-    new_dissolved.geometry = new_dissolved.geometry.apply(fill_holes)
-    new_dissolved.geometry = new_dissolved.geometry.buffer(0.005).buffer(-0.005)
+    #new_dissolved = new_sm.dissolve()
+    #new_dissolved.geometry = new_dissolved.geometry.apply(fill_holes)
+    #new_dissolved.geometry = new_dissolved.geometry.buffer(0.005).buffer(-0.005)
 
     new_buffered = new_dissolved.copy()
     new_buffered.geometry = new_buffered.buffer(0.0002)
