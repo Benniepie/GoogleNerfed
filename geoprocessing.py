@@ -366,10 +366,10 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
 
     # Apply Morphological Closing
     mb = 0.0001
-    #if not old_dissolved.empty:
-    #    old_dissolved.geometry = old_dissolved.buffer(mb).buffer(-mb)
-    #if not new_dissolved.empty:
-    #    new_dissolved.geometry = new_dissolved.buffer(mb).buffer(-mb)
+    if not old_dissolved.empty:
+        old_dissolved.geometry = old_dissolved.buffer(mb).buffer(-mb)
+    if not new_dissolved.empty:
+        new_dissolved.geometry = new_dissolved.buffer(mb).buffer(-mb)
 
     old_buffered = old_dissolved.copy()
     old_buffered.geometry = old_buffered.buffer(0.0002)
