@@ -52,6 +52,46 @@
             width: auto;
         }
 
+        /* Collapsible Sections */
+        .section-header {
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        .section-header:hover { background: rgba(255, 255, 255, 0.1); }
+        .section-content {
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            background: rgba(0, 0, 0, 0.2);
+            display: block; /* Default open */
+        }
+        .section-content.collapsed {
+            display: none;
+        }
+        .section-header.collapsed {
+            margin-bottom: 15px;
+            border-radius: 6px;
+        }
+        .section-header .toggle-icon {
+            font-size: 0.8rem;
+            transition: transform 0.3s;
+        }
+        .section-header.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
         /* Base Map Switcher */
         .basemap-switcher { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; }
         .basemap-switcher label { font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
@@ -128,40 +168,56 @@
 
     <div class="control-panel" id="controlPanel">
         <h2>
-            MyMaps Control
+            map.atpgeo.com
             <div>
                 <button class="icon-btn" id="settingsBtn" title="Settings" style="font-size: 1rem; margin-right: 5px;">⚙️</button>
                 <button class="icon-btn" id="collapseBtn" title="Toggle Panel" style="font-size: 1rem;">➖</button>
             </div>
         </h2>
 
-        <div class="basemap-switcher" style="flex-wrap: wrap;">
-            <label>
-                <input type="radio" name="basemap" value="dark" checked> Dark Map
-            </label>
-            <label>
-                <input type="radio" name="basemap" value="satellite"> Satellite
-            </label>
-            <label>
-                <input type="radio" name="basemap" value="hybrid"> Hybrid
-            </label>
-            <label>
-                <input type="radio" name="basemap" value="firefly"> Firefly
-            </label>
-            <label>
-                <input type="radio" name="basemap" value="fireflyHybrid"> Firefly Hybrid
-            </label>
+        <div class="section-header" onclick="toggleSection(this)">
+            Base Map <span class="toggle-icon">▼</span>
+        </div>
+        <div class="section-content">
+            <div class="basemap-switcher" style="flex-wrap: wrap; border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+                <label>
+                    <input type="radio" name="basemap" value="dark" checked> Dark Map
+                </label>
+                <label>
+                    <input type="radio" name="basemap" value="satellite"> Satellite
+                </label>
+                <label>
+                    <input type="radio" name="basemap" value="hybrid"> Hybrid
+                </label>
+                <label>
+                    <input type="radio" name="basemap" value="firefly"> Firefly
+                </label>
+                <label>
+                    <input type="radio" name="basemap" value="fireflyHybrid"> Firefly Hybrid
+                </label>
+            </div>
         </div>
 
-        <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">
-            <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: var(--text-color);">🔥 Live FIRMS Data (Global)</h3>
+        <div class="section-header collapsed" onclick="toggleSection(this)">
+            Live Data Layers <span class="toggle-icon">▼</span>
+        </div>
+        <div class="section-content collapsed">
+            <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: var(--text-color);">🔥 Live FIRMS Data (Global) - 48 hours</h3>
 
-            <input type="password" id="firmsApiKey" value="ad28c643441e17360bb136f8da9189bb" placeholder="Enter NASA FIRMS API Key" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 6px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+            <input type="hidden" id="firmsApiKey" value="ad28c643441e17360bb136f8da9189bb">
 
             <select id="firmsStyleMode" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
                 <option value="simple">Simple (All Red)</option>
                 <option value="time">Time Since Detection</option>
             </select>
+
+            <div id="firmsTimeKey" style="display: none; margin-bottom: 10px; font-size: 0.8rem; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);">
+                <div style="margin-bottom: 4px; font-weight: bold;">Time Since Detection:</div>
+                <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 2px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#7f1d1d;"></span> &le; 3 hours</div>
+                <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 2px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#dc2626;"></span> &le; 6 hours</div>
+                <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 2px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#ea580c;"></span> &le; 12 hours</div>
+                <div style="display: flex; align-items: center; gap: 5px;"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#eab308;"></span> &gt; 12 hours</div>
+            </div>
 
             <div class="layer-item" style="border-left: 3px solid #ef4444;">
                 <input type="checkbox" id="nasaFirmsToggle">
@@ -170,12 +226,33 @@
             <div id="firmsStatus" style="font-size: 0.8rem; color: #94a3b8; display: none; margin-top: 5px;">Ready.</div>
         </div>
 
-        <div class="layer-list" id="layerList">
-            <em style="font-size: 0.9rem; color: #94a3b8;">Loading layers...</em>
+        <div class="section-header" onclick="toggleSection(this)">
+            Front Line Tracker <span class="toggle-icon">▼</span>
+        </div>
+        <div class="section-content">
+            <div class="layer-list" id="frontlineLayerList" style="margin-bottom: 0;">
+                <em style="font-size: 0.9rem; color: #94a3b8;">Loading layers...</em>
+            </div>
+            <div id="timelineContainer" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); text-align: center;">
+                <label style="font-size: 0.85rem; display: block; margin-bottom: 5px;">Map Timeline: <span id="currentDateDisplay" style="font-weight: bold; color: var(--accent-color);">Latest</span></label>
+                <input type="range" id="timelineSlider" min="0" max="0" value="0" style="width: 100%;" disabled>
+            </div>
+        </div>
+
+        <div class="section-header collapsed" onclick="toggleSection(this)">
+            Static Data Layers <span class="toggle-icon">▼</span>
+        </div>
+        <div class="section-content collapsed">
+            <div class="layer-list" id="staticLayerList" style="margin-bottom: 0;">
+                <em style="font-size: 0.9rem; color: #94a3b8;">Loading layers...</em>
+            </div>
         </div>
 
 
-        <div class="upload-section">
+        <div class="section-header collapsed" onclick="toggleSection(this)">
+            Map Admin <span class="toggle-icon">▼</span>
+        </div>
+        <div class="section-content collapsed upload-section" style="border-top: none; padding-top: 10px;">
             <form id="uploadForm">
                 <input type="file" id="kmlFile" accept=".kml,.kmz" multiple required />
                 <button type="submit" id="uploadBtn" class="primary-btn">Upload KML / KMZ</button>
@@ -183,11 +260,6 @@
             </form>
             <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; margin-top: 10px; background: #8b5cf6;">🤖 Automate Map Update</button>
             <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-top: 10px; background: var(--border-color);">⬇️ Export Displayed Data</button>
-        </div>
-
-        <div id="timelineContainer" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); text-align: center;">
-            <label style="font-size: 0.85rem; display: block; margin-bottom: 5px;">Map Timeline: <span id="currentDateDisplay" style="font-weight: bold; color: var(--accent-color);">Latest</span></label>
-            <input type="range" id="timelineSlider" min="0" max="0" value="0" style="width: 100%;" disabled>
         </div>
 
     </div>
@@ -305,6 +377,12 @@
     <script src="https://unpkg.com/tokml/tokml.js"></script>
 
     <script>
+        function toggleSection(header) {
+            header.classList.toggle('collapsed');
+            const content = header.nextElementSibling;
+            content.classList.toggle('collapsed');
+        }
+
         // 1. Initialise the Map
         const map = L.map('map', { zoomControl: false, zoomSnap: 0.25, zoomDelta: 0.25 }).setView([49.0, 31.0], 6); // Default view centered on Ukraine
         L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -417,6 +495,13 @@
                     return data;
                 });
 
+                // Sort by date/time ascending so older fires render first, and newer ones render on top
+                currentFirmsData.sort((a, b) => {
+                    const timeA = a.acq_date + "T" + a.acq_time.padStart(4, '0');
+                    const timeB = b.acq_date + "T" + b.acq_time.padStart(4, '0');
+                    return timeA.localeCompare(timeB);
+                });
+
                 renderFirmsVectorData();
 
                 statusEl.textContent = `Loaded ${currentFirmsData.length} active fires from 3 satellites.`;
@@ -510,7 +595,13 @@
         });
 
         // Listen for dropdown styling changes
-        document.getElementById('firmsStyleMode').addEventListener('change', () => {
+        document.getElementById('firmsStyleMode').addEventListener('change', (e) => {
+            const timeKey = document.getElementById('firmsTimeKey');
+            if (e.target.value === 'time') {
+                timeKey.style.display = 'block';
+            } else {
+                timeKey.style.display = 'none';
+            }
             if (isFirmsActive && map.getZoom() >= ZOOM_THRESHOLD) {
                 renderFirmsVectorData();
             }
@@ -633,15 +724,18 @@
                 const response = await fetch('/api/layers');
                 const data = await response.json();
                 
-                const layerListEl = document.getElementById('layerList');
-                layerListEl.innerHTML = ''; 
+                const frontlineListEl = document.getElementById('frontlineLayerList');
+                const staticListEl = document.getElementById('staticLayerList');
+                frontlineListEl.innerHTML = '';
+                staticListEl.innerHTML = '';
                 
                 if (data.layers.length === 0) {
-                    layerListEl.innerHTML = '<em style="font-size: 0.9rem; color: #94a3b8;">No layers available.</em>';
+                    frontlineListEl.innerHTML = '<em style="font-size: 0.9rem; color: #94a3b8;">No layers available.</em>';
+                    staticListEl.innerHTML = '<em style="font-size: 0.9rem; color: #94a3b8;">No layers available.</em>';
                     return;
                 }
 
-                                // Sort layers by user's saved order if it exists
+                // Sort layers by user's saved order if it exists
                 let sortedLayers = data.layers;
                 if (appSettings.layerOrder && appSettings.layerOrder.length > 0) {
                     sortedLayers.sort((a, b) => {
@@ -655,52 +749,60 @@
                 }
 
                 for (const filename of sortedLayers) {
+                    const isFrontline = filename.startsWith('AP Map') || filename.startsWith('AP Pins') || filename.startsWith('SM Map') || filename.startsWith('SM Pins');
+
                     const item = document.createElement('div');
                     item.className = 'layer-item';
-                    item.draggable = true;
                     item.dataset.filename = filename;
 
-                    // Drag and Drop Events
-                    item.addEventListener('dragstart', (e) => {
-                        item.classList.add('dragging');
-                        e.dataTransfer.setData('text/plain', filename);
-                    });
+                    // Only allow drag and drop for Static Data Layers
+                    if (!isFrontline) {
+                        item.draggable = true;
 
-                    item.addEventListener('dragend', () => {
-                        item.classList.remove('dragging');
-                        document.querySelectorAll('.layer-item').forEach(el => el.classList.remove('drag-over'));
-                        saveLayerOrder(); // Save new order to backend
-                    });
+                        // Drag and Drop Events
+                        item.addEventListener('dragstart', (e) => {
+                            item.classList.add('dragging');
+                            e.dataTransfer.setData('text/plain', filename);
+                        });
 
-                    item.addEventListener('dragover', (e) => {
-                        e.preventDefault(); // Necessary to allow dropping
-                        item.classList.add('drag-over');
-                    });
+                        item.addEventListener('dragend', () => {
+                            item.classList.remove('dragging');
+                            document.querySelectorAll('.layer-item').forEach(el => el.classList.remove('drag-over'));
+                            saveLayerOrder(); // Save new order to backend
+                        });
 
-                    item.addEventListener('dragleave', () => {
-                        item.classList.remove('drag-over');
-                    });
+                        item.addEventListener('dragover', (e) => {
+                            e.preventDefault(); // Necessary to allow dropping
+                            item.classList.add('drag-over');
+                        });
 
-                    item.addEventListener('drop', (e) => {
-                        e.preventDefault();
-                        item.classList.remove('drag-over');
-                        const draggingFile = e.dataTransfer.getData('text/plain');
-                        if (draggingFile === filename) return;
+                        item.addEventListener('dragleave', () => {
+                            item.classList.remove('drag-over');
+                        });
 
-                        const draggingEl = document.querySelector(`.layer-item[data-filename="${draggingFile}"]`);
-                        const layerList = document.getElementById('layerList');
+                        item.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            item.classList.remove('drag-over');
+                            const draggingFile = e.dataTransfer.getData('text/plain');
+                            if (draggingFile === filename) return;
 
-                        // Determine whether to insert before or after
-                        const allItems = [...layerList.querySelectorAll('.layer-item')];
-                        const dropIdx = allItems.indexOf(item);
-                        const dragIdx = allItems.indexOf(draggingEl);
+                            const draggingEl = document.querySelector(`.layer-item[data-filename="${draggingFile}"]`);
+                            if (!draggingEl) return;
 
-                        if (dragIdx < dropIdx) {
-                            item.after(draggingEl);
-                        } else {
-                            item.before(draggingEl);
-                        }
-                    });
+                            const layerList = document.getElementById('staticLayerList');
+
+                            // Determine whether to insert before or after
+                            const allItems = [...layerList.querySelectorAll('.layer-item')];
+                            const dropIdx = allItems.indexOf(item);
+                            const dragIdx = allItems.indexOf(draggingEl);
+
+                            if (dragIdx < dropIdx) {
+                                item.after(draggingEl);
+                            } else {
+                                item.before(draggingEl);
+                            }
+                        });
+                    }
                     
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
@@ -734,21 +836,66 @@
                     item.appendChild(checkbox);
                     item.appendChild(label);
                     item.appendChild(actionsDiv);
-                    layerListEl.appendChild(item);
 
-                    // Initially hide the layer item until the timeline sorts it out
-                    item.style.display = 'none';
+                    if (isFrontline) {
+                        frontlineListEl.appendChild(item);
+                        // Initially hide the layer item until the timeline sorts it out
+                        item.style.display = 'none';
+                    } else {
+                        staticListEl.appendChild(item);
+                        // Static items are always visible
+                        item.style.display = 'flex';
+                    }
 
                     // Load KML
                     await fetchAndAddKML(filename);
 
                     // Toggle visibility
                     checkbox.addEventListener('change', (e) => {
-                        if (e.target.checked) {
-                            if (activeLayers[filename]) map.addLayer(activeLayers[filename]);
-                        } else {
-                            if (activeLayers[filename]) map.removeLayer(activeLayers[filename]);
+                        const isChecked = e.target.checked;
+
+                        // If it's a frontline layer, toggle all related dates to match
+                        if (isFrontline) {
+                            let prefix = '';
+                            if (filename.startsWith('AP Map')) prefix = 'AP Map';
+                            else if (filename.startsWith('AP Pins')) prefix = 'AP Pins';
+                            else if (filename.startsWith('SM Map')) prefix = 'SM Map';
+                            else if (filename.startsWith('SM Pins')) prefix = 'SM Pins';
+
+                            if (prefix) {
+                                for (const fn in activeLayers) {
+                                    if (fn.startsWith(prefix)) {
+                                        const otherChk = document.getElementById('chk_' + fn);
+                                        if (otherChk && otherChk !== checkbox) {
+                                            otherChk.checked = isChecked;
+                                        }
+
+                                        // Update map visibility ONLY if this layer is meant for the CURRENT selected date
+                                        const layerDate = extractDateFromFilename(fn);
+                                        const currentDisplayDate = document.getElementById('currentDateDisplay').textContent;
+                                        if (!layerDate || layerDate === currentDisplayDate) {
+                                            if (isChecked && !map.hasLayer(activeLayers[fn])) {
+                                                map.addLayer(activeLayers[fn]);
+                                            } else if (!isChecked && map.hasLayer(activeLayers[fn])) {
+                                                map.removeLayer(activeLayers[fn]);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
+
+                        // Handle current target specifically
+                        if (isChecked) {
+                            if (activeLayers[filename] && (!isFrontline || extractDateFromFilename(filename) === document.getElementById('currentDateDisplay').textContent)) {
+                                map.addLayer(activeLayers[filename]);
+                            }
+                        } else {
+                            if (activeLayers[filename] && map.hasLayer(activeLayers[filename])) {
+                                map.removeLayer(activeLayers[filename]);
+                            }
+                        }
+                        reorderActiveLayers();
                     });
                 }
                 updateTimeline();
@@ -1058,12 +1205,32 @@
 
 
         function reorderActiveLayers() {
-            const items = document.querySelectorAll('.layer-item');
-            const newOrder = [];
-            items.forEach(i => newOrder.push(i.dataset.filename));
+            // We want Static Layers on the BOTTOM and Frontline on the TOP.
+            // Because `.bringToFront()` successively pushes layers to the absolute top of the Leaflet pane,
+            // the *last* layer we call it on will be the *highest* visible layer.
+            //
+            // In the UI list (top-to-bottom):
+            // The top-most item in a list should be visually higher than the bottom-most item in that list.
+            // Therefore, we must process the bottom-most UI item first, and the top-most UI item last.
+            //
+            // Order of calling `bringToFront()`:
+            // 1. Static Layers (bottom UI item up to top UI item)
+            // 2. Frontline Layers (bottom UI item up to top UI item)
 
-            for (let i = newOrder.length - 1; i >= 0; i--) {
-                const filename = newOrder[i];
+            const staticItems = document.querySelectorAll('#staticLayerList .layer-item');
+            const frontlineItems = document.querySelectorAll('#frontlineLayerList .layer-item');
+
+            // Process Static Layers (iterate backwards)
+            for (let i = staticItems.length - 1; i >= 0; i--) {
+                const filename = staticItems[i].dataset.filename;
+                if (activeLayers[filename] && map.hasLayer(activeLayers[filename])) {
+                    activeLayers[filename].bringToFront();
+                }
+            }
+
+            // Process Frontline Layers (iterate backwards)
+            for (let i = frontlineItems.length - 1; i >= 0; i--) {
+                const filename = frontlineItems[i].dataset.filename;
                 if (activeLayers[filename] && map.hasLayer(activeLayers[filename])) {
                     activeLayers[filename].bringToFront();
                 }
@@ -1291,6 +1458,31 @@
 
                     // Reload layers to get the new maps with styles applied
                     await loadLayers();
+
+                    // Find the newly generated date on the timeline and jump to it
+                    setTimeout(() => {
+                        if (availableDates.length > 0) {
+                            const newDateIdx = availableDates.indexOf(updateDate);
+                            if (newDateIdx !== -1) {
+                                const slider = document.getElementById('timelineSlider');
+                                slider.value = newDateIdx;
+                                slider.dispatchEvent(new Event('input'));
+
+                                // Make sure the newly added layers are ticked
+                                data.results.forEach(r => {
+                                    if(r.status === 'success' && r.new_files) {
+                                        r.new_files.forEach(fn => {
+                                            const chk = document.getElementById('chk_' + fn);
+                                            if (chk && !chk.checked) {
+                                                chk.checked = true;
+                                                chk.dispatchEvent(new Event('change'));
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        }
+                    }, 500); // small delay to ensure layers loaded
 
                     setTimeout(() => {
                         document.getElementById('automateModal').style.display = 'none';
