@@ -439,22 +439,39 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
 
     # Compile Final Map Output
     
-    # 1. Melt touching polygons together to erase internal borders
+# Compile Final Map Output
+    
+    # 1. Melt touching polygons together
     map_out = new_sm.dissolve()
     
-    # 2. Break disconnected areas into separate polygons
     if not map_out.empty:
+        # 2. FUSE edges: Micro-buffer (1 meter) to destroy internal cutlines without rounding corners
+        map_out.geometry = map_out.geometry.buffer(1e-5).buffer(-1e-5)
+        
+        # 3. PAVE gaps: Wipe out all enclosed internal holes
+        map_out.geometry = map_out.geometry.apply(fill_holes)
+        
+        # 4. Break disconnected areas into separate polygons
         map_out = map_out.explode(index_parts=False).reset_index(drop=True)
-        map_out = map_out[['geometry']]  # Strip out old individual unit names
+        
+        # 5. DUST filter: Delete microscopic standalone slivers
+        map_out = map_out[map_out.geometry.area > 1e-7]
+        
+        # Format output
+        map_out = map_out[['geometry']]
         map_out['Name'] = 'Russian controlled'
 
-    # 3. Process Crimea
+    # Process Crimea (Apply the exact same cleanup)
     if not crimea.empty:
         crimea_cleaned = crimea[['geometry']].copy()
-        # Dissolve Crimea as well to remove any internal province borders
         crimea_cleaned = crimea_cleaned.dissolve()
+        
         if not crimea_cleaned.empty:
+            crimea_cleaned.geometry = crimea_cleaned.geometry.buffer(1e-5).buffer(-1e-5)
+            crimea_cleaned.geometry = crimea_cleaned.geometry.apply(fill_holes)
             crimea_cleaned = crimea_cleaned.explode(index_parts=False).reset_index(drop=True)
+            crimea_cleaned = crimea_cleaned[crimea_cleaned.geometry.area > 1e-7]
+            
             crimea_cleaned['Name'] = 'Autonomous Republic of Crimea'
         
         map_out = pd.concat([map_out, crimea_cleaned], ignore_index=True)
