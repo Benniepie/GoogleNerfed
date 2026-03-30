@@ -154,11 +154,20 @@
         </div>
 
         <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);">
-            <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: var(--text-color);">Live Data</h3>
+            <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: var(--text-color);">🔥 Live FIRMS Data (Global)</h3>
+
+            <input type="password" id="firmsApiKey" value="ad28c643441e17360bb136f8da9189bb" placeholder="Enter NASA FIRMS API Key" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 6px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+
+            <select id="firmsStyleMode" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+                <option value="simple">Simple (All Red)</option>
+                <option value="time">Time Since Detection</option>
+            </select>
+
             <div class="layer-item" style="border-left: 3px solid #ef4444;">
                 <input type="checkbox" id="nasaFirmsToggle">
-                <label for="nasaFirmsToggle" style="font-weight: bold; color: #fca5a5;">🔥 NASA Active Fires (VIIRS)</label>
+                <label for="nasaFirmsToggle" style="font-weight: bold; color: #fca5a5;">Load VIIRS Hybrid Layer</label>
             </div>
+            <div id="firmsStatus" style="font-size: 0.8rem; color: #94a3b8; display: none; margin-top: 5px;">Ready.</div>
         </div>
 
         <div class="layer-list" id="layerList">
@@ -327,22 +336,165 @@
         baseMaps.hybrid = L.layerGroup([baseMaps.satellite, labelsLayer]);
         baseMaps.fireflyHybrid = L.layerGroup([baseMaps.firefly, labelsLayer]);
 
-        // --- LIVE DATA: NASA FIRMS (GIBS WMS) ---
-        // Using the high-resolution VIIRS sensor for thermal anomalies
-        const nasaFiresLayer = L.tileLayer.wms("https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi", {
+        // --- LIVE DATA: NASA FIRMS (Hybrid Raster/Vector) ---
+        const ZOOM_THRESHOLD = 8; // Zoom level at which we switch from Raster to Vector
+        let isFirmsActive = false;
+
+        // 1. The Raster Layer (for zoomed-out global views)
+        const nasaRasterLayer = L.tileLayer.wms("https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi", {
             layers: 'VIIRS_SNPP_Thermal_Anomalies_375m_All',
             format: 'image/png',
             transparent: true,
-            attribution: '&copy; <a href="https://earthdata.nasa.gov/gibs" target="_blank">NASA EOSDIS GIBS</a>',
-            zIndex: 100 // Ensures fires render on top of the base maps
+            attribution: '&copy; NASA EOSDIS GIBS',
+            zIndex: 100
         });
 
-        // Listen for the toggle checkbox
-        document.getElementById('nasaFirmsToggle').addEventListener('change', (e) => {
-            if (e.target.checked) {
-                nasaFiresLayer.addTo(map);
+        // 2. The Vector Layer (for zoomed-in detailed views)
+        let firmsVectorGroup = L.layerGroup();
+        let currentFirmsData = [];
+
+        async function fetchAndRenderFirmsBBox() {
+            const apiKey = document.getElementById('firmsApiKey').value.trim();
+            const statusEl = document.getElementById('firmsStatus');
+
+            if (!apiKey) {
+                alert("Please enter a NASA FIRMS API Key.");
+                return;
+            }
+
+            statusEl.style.display = 'block';
+            statusEl.textContent = 'Fetching vector data for this area...';
+            statusEl.style.color = '#94a3b8';
+
+            // Calculate Bounding Box (West, South, East, North)
+            const bounds = map.getBounds();
+            // Pad the bounds slightly so dots don't pop in right at the screen edge
+            const bbox = `${bounds.getWest() - 0.5},${bounds.getSouth() - 0.5},${bounds.getEast() + 0.5},${bounds.getNorth() + 0.5}`;
+
+            // Fetch 1 day of VIIRS data specifically for this BBox
+            const url = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${apiKey}/VIIRS_SNPP_NRT/${bbox}/1`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("API limits reached or invalid area.");
+
+                const csvText = await response.text();
+                const rows = csvText.split('\n').filter(row => row.trim() !== '');
+
+                if (rows.length <= 1) {
+                    // No fires in this area
+                    currentFirmsData = [];
+                    firmsVectorGroup.clearLayers();
+                    statusEl.textContent = 'No thermal anomalies in this view.';
+                    statusEl.style.color = '#94a3b8';
+                    return;
+                }
+
+                const headers = rows.shift().split(',');
+
+                currentFirmsData = rows.map(row => {
+                    const values = row.split(',');
+                    let data = {};
+                    headers.forEach((header, index) => { data[header] = values[index]; });
+                    return data;
+                });
+
+                renderFirmsVectorData();
+
+                statusEl.textContent = `Loaded ${currentFirmsData.length} active fires.`;
+                statusEl.style.color = '#22c55e';
+
+            } catch (error) {
+                console.error("FIRMS Error:", error);
+                statusEl.textContent = 'Error fetching vector data.';
+                statusEl.style.color = '#ef4444';
+            }
+        }
+
+        function renderFirmsVectorData() {
+            firmsVectorGroup.clearLayers();
+            const styleMode = document.getElementById('firmsStyleMode').value;
+            const now = new Date();
+
+            currentFirmsData.forEach(fire => {
+                if (!fire.latitude || !fire.longitude) return;
+
+                const timeStr = fire.acq_time.padStart(4, '0');
+                const isoString = `${fire.acq_date}T${timeStr.substring(0,2)}:${timeStr.substring(2,4)}:00Z`;
+                const fireTime = new Date(isoString);
+                const ageHours = (now - fireTime) / (1000 * 60 * 60);
+
+                let fillColor = '#ef4444';
+                let fillOpacity = 0.6;
+
+                if (styleMode === 'time') {
+                    if (ageHours <= 3) { fillColor = '#7f1d1d'; fillOpacity = 0.9; }
+                    else if (ageHours <= 6) { fillColor = '#dc2626'; fillOpacity = 0.8; }
+                    else if (ageHours <= 12) { fillColor = '#ea580c'; fillOpacity = 0.7; }
+                    else { fillColor = '#eab308'; fillOpacity = 0.5; }
+                }
+
+                const fireCircle = L.circle([parseFloat(fire.latitude), parseFloat(fire.longitude)], {
+                    color: fillColor,
+                    weight: 1,
+                    fillColor: fillColor,
+                    fillOpacity: fillOpacity,
+                    radius: 187.5 // 375m VIIRS footprint
+                });
+
+                fireCircle.bindPopup(`
+                    <b>Thermal Anomaly</b><br>
+                    Detected: ${fire.acq_date} at ${timeStr} UTC<br>
+                    Age: ${Math.round(ageHours)} hours ago<br>
+                    Confidence: ${fire.confidence}
+                `);
+
+                firmsVectorGroup.addLayer(fireCircle);
+            });
+        }
+
+        // --- Core Map Event Listeners for Hybrid Logic ---
+        function updateFirmsDisplay() {
+            if (!isFirmsActive) return;
+
+            const currentZoom = map.getZoom();
+
+            if (currentZoom < ZOOM_THRESHOLD) {
+                // Zoomed Out: Show Raster, Hide Vector
+                if (!map.hasLayer(nasaRasterLayer)) map.addLayer(nasaRasterLayer);
+                if (map.hasLayer(firmsVectorGroup)) map.removeLayer(firmsVectorGroup);
+                document.getElementById('firmsStatus').textContent = 'Zoom in for vector details...';
+                document.getElementById('firmsStatus').style.color = '#94a3b8';
             } else {
-                map.removeLayer(nasaFiresLayer);
+                // Zoomed In: Show Vector, Hide Raster, Fetch Data
+                if (map.hasLayer(nasaRasterLayer)) map.removeLayer(nasaRasterLayer);
+                if (!map.hasLayer(firmsVectorGroup)) map.addLayer(firmsVectorGroup);
+                fetchAndRenderFirmsBBox();
+            }
+        }
+
+        // Listen for user panning and zooming
+        map.on('moveend', updateFirmsDisplay);
+
+        // Listen for the toggle switch
+        document.getElementById('nasaFirmsToggle').addEventListener('change', (e) => {
+            isFirmsActive = e.target.checked;
+            const statusEl = document.getElementById('firmsStatus');
+
+            if (isFirmsActive) {
+                statusEl.style.display = 'block';
+                updateFirmsDisplay();
+            } else {
+                map.removeLayer(nasaRasterLayer);
+                map.removeLayer(firmsVectorGroup);
+                statusEl.style.display = 'none';
+            }
+        });
+
+        // Listen for dropdown styling changes
+        document.getElementById('firmsStyleMode').addEventListener('change', () => {
+            if (isFirmsActive && map.getZoom() >= ZOOM_THRESHOLD) {
+                renderFirmsVectorData();
             }
         });
 
