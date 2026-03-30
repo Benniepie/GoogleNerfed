@@ -418,14 +418,24 @@
         const ZOOM_THRESHOLD = 8; // Zoom level at which we switch from Raster to Vector
         let isFirmsActive = false;
 
-        // 1. The Raster Layer (for zoomed-out global views)
-        const nasaRasterLayer = L.tileLayer.wms("https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi", {
+        // 1. The Raster Layer (Grouped for all 3 satellites)
+        const snppRaster = L.tileLayer.wms("https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi", {
             layers: 'VIIRS_SNPP_Thermal_Anomalies_375m_All',
-            format: 'image/png',
-            transparent: true,
-            attribution: '&copy; NASA EOSDIS GIBS',
-            zIndex: 100
+            format: 'image/png', transparent: true, zIndex: 100
         });
+        
+        const noaa20Raster = L.tileLayer.wms("https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi", {
+            layers: 'VIIRS_NOAA20_Thermal_Anomalies_375m_All',
+            format: 'image/png', transparent: true, zIndex: 100
+        });
+
+        const noaa21Raster = L.tileLayer.wms("https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi", {
+            layers: 'VIIRS_NOAA21_Thermal_Anomalies_375m_All',
+            format: 'image/png', transparent: true, zIndex: 100
+        });
+
+        // Bundle them together so they toggle as a single layer
+        const nasaRasterLayer = L.layerGroup([snppRaster, noaa20Raster, noaa21Raster]);
 
         // 2. The Vector Layer (for zoomed-in detailed views)
         let firmsVectorGroup = L.layerGroup();
