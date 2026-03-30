@@ -438,12 +438,27 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
         pins_out = gpd.GeoDataFrame(columns=['Name', 'geometry'], crs=points_ukr.crs)
 
     # Compile Final Map Output
-    map_out = new_sm.copy()
+    
+    # 1. Melt touching polygons together to erase internal borders
+    map_out = new_sm.dissolve()
+    
+    # 2. Break disconnected areas into separate polygons
+    if not map_out.empty:
+        map_out = map_out.explode(index_parts=False).reset_index(drop=True)
+        map_out = map_out[['geometry']]  # Strip out old individual unit names
+        map_out['Name'] = 'Russian controlled'
+
+    # 3. Process Crimea
     if not crimea.empty:
         crimea_cleaned = crimea[['geometry']].copy()
-        crimea_cleaned['Name'] = 'Autonomous Republic of Crimea'
+        # Dissolve Crimea as well to remove any internal province borders
+        crimea_cleaned = crimea_cleaned.dissolve()
+        if not crimea_cleaned.empty:
+            crimea_cleaned = crimea_cleaned.explode(index_parts=False).reset_index(drop=True)
+            crimea_cleaned['Name'] = 'Autonomous Republic of Crimea'
+        
         map_out = pd.concat([map_out, crimea_cleaned], ignore_index=True)
-        map_out = gpd.GeoDataFrame(map_out, geometry='geometry')
+        map_out = gpd.GeoDataFrame(map_out, geometry='geometry', crs=new_sm.crs)
 
     if 'Name' not in map_out.columns:
         map_out['Name'] = ''
@@ -451,4 +466,5 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     # Snap to grid at the very end to match QGIS precision exactly
     map_out = snap_to_grid(map_out, precision=1e-7)
     pins_out = snap_to_grid(pins_out, precision=1e-7)
+    
     return map_out, pins_out
