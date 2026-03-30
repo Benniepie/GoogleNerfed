@@ -626,5 +626,3 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
         map_out['Name'] = ''
         
     return map_out, pins_out
-    
-    return map_out, pins_out
