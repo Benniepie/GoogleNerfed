@@ -363,36 +363,54 @@
             }
 
             statusEl.style.display = 'block';
-            statusEl.textContent = 'Fetching vector data for this area...';
+            statusEl.textContent = 'Fetching vector data (SNPP & NOAA-20)...';
             statusEl.style.color = '#94a3b8';
 
-            // Calculate Bounding Box (West, South, East, North)
+            // Calculate Bounding Box
             const bounds = map.getBounds();
-            // Pad the bounds slightly so dots don't pop in right at the screen edge
             const bbox = `${bounds.getWest() - 0.5},${bounds.getSouth() - 0.5},${bounds.getEast() + 0.5},${bounds.getNorth() + 0.5}`;
 
-            // Fetch 1 day of VIIRS data specifically for this BBox
-            const url = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${apiKey}/VIIRS_SNPP_NRT/${bbox}/1`;
+            // Query both primary VIIRS satellites over 2 days to match the Raster composite
+            const sources = ['VIIRS_SNPP_NRT', 'VIIRS_NOAA20_NRT'];
 
             try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error("API limits reached or invalid area.");
+                // Fire off both API requests at the same time
+                const fetchPromises = sources.map(source =>
+                    fetch(`https://firms.modaps.eosdis.nasa.gov/api/area/csv/${apiKey}/${source}/${bbox}/2`)
+                );
 
-                const csvText = await response.text();
-                const rows = csvText.split('\n').filter(row => row.trim() !== '');
+                const responses = await Promise.all(fetchPromises);
 
-                if (rows.length <= 1) {
-                    // No fires in this area
+                let allRows = [];
+                let headers = [];
+
+                for (const response of responses) {
+                    if (!response.ok) throw new Error("API limits reached or invalid area.");
+
+                    const csvText = await response.text();
+                    const rows = csvText.split('\n').filter(row => row.trim() !== '');
+
+                    // If we have more than just the header row
+                    if (rows.length > 1) {
+                        if (headers.length === 0) {
+                            headers = rows.shift().split(','); // Keep headers from the first file
+                        } else {
+                            rows.shift(); // Discard headers from the second file
+                        }
+                        allRows.push(...rows); // Merge the data
+                    }
+                }
+
+                if (allRows.length === 0) {
                     currentFirmsData = [];
                     firmsVectorGroup.clearLayers();
-                    statusEl.textContent = 'No thermal anomalies in this view.';
+                    statusEl.textContent = 'No thermal anomalies in this specific view.';
                     statusEl.style.color = '#94a3b8';
                     return;
                 }
 
-                const headers = rows.shift().split(',');
-
-                currentFirmsData = rows.map(row => {
+                // Parse our newly combined massive dataset
+                currentFirmsData = allRows.map(row => {
                     const values = row.split(',');
                     let data = {};
                     headers.forEach((header, index) => { data[header] = values[index]; });
