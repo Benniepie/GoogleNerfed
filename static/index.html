@@ -948,8 +948,12 @@
                     // Style for points/markers
                     pointToLayer: function (feature, latlng) {
                         const style = getFeatureStyle(feature);
-                        return L.circleMarker(latlng, {
-                            radius: 6,
+                        
+                        // CHANGE 1: Use L.circle instead of L.circleMarker
+                        return L.circle(latlng, {
+                            // CHANGE 2: Radius is now in METRES. 
+                            // Try 50, 100, or 200 depending on how spaced out they are!
+                            radius: 100, 
                             fillColor: style.color,
                             color: '#ffffff',
                             weight: 1,
