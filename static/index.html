@@ -758,7 +758,37 @@
                     });
                 }
 
-                for (const filename of sortedLayers) {
+                const frontlineLayers = [];
+                const staticLayers = [];
+
+                sortedLayers.forEach(filename => {
+                    const isFrontline = filename.startsWith('AP Map') || filename.startsWith('AP Pins') || filename.startsWith('SM Map') || filename.startsWith('SM Pins');
+                    if (isFrontline) {
+                        frontlineLayers.push(filename);
+                    } else {
+                        staticLayers.push(filename);
+                    }
+                });
+
+                const getFrontlineRank = (filename) => {
+                    if (filename.startsWith('AP Pins')) return 1;
+                    if (filename.startsWith('SM Pins')) return 2;
+                    if (filename.startsWith('AP Map')) return 3;
+                    if (filename.startsWith('SM Map')) return 4;
+                    return 5;
+                };
+
+                frontlineLayers.sort((a, b) => {
+                    const rankA = getFrontlineRank(a);
+                    const rankB = getFrontlineRank(b);
+                    if (rankA !== rankB) return rankA - rankB;
+                    // within same rank, sort by date descending
+                    return b.localeCompare(a);
+                });
+
+                const finalSortedLayers = [...frontlineLayers, ...staticLayers];
+
+                for (const filename of finalSortedLayers) {
                     const isFrontline = filename.startsWith('AP Map') || filename.startsWith('AP Pins') || filename.startsWith('SM Map') || filename.startsWith('SM Pins');
 
                     const item = document.createElement('div');
