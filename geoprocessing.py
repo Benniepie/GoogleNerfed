@@ -330,6 +330,12 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     old_sm = old_sm[old_sm.geometry.type.isin(['Polygon', 'MultiPolygon'])]
     new_sm = new_sm[new_sm.geometry.type.isin(['Polygon', 'MultiPolygon'])]
 
+    # --- THE FIX: Pre-Snapping ---
+    # Snap the raw polygons to the grid immediately. This forces adjacent internal borders 
+    # to perfectly align before they melt, eliminating artifacts without rounding the outer corners!
+    old_sm = snap_to_grid(old_sm, precision=1e-7)
+    new_sm = snap_to_grid(new_sm, precision=1e-7)
+
     # Process Crimea template for final output
     if ukr_prov_gdf is not None and not ukr_prov_gdf.empty:
         ukr_prov_gdf['Name'] = ukr_prov_gdf['Name'].fillna('')
@@ -338,18 +344,30 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
             ukr_prov_gdf['description'] = ukr_prov_gdf['description'].fillna('')
             crimea_mask = crimea_mask | ukr_prov_gdf['description'].str.contains('Krym', case=False, na=False)
         crimea = ukr_prov_gdf[crimea_mask].copy()
+        crimea = snap_to_grid(crimea, precision=1e-7)
+        crimea_dissolved = crimea.dissolve()
+        crimea_dissolved.geometry = crimea_dissolved.geometry.apply(fill_holes)
     else:
-        crimea = gpd.GeoDataFrame(geometry=[])
+        crimea_dissolved = gpd.GeoDataFrame(geometry=[])
 
-    # Pure, sharp-cornered dissolves (All Morphological Closing removed)
+    # 1. Dissolve (Melts touching polygons)
+    # 2. Fill Holes (Paves over any microscopic internal gaps)
     old_dissolved = old_sm.dissolve()
     old_dissolved.geometry = old_dissolved.geometry.apply(fill_holes)
 
     new_dissolved = new_sm.dissolve()
     new_dissolved.geometry = new_dissolved.geometry.apply(fill_holes)
 
-    # The SM map contains polygons of RUSSIAN Armed forces.
-    # Therefore, new_dissolved - old_dissolved is area RUSSIA Gained.
+    # 3. Dust Filter (Deletes microscopic disconnected floating pixels)
+    if not old_dissolved.empty:
+        old_dissolved = old_dissolved.explode(index_parts=False)
+        old_dissolved = old_dissolved[old_dissolved.geometry.area > 1e-7]
+
+    if not new_dissolved.empty:
+        new_dissolved = new_dissolved.explode(index_parts=False)
+        new_dissolved = new_dissolved[new_dissolved.geometry.area > 1e-7]
+
+    # --- CALCULATE GAINS ---
     if not new_dissolved.empty and not old_dissolved.empty:
         new_line_area = gpd.overlay(new_dissolved, old_dissolved, how='difference')
     elif not new_dissolved.empty:
@@ -357,7 +375,6 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     else:
         new_line_area = gpd.GeoDataFrame(geometry=[])
 
-    # old_dissolved - new_dissolved is area UKRAINE Gained (Russia shrunk).
     if not old_dissolved.empty and not new_dissolved.empty:
         old_line_area = gpd.overlay(old_dissolved, new_dissolved, how='difference')
     elif not old_dissolved.empty:
@@ -365,11 +382,12 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     else:
         old_line_area = gpd.GeoDataFrame(geometry=[])
 
-    if not crimea.empty:
+    # Filter out Crimea from changes
+    if not crimea_dissolved.empty:
         if not new_line_area.empty:
-            new_line_area = gpd.overlay(new_line_area, crimea, how='difference')
+            new_line_area = gpd.overlay(new_line_area, crimea_dissolved, how='difference')
         if not old_line_area.empty:
-            old_line_area = gpd.overlay(old_line_area, crimea, how='difference')
+            old_line_area = gpd.overlay(old_line_area, crimea_dissolved, how='difference')
 
     # Filter by area threshold to remove micro-slivers
     area_thresh = 1e-5
@@ -407,12 +425,9 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
         new_buffered = new_buffered.dissolve()
 
     # --- FILTER PINS TO TRACE THE *PREVIOUS* LINE ---
-    
-    # Ukr Gains (Russia retreated): Remove pins touching the NEW Russian frontline
     if not points_ukr.empty and not new_buffered.empty:
         points_ukr = gpd.overlay(points_ukr, new_buffered, how='difference')
 
-    # Ru Gains (Russia advanced): Keep ONLY pins touching the OLD Russian frontline
     if not points_ru.empty and not old_buffered.empty:
         points_ru = gpd.sjoin(points_ru, old_buffered, how='inner', predicate='intersects')
         if 'index_right' in points_ru.columns:
@@ -437,42 +452,18 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     else:
         pins_out = gpd.GeoDataFrame(columns=['Name', 'geometry'], crs=points_ukr.crs)
 
-    # Compile Final Map Output
-    
-# Compile Final Map Output
-    
-    # 1. Melt touching polygons together
-    map_out = new_sm.dissolve()
-    
+    # --- COMPILE FINAL MAP OUTPUT ---
+    # We use new_dissolved, which is already perfectly snapped, dissolved, and artifact-free!
+    map_out = new_dissolved.copy()
     if not map_out.empty:
-        # 2. FUSE edges: Micro-buffer (1 meter) to destroy internal cutlines without rounding corners
-        map_out.geometry = map_out.geometry.buffer(1e-5).buffer(-1e-5)
-        
-        # 3. PAVE gaps: Wipe out all enclosed internal holes
-        map_out.geometry = map_out.geometry.apply(fill_holes)
-        
-        # 4. Break disconnected areas into separate polygons
-        map_out = map_out.explode(index_parts=False).reset_index(drop=True)
-        
-        # 5. DUST filter: Delete microscopic standalone slivers
-        map_out = map_out[map_out.geometry.area > 1e-7]
-        
-        # Format output
         map_out = map_out[['geometry']]
         map_out['Name'] = 'Russian controlled'
 
-    # Process Crimea (Apply the exact same cleanup)
-    if not crimea.empty:
-        crimea_cleaned = crimea[['geometry']].copy()
-        crimea_cleaned = crimea_cleaned.dissolve()
-        
-        if not crimea_cleaned.empty:
-            crimea_cleaned.geometry = crimea_cleaned.geometry.buffer(1e-5).buffer(-1e-5)
-            crimea_cleaned.geometry = crimea_cleaned.geometry.apply(fill_holes)
-            crimea_cleaned = crimea_cleaned.explode(index_parts=False).reset_index(drop=True)
-            crimea_cleaned = crimea_cleaned[crimea_cleaned.geometry.area > 1e-7]
-            
-            crimea_cleaned['Name'] = 'Autonomous Republic of Crimea'
+    if not crimea_dissolved.empty:
+        crimea_cleaned = crimea_dissolved.copy()
+        crimea_cleaned = crimea_cleaned.explode(index_parts=False).reset_index(drop=True)
+        crimea_cleaned = crimea_cleaned[['geometry']]
+        crimea_cleaned['Name'] = 'Autonomous Republic of Crimea'
         
         map_out = pd.concat([map_out, crimea_cleaned], ignore_index=True)
         map_out = gpd.GeoDataFrame(map_out, geometry='geometry', crs=new_sm.crs)
@@ -480,8 +471,160 @@ def run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
     if 'Name' not in map_out.columns:
         map_out['Name'] = ''
         
-    # Snap to grid at the very end to match QGIS precision exactly
-    map_out = snap_to_grid(map_out, precision=1e-7)
-    pins_out = snap_to_grid(pins_out, precision=1e-7)
+    return map_out, pins_outdef run_sm_model(old_sm_gdf, new_sm_gdf, ukr_prov_gdf=None):
+    old_sm_gdf['Name'] = old_sm_gdf['Name'].fillna('')
+    new_sm_gdf['Name'] = new_sm_gdf['Name'].fillna('')
+
+    old_sm = old_sm_gdf[~old_sm_gdf['Name'].str.contains('Ukrainian Armed Forces', case=False, na=False)].copy()
+    new_sm = new_sm_gdf[~new_sm_gdf['Name'].str.contains('Ukrainian Armed Forces', case=False, na=False)].copy()
+
+    old_sm = old_sm[~old_sm['Name'].str.contains('Crimea', case=False, na=False)]
+    new_sm = new_sm[~new_sm['Name'].str.contains('Crimea', case=False, na=False)]
+    
+    old_sm = old_sm[old_sm.geometry.type.isin(['Polygon', 'MultiPolygon'])]
+    new_sm = new_sm[new_sm.geometry.type.isin(['Polygon', 'MultiPolygon'])]
+
+    # --- THE FIX: Pre-Snapping ---
+    # Snap the raw polygons to the grid immediately. This forces adjacent internal borders 
+    # to perfectly align before they melt, eliminating artifacts without rounding the outer corners!
+    old_sm = snap_to_grid(old_sm, precision=1e-7)
+    new_sm = snap_to_grid(new_sm, precision=1e-7)
+
+    # Process Crimea template for final output
+    if ukr_prov_gdf is not None and not ukr_prov_gdf.empty:
+        ukr_prov_gdf['Name'] = ukr_prov_gdf['Name'].fillna('')
+        crimea_mask = ukr_prov_gdf['Name'].str.contains('Crimea', case=False, na=False) | ukr_prov_gdf['Name'].isin(['01', '85'])
+        if 'description' in ukr_prov_gdf.columns:
+            ukr_prov_gdf['description'] = ukr_prov_gdf['description'].fillna('')
+            crimea_mask = crimea_mask | ukr_prov_gdf['description'].str.contains('Krym', case=False, na=False)
+        crimea = ukr_prov_gdf[crimea_mask].copy()
+        crimea = snap_to_grid(crimea, precision=1e-7)
+        crimea_dissolved = crimea.dissolve()
+        crimea_dissolved.geometry = crimea_dissolved.geometry.apply(fill_holes)
+    else:
+        crimea_dissolved = gpd.GeoDataFrame(geometry=[])
+
+    # 1. Dissolve (Melts touching polygons)
+    # 2. Fill Holes (Paves over any microscopic internal gaps)
+    old_dissolved = old_sm.dissolve()
+    old_dissolved.geometry = old_dissolved.geometry.apply(fill_holes)
+
+    new_dissolved = new_sm.dissolve()
+    new_dissolved.geometry = new_dissolved.geometry.apply(fill_holes)
+
+    # 3. Dust Filter (Deletes microscopic disconnected floating pixels)
+    if not old_dissolved.empty:
+        old_dissolved = old_dissolved.explode(index_parts=False)
+        old_dissolved = old_dissolved[old_dissolved.geometry.area > 1e-7]
+
+    if not new_dissolved.empty:
+        new_dissolved = new_dissolved.explode(index_parts=False)
+        new_dissolved = new_dissolved[new_dissolved.geometry.area > 1e-7]
+
+    # --- CALCULATE GAINS ---
+    if not new_dissolved.empty and not old_dissolved.empty:
+        new_line_area = gpd.overlay(new_dissolved, old_dissolved, how='difference')
+    elif not new_dissolved.empty:
+        new_line_area = new_dissolved.copy()
+    else:
+        new_line_area = gpd.GeoDataFrame(geometry=[])
+
+    if not old_dissolved.empty and not new_dissolved.empty:
+        old_line_area = gpd.overlay(old_dissolved, new_dissolved, how='difference')
+    elif not old_dissolved.empty:
+        old_line_area = old_dissolved.copy()
+    else:
+        old_line_area = gpd.GeoDataFrame(geometry=[])
+
+    # Filter out Crimea from changes
+    if not crimea_dissolved.empty:
+        if not new_line_area.empty:
+            new_line_area = gpd.overlay(new_line_area, crimea_dissolved, how='difference')
+        if not old_line_area.empty:
+            old_line_area = gpd.overlay(old_line_area, crimea_dissolved, how='difference')
+
+    # Filter by area threshold to remove micro-slivers
+    area_thresh = 1e-5
+    if not new_line_area.empty:
+        new_line_area = new_line_area[new_line_area.geometry.area > area_thresh]
+
+    if not old_line_area.empty:
+        old_line_area = old_line_area[old_line_area.geometry.area > area_thresh]
+
+    # Boundaries -> Points
+    if not old_line_area.empty:
+        old_boundaries = old_line_area.copy()
+        old_boundaries.geometry = old_boundaries.geometry.boundary
+    else:
+        old_boundaries = gpd.GeoDataFrame(geometry=[])
+
+    if not new_line_area.empty:
+        new_boundaries = new_line_area.copy()
+        new_boundaries.geometry = new_boundaries.geometry.boundary
+    else:
+        new_boundaries = gpd.GeoDataFrame(geometry=[])
+
+    points_ukr = generate_points_along_lines(old_boundaries, 0.003)
+    points_ru = generate_points_along_lines(new_boundaries, 0.003)
+
+    # Buffers strictly for filtering pins to the correct side of the frontline
+    old_buffered = old_dissolved.copy()
+    if not old_buffered.empty:
+        old_buffered.geometry = old_buffered.buffer(0.0002)
+        old_buffered = old_buffered.dissolve()
+
+    new_buffered = new_dissolved.copy()
+    if not new_buffered.empty:
+        new_buffered.geometry = new_buffered.buffer(0.0002)
+        new_buffered = new_buffered.dissolve()
+
+    # --- FILTER PINS TO TRACE THE *PREVIOUS* LINE ---
+    if not points_ukr.empty and not new_buffered.empty:
+        points_ukr = gpd.overlay(points_ukr, new_buffered, how='difference')
+
+    if not points_ru.empty and not old_buffered.empty:
+        points_ru = gpd.sjoin(points_ru, old_buffered, how='inner', predicate='intersects')
+        if 'index_right' in points_ru.columns:
+            points_ru = points_ru.drop(columns=['index_right'])
+
+    # Label Pins
+    if not points_ukr.empty:
+        points_ukr['Name'] = 'Ukr gains'
+    else:
+        points_ukr = gpd.GeoDataFrame(columns=['Name', 'geometry'], crs=points_ukr.crs if not points_ukr.empty else None)
+
+    if not points_ru.empty:
+        points_ru['Name'] = 'Ru gains'
+    else:
+        points_ru = gpd.GeoDataFrame(columns=['Name', 'geometry'], crs=points_ru.crs if not points_ru.empty else None)
+
+    # Compile Pins Output
+    pins_out = pd.concat([points_ukr, points_ru], ignore_index=True)
+    if not pins_out.empty:
+        pins_out = gpd.GeoDataFrame(pins_out, geometry='geometry')
+        pins_out = pins_out[pins_out.geometry.type == 'Point']
+    else:
+        pins_out = gpd.GeoDataFrame(columns=['Name', 'geometry'], crs=points_ukr.crs)
+
+    # --- COMPILE FINAL MAP OUTPUT ---
+    # We use new_dissolved, which is already perfectly snapped, dissolved, and artifact-free!
+    map_out = new_dissolved.copy()
+    if not map_out.empty:
+        map_out = map_out[['geometry']]
+        map_out['Name'] = 'Russian controlled'
+
+    if not crimea_dissolved.empty:
+        crimea_cleaned = crimea_dissolved.copy()
+        crimea_cleaned = crimea_cleaned.explode(index_parts=False).reset_index(drop=True)
+        crimea_cleaned = crimea_cleaned[['geometry']]
+        crimea_cleaned['Name'] = 'Autonomous Republic of Crimea'
+        
+        map_out = pd.concat([map_out, crimea_cleaned], ignore_index=True)
+        map_out = gpd.GeoDataFrame(map_out, geometry='geometry', crs=new_sm.crs)
+
+    if 'Name' not in map_out.columns:
+        map_out['Name'] = ''
+        
+    return map_out, pins_out
     
     return map_out, pins_out
