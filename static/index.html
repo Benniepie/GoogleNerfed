@@ -363,19 +363,19 @@
             }
 
             statusEl.style.display = 'block';
-            statusEl.textContent = 'Fetching vector data (SNPP & NOAA-20)...';
+            statusEl.textContent = 'Fetching vector data (SNPP, NOAA-20 & NOAA-21)...';
             statusEl.style.color = '#94a3b8';
 
             // Calculate Bounding Box
             const bounds = map.getBounds();
             const bbox = `${bounds.getWest() - 0.5},${bounds.getSouth() - 0.5},${bounds.getEast() + 0.5},${bounds.getNorth() + 0.5}`;
 
-            // Query both primary VIIRS satellites over 2 days to match the Raster composite
-            const sources = ['VIIRS_SNPP_NRT', 'VIIRS_NOAA20_NRT'];
+        // Query all THREE primary VIIRS satellites over 2 days
+        const sources = ['VIIRS_SNPP_NRT', 'VIIRS_NOAA20_NRT', 'VIIRS_NOAA21_NRT'];
 
             try {
-                // Fire off both API requests at the same time
-                const fetchPromises = sources.map(source =>
+            // Fire off all API requests simultaneously
+            const fetchPromises = sources.map(source =>
                     fetch(`https://firms.modaps.eosdis.nasa.gov/api/area/csv/${apiKey}/${source}/${bbox}/2`)
                 );
 
@@ -395,7 +395,7 @@
                         if (headers.length === 0) {
                             headers = rows.shift().split(','); // Keep headers from the first file
                         } else {
-                            rows.shift(); // Discard headers from the second file
+                        rows.shift(); // Discard headers from subsequent files
                         }
                         allRows.push(...rows); // Merge the data
                     }
@@ -419,7 +419,7 @@
 
                 renderFirmsVectorData();
 
-                statusEl.textContent = `Loaded ${currentFirmsData.length} active fires.`;
+                statusEl.textContent = `Loaded ${currentFirmsData.length} active fires from 3 satellites.`;
                 statusEl.style.color = '#22c55e';
 
             } catch (error) {
