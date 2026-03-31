@@ -818,6 +818,16 @@
 
                 // Add the newly selected map option
                 baseMaps[e.target.value].addTo(map);
+                // --- THE ALIGNMENT FIX ---
+                // Wait 50ms for the new MapLibre canvas to be injected into the DOM
+                setTimeout(() => {
+                    // Force Leaflet to recalculate container sizes
+                    map.invalidateSize();
+                    // Give the map a microscopic, invisible 1-pixel jiggle to force MapLibre to sync!
+                    map.panBy([1, 0], { animate: false });
+                    map.panBy([-1, 0], { animate: false });
+                }, 50);
+
             });
         });
 
