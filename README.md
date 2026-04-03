@@ -30,8 +30,19 @@ A lightweight, open-source, and fully self-hosted clone of Google MyMaps. This p
 
 ### **Mapping Providers**
 
-* **OpenFreeMap**: Providing the 'Liberty Dark' vector tiles.  
+* **OpenFreeMap**: Providing the 'Dark' and 'Light' vector tiles.
+* **OpenTopoMap**: Topographic  tiles.
+* **HOT**: Humanitarian Open Street Map tiles
 * **Esri World Imagery**: Providing the high-resolution satellite raster tiles.
+* **Esri Firefly**: Lower Saturation satellite tiles
+* **Sentinel 2 Cloudless Imagery**: Mosaic of Sentinel 2 satellite imagert
+* **Sentinel 2 L2A TRUE COLOUR / NATURAL COLOUR**: Latest Sentinel 2 satellite imagery from Copernicus where cloud cover is <30%
+* **Custom hybrid layer:** Using OpenFreeMap vector tiles overlaid for each of the 5 satellite imagery providers
+  
+### **Data Providers**
+* **Ukraine War FrontLines:** Functionality to load Ukraine war front line data from two mappers, calculate the differences between the two, draw the changes on that map using map markers with the historical data easily browsable using a timeline slider
+* **NASA FIRMS:** Last 48 hours VIIRS satellite data (as raster tiles at lower zoom levels & CSV data plotted on the map and higher zoom levels
+* **Sentinel 2 metadata:** To determine the created date of the Sentinel 2 imagery
 
 ## **🚀 Getting Started**
 
