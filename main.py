@@ -14,6 +14,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from geoprocessing import load_kml, save_kml, run_ap_model, run_sm_model, copy_kml_styles
 from titiler.core.factory import TilerFactory
+import math
+import mercantile
+from fastapi.responses import RedirectResponse
+
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('mymaps-automation')
