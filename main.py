@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from geoprocessing import load_kml, save_kml, run_ap_model, run_sm_model, copy_kml_styles
+from titiler.core.factory import TilerFactory
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('mymaps-automation')
@@ -29,6 +30,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- ADD TITILER ROUTER HERE ---
+# This instantly gives your FastAPI app the ability to serve map tiles from COGs!
+cog_tiler = TilerFactory()
+app.include_router(
+    cog_tiler.router,
+    prefix="/cog",
+    tags=["Cloud Optimized GeoTIFF"]
+)
+# -------------------------------
 
 DATA_DIR = Path("/app/data")
 DATA_DIR.mkdir(parents=True, exist_ok=True)
