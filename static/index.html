@@ -493,11 +493,9 @@
                 tileSize: 512,
                 zIndex: 10
             }),
-			// Define the S3 URL to the Copernicus DEM (AWS hosts a public mirror of this)
-        	// Note: For a production app, you might want a VRT (Virtual Raster) that mosaics all of Europe
-        	const copernicusDemUrl = "s3://copernicus-dem-30m/Copernicus_DSM_COG_10_N48_00_E034_00_DEM/Copernicus_DSM_COG_10_N48_00_E034_00_DEM.tif";
 
-        	layers.topography = L.tileLayer(`/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url=${copernicusDemUrl}&colormap_name=cfastie&rescale=0,1500`, {
+
+        	topography: L.tileLayer(`/api/dynamic-topo/{z}/{x}/{y}.png', {
             	attribution: 'Elevation data &copy; Copernicus',
             	opacity: 0.8, // Slight transparency looks great over a dark base map
             	maxNativeZoom: 14 // DEM data gets blurry past zoom 14, this scales it smoothly
