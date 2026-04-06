@@ -497,7 +497,7 @@
             }),
 
 
-        	topography: L.tileLayer(`/api/dynamic-topo/{z}/{x}/{y}.png', {
+        	topography: L.tileLayer('/api/dynamic-topo/{z}/{x}/{y}.png', {
             	attribution: 'Elevation data &copy; Copernicus',
             	opacity: 0.8, // Slight transparency looks great over a dark base map
             	maxNativeZoom: 14 // DEM data gets blurry past zoom 14, this scales it smoothly
