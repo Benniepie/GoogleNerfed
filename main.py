@@ -41,6 +41,33 @@ app.include_router(
 )
 # -------------------------------
 
+@app.get("/api/dynamic-topo/{z}/{x}/{y}.png")
+async def get_dynamic_topo(z: int, x: int, y: int):
+    """
+    Intercepts Leaflet's XYZ tile request, calculates the geographic coordinates,
+    finds the correct Copernicus DEM S3 URL, and redirects to Titiler to render it.
+    """
+    # 1. Get the geographical center of the requested map tile
+    bounds = mercantile.bounds(x, y, z)
+    center_lat = (bounds.north + bounds.south) / 2
+    center_lng = (bounds.east + bounds.west) / 2
+
+    # 2. Format the exact Copernicus S3 grid reference dynamically
+    lat_floor = math.floor(center_lat)
+    lng_floor = math.floor(center_lng)
+
+    lat_str = f"N{lat_floor:02d}" if lat_floor >= 0 else f"S{abs(lat_floor):02d}"
+    lng_str = f"E{lng_floor:03d}" if lng_floor >= 0 else f"W{abs(lng_floor):03d}"
+
+    folder = f"Copernicus_DSM_COG_10_{lat_str}_00_{lng_str}_00_DEM"
+    s3_url = f"s3://copernicus-dem-30m/{folder}/{folder}.tif"
+
+    # 3. Redirect internally to the Titiler endpoint to do the heavy lifting
+    titiler_url = f"/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url={s3_url}&colormap_name=cfastie&rescale=0,1500"
+    
+    return RedirectResponse(url=titiler_url)
+
+
 DATA_DIR = Path("/app/data")
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
