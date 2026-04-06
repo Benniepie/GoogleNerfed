@@ -7,3 +7,4 @@ shapely
 beautifulsoup4
 lxml
 pyogrio
+titiler.core
