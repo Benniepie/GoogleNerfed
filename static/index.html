@@ -492,16 +492,7 @@
                 attribution: '&copy; Sentinel Hub / Copernicus',
                 tileSize: 512,
                 zIndex: 10
-            }),
-			// Define the S3 URL to the Copernicus DEM (AWS hosts a public mirror of this)
-        	// Note: For a production app, you might want a VRT (Virtual Raster) that mosaics all of Europe
-        	const copernicusDemUrl = "s3://copernicus-dem-30m/Copernicus_DSM_COG_10_N48_00_E034_00_DEM/Copernicus_DSM_COG_10_N48_00_E034_00_DEM.tif";
-
-        	layers.topography = L.tileLayer(`/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url=${copernicusDemUrl}&colormap_name=cfastie&rescale=0,1500`, {
-            	attribution: 'Elevation data &copy; Copernicus',
-            	opacity: 0.8, // Slight transparency looks great over a dark base map
-            	maxNativeZoom: 14 // DEM data gets blurry past zoom 14, this scales it smoothly
-	        });
+            })
         };
 
 
@@ -1878,43 +1869,7 @@
                 }
             }
         });
-		// --- Topography Legend ---
-        const topoLegend = L.control({ position: 'bottomright' });
 
-        topoLegend.onAdd = function (map) {
-            const div = L.DomUtil.create('div', 'info legend');
-            // Create a CSS gradient block that matches our 'cfastie' Titiler colormap
-            div.innerHTML = `
-                <div style="background: rgba(30, 30, 35, 0.85); padding: 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); color: white; font-size: 12px; backdrop-filter: blur(12px);">
-                    <h4 style="margin: 0 0 5px 0; border-bottom: 1px solid #475569; padding-bottom: 3px;">Elevation</h4>
-                    <div style="display: flex;">
-                        <div style="background: linear-gradient(to top, #0000ff, #00ffff, #00ff00, #ffff00, #ff0000, #ffffff); width: 15px; height: 150px; border-radius: 3px; margin-right: 10px;"></div>
-                        <div style="display: flex; flex-direction: column; justify-content: space-between; height: 150px;">
-                            <span>1500m+</span>
-                            <span>1200m</span>
-                            <span>900m</span>
-                            <span>600m</span>
-                            <span>300m</span>
-                            <span>0m</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            return div;
-        };
-
-        // Only show the legend when the topography layer is active
-        map.on('layeradd', function(event) {
-            if (event.layer === layers.topography) {
-                topoLegend.addTo(map);
-            }
-        });
-
-        map.on('layerremove', function(event) {
-            if (event.layer === layers.topography) {
-                map.removeControl(topoLegend);
-            }
-        });
     </script>
 </body>
 </html>
