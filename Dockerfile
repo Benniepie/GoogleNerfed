@@ -22,9 +22,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the backend and frontend files
 COPY main.py .
 COPY geoprocessing.py .
-COPY debug_pipeline.py .
-COPY debug_config.json .
-COPY test_identical.py .
 COPY static/ ./static/
 
 # Ensure the data directory exists
