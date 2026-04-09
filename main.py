@@ -33,7 +33,8 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     # Replace with your actual public domain
-    allow_origins=["https://map.atpgeo.com", "http://localhost:8000"], 
+    allow_origins=["*"],
+    #allow_origins=["https://map.atpgeo.com", "http://localhost:8000, "http://100.74.180.38:8069"], 
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE"], 
     allow_headers=["*"],
