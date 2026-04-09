@@ -15,7 +15,7 @@ document.getElementById('admin-panel-container').innerHTML = `
             <div id="statusMsg" class="status-msg">Upload complete!</div>
         </form>
         <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; margin-top: 10px; background: #8b5cf6;">🤖 Automate Map Update</button>
-        <button class="primary-btn" onclick="document.getElementById('settingsModal').style.display='flex'" style="width: 100%; margin-top: 10px; background: #0ea5e9;">⚙️ Map Settings</button>
+        <button class="primary-btn" onclick="openSettingsModal()" style="width: 100%; margin-top: 10px; background: #0ea5e9;">⚙️ Map Settings</button>
         <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-top: 10px; background: var(--border-color);">⬇️ Export Displayed Data</button>
     </div>
 `;
@@ -611,17 +611,18 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
         }
 
         // Settings UI Logic
-        document.getElementById('settingsBtn').addEventListener('click', () => {
+
+        window.openSettingsModal = function() {
             document.getElementById('defaultLat').value = appSettings.defaultLat || 49.0;
             document.getElementById('defaultLng').value = appSettings.defaultLng || 31.0;
             document.getElementById('defaultZoom').value = appSettings.defaultZoom || 6;
             document.getElementById('defaultBasemap').value = appSettings.defaultBasemap || 'dark';
             document.getElementById('settingsModal').style.display = 'flex';
-        });
+        };
 
         function useCurrentView() {
             const center = map.getCenter();
             document.getElementById('defaultLat').value = center.lat.toFixed(5);
             document.getElementById('defaultLng').value = center.lng.toFixed(5);
             document.getElementById('defaultZoom').value = map.getZoom();
-        }        
+        }      
