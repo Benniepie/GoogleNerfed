@@ -699,6 +699,7 @@
                     document.getElementById('wmsLoading').innerHTML = `<em style="color: #ef4444;">Failed to retrieve image data.</em>`;
                 }
             }
+        });
         async function loadSettingsAndInit() {
             try {
                 const response = await fetch('/api/settings');
@@ -760,6 +761,3 @@
                 }
             }
         }
-
-
-        });
