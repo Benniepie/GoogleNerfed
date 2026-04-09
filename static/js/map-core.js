@@ -48,10 +48,10 @@
             }),
             // Transparent overlays for Hybrid views
             roads: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
-                pane: 'markerPane', opacity: 0.7
+        
             }),
             labels: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-                pane: 'tooltipPane'
+          
 
             }),
 
@@ -59,7 +59,7 @@
             vectorLabels: L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/liberty',
                 attribution: '&copy; OpenStreetMap contributors',
-                pane: 'tooltipPane',
+                
                 interactive: false
             }),
 
