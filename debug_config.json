@@ -1,6 +1,0 @@
-{
-    "point_distance": 0.003,
-    "morph_buffer": 0.0001,
-    "ap_area_threshold": 1e-05,
-    "sm_area_threshold": 1e-05
-}
