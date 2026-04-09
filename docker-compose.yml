@@ -3,13 +3,15 @@ version: '3.8'
 services:
   maps:
     build: .
-    container_name: mymaps-clone
-#    ports:
-#      - "8080:8000"
+    container_name: "ATP-Maps-${CONTAINERSUFFIX}"
+    env_file:
+      - .env
+    ports:
+      - "${PORT}:8000"
     volumes:
       # This is the folder you can drop your initial KML/KMZ files into.
       - ./data:/app/data
     restart: unless-stopped
-    network_mode: host
+    
 
 
