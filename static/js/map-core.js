@@ -18,6 +18,12 @@
         const map = L.map('map', { zoomControl: false, zoomSnap: 0.25, zoomDelta: 0.25 }).setView([49.0, 31.0], 6); // Default view centered on Ukraine
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
+        // --- NEW CUSTOM PANE FIX ---
+        map.createPane('hybridLabels');
+        map.getPane('hybridLabels').style.zIndex = 250; // Sits above satellite (200) but below KMLs (400)
+        map.getPane('hybridLabels').style.pointerEvents = 'none'; // Ensures clicks pass through to your KMLs!
+        // ---------------------------
+
         const activeLayers = {};
 
             // Settings from backend
@@ -48,10 +54,10 @@
             }),
             // Transparent overlays for Hybrid views
             roads: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
-        
+                pane: 'hybridLabels'
             }),
             labels: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-          
+                pane: 'hybridLabels'
 
             }),
 
@@ -59,7 +65,7 @@
             vectorLabels: L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/liberty',
                 attribution: '&copy; OpenStreetMap contributors',
-                
+                pane: 'hybridLabels',
                 interactive: false
             }),
 
