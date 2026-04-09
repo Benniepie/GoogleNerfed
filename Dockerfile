@@ -23,9 +23,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY main.py .
 COPY geoprocessing.py .
 COPY static/ ./static/
-
+COPY admin_assets/ ./admin_assets/
 # Ensure the data directory exists
 RUN mkdir -p /app/data
 
 # Run the FastAPI server using Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8069"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

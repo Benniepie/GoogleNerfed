@@ -4,11 +4,14 @@ import zipfile
 import json
 import urllib.request
 import tempfile
+import os
+import secrets
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, UploadFile, File, Body, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Body, Form, HTTPException, Request, Response, Depends, status
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -29,51 +32,77 @@ app = FastAPI()
 # Enable CORS just in case
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # Replace with your actual public domain
+    allow_origins=["https://map.atpgeo.com", "http://localhost:8000"], 
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "DELETE"], 
     allow_headers=["*"],
 )
 
 # --- ADD TITILER ROUTER HERE ---
 # This instantly gives your FastAPI app the ability to serve map tiles from COGs!
-cog_tiler = TilerFactory()
-app.include_router(
-    cog_tiler.router,
-    prefix="/cog",
-    tags=["Cloud Optimized GeoTIFF"]
-)
+#cog_tiler = TilerFactory()
+#app.include_router(
+#    cog_tiler.router,
+#    prefix="/cog",
+#    tags=["Cloud Optimized GeoTIFF"]
+#)
 # -------------------------------
 
-@app.get("/api/dynamic-topo/{z}/{x}/{y}.png")
-async def get_dynamic_topo(z: int, x: int, y: int):
-    """
-    Intercepts Leaflet's XYZ tile request, calculates the geographic coordinates,
-    finds the correct Copernicus DEM S3 URL, and redirects to Titiler to render it.
-    """
-    # 1. Get the geographical center of the requested map tile
-    bounds = mercantile.bounds(x, y, z)
-    center_lat = (bounds.north + bounds.south) / 2
-    center_lng = (bounds.east + bounds.west) / 2
+#@app.get("/api/dynamic-topo/{z}/{x}/{y}.png")
+#async def get_dynamic_topo(z: int, x: int, y: int):
+#    """
+#    Intercepts Leaflet's XYZ tile request, calculates the geographic coordinates,
+#    finds the correct Copernicus DEM S3 URL, and redirects to Titiler to render it.
+#    """
+#    # 1. Get the geographical center of the requested map tile
+#    bounds = mercantile.bounds(x, y, z)
+#    center_lat = (bounds.north + bounds.south) / 2
+#    center_lng = (bounds.east + bounds.west) / 2
 
     # 2. Format the exact Copernicus S3 grid reference dynamically
-    lat_floor = math.floor(center_lat)
-    lng_floor = math.floor(center_lng)
+#    lat_floor = math.floor(center_lat)
+#    lng_floor = math.floor(center_lng)
+#
+#    lat_str = f"N{lat_floor:02d}" if lat_floor >= 0 else f"S{abs(lat_floor):02d}"
+#    lng_str = f"E{lng_floor:03d}" if lng_floor >= 0 else f"W{abs(lng_floor):03d}"
 
-    lat_str = f"N{lat_floor:02d}" if lat_floor >= 0 else f"S{abs(lat_floor):02d}"
-    lng_str = f"E{lng_floor:03d}" if lng_floor >= 0 else f"W{abs(lng_floor):03d}"
+#    folder = f"Copernicus_DSM_COG_10_{lat_str}_00_{lng_str}_00_DEM"
+#    s3_url = f"s3://copernicus-dem-30m/{folder}/{folder}.tif"
 
-    folder = f"Copernicus_DSM_COG_10_{lat_str}_00_{lng_str}_00_DEM"
-    s3_url = f"s3://copernicus-dem-30m/{folder}/{folder}.tif"
-
-    # 3. Redirect internally to the Titiler endpoint to do the heavy lifting
-    titiler_url = f"/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url={s3_url}&colormap_name=cfastie&rescale=0,1500"
+#    # 3. Redirect internally to the Titiler endpoint to do the heavy lifting
+#    titiler_url = f"/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url={s3_url}&colormap_name=cfastie&rescale=0,1500"
     
-    return RedirectResponse(url=titiler_url)
+#    return RedirectResponse(url=titiler_url)
 
 
 DATA_DIR = Path("/app/data")
 DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# Grab secrets from the environment injected by Docker
+SENTINEL_INSTANCE_ID = os.getenv("SENTINEL_INSTANCE_ID")
+FIRMS_API_KEY = os.getenv("FIRMS_API_KEY")
+
+# Grab admin credentials with fallbacks just in case the .env is missing
+ADMIN_USER = os.getenv("ADMIN_USER", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
+
+# --- SECURITY SETUP ---
+security = HTTPBasic()
+
+def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
+    """Checks the provided username and password securely."""
+    correct_username = secrets.compare_digest(credentials.username, ADMIN_USER)
+    correct_password = secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
+# ----------------------
 
 @app.get("/api/layers")
 async def get_layers():
@@ -84,7 +113,7 @@ async def get_layers():
             files.append(f.name)
     return {"layers": sorted(files)}
 
-@app.post("/api/upload")
+@app.post("/api/upload", dependencies=[Depends(verify_admin)])
 async def upload_file(files: List[UploadFile] = File(...)):
     """Handles multiple KML and KMZ uploads, automatically extracting KMZ to KML."""
     results = []
@@ -131,7 +160,7 @@ async def get_settings():
             return {}
     return {}
 
-@app.post("/api/settings")
+@app.post("/api/settings", dependencies=[Depends(verify_admin)])
 async def save_settings(settings: Dict[str, Any] = Body(...)):
     """Saves application settings and styles to settings.json."""
     settings_path = DATA_DIR / "settings.json"
@@ -180,7 +209,7 @@ def download_file(url: str, dest: Path) -> bool:
         print(f"Error downloading {url}: {e}")
         return False
 
-@app.post("/api/process_updates")
+@app.post("/api/process_updates", dependencies=[Depends(verify_admin)])
 def process_updates(
     new_ap_url: str = Form(""),
     new_sm_url: str = Form(""),
@@ -355,7 +384,7 @@ def process_updates(
     return {"results": results}
 
 
-@app.delete("/api/layers/{filename}")
+@app.delete("/api/layers/{filename}", dependencies=[Depends(verify_admin)])
 async def delete_layer(filename: str):
     """Safeguards the file by renaming it with a .deleted extension."""
     file_path = DATA_DIR / filename
@@ -372,6 +401,46 @@ app.mount("/data", StaticFiles(directory="/app/data"), name="data")
 @app.get("/")
 async def serve_frontend():
     return FileResponse("static/index.html")
+
+@app.get("/api/sentinel")
+def proxy_sentinel(request: Request):
+    """Proxies Sentinel Hub WMS requests to hide the Instance ID."""
+    # Grab the exact parameters Leaflet sent (e.g. bbox, width, height)
+    query_string = request.url.query
+    url = f"https://sh.dataspace.copernicus.eu/ogc/wms/{SENTINEL_INSTANCE_ID}?{query_string}"
+    
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req) as response:
+            data = response.read()
+            # WMS GetMap returns images (png/jpeg), GetFeatureInfo returns JSON
+            content_type = response.headers.get('Content-Type', 'image/png')
+            return Response(content=data, media_type=content_type)
+    except Exception as e:
+        logger.error(f"Sentinel Proxy Error: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching satellite data")
+
+@app.get("/api/firms/{source}/{bbox}")
+def proxy_firms(source: str, bbox: str):
+    """Securely proxies NASA FIRMS requests so the API key never reaches the browser."""
+    url = f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{FIRMS_API_KEY}/{source}/{bbox}/2"
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req) as response:
+            csv_data = response.read()
+            return Response(content=csv_data, media_type="text/csv")
+    except Exception as e:
+        logger.error(f"NASA FIRMS Proxy Error: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching thermal data")
+
+@app.get("/admin", dependencies=[Depends(verify_admin)])
+async def serve_admin():
+    return FileResponse("static/index.html")
+
+# Serve the admin script ONLY to authenticated users
+@app.get("/admin_assets/map-admin.js", dependencies=[Depends(verify_admin)])
+async def serve_admin_js():
+    return FileResponse("admin_assets/map-admin.js")
 
 @app.get("/maplibre")
 async def serve_maplibre():
