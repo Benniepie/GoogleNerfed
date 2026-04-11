@@ -147,7 +147,7 @@
         .layer-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
         .layer-list::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
-        .layer-item { display: flex; align-items: center; margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 0px; border-radius: 6px; cursor: grab; transition: background-color 0.2s, transform 0.2s; }
+        .layer-item { display: flex; align-items: center; padding: 0px; border-radius: 6px; cursor: grab; transition: background-color 0.2s, transform 0.2s; }
         .layer-item.dragging { opacity: 0.5; transform: scale(0.98); }
         .layer-item.drag-over { border-top: 2px solid var(--accent-color); }
         .layer-item input[type="checkbox"] { cursor: pointer; accent-color: var(--accent-color); }
@@ -161,7 +161,7 @@
         .icon-btn:hover { background: rgba(255,255,255,0.1); }
         .icon-btn.delete:hover { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
 
-        .upload-section { border-top: 1px solid var(--border-color); padding-top: 15px; }
+        .upload-section { border-top: 1px solid var(--border-color); }
         .upload-section form { display: flex; flex-direction: column; gap: 10px; }
         
         input[type="file"] { font-size: 0.85rem; color: var(--text-color); }
@@ -311,7 +311,7 @@
         <div class="section-content">
             <div id="frontlineLayerList" class="layer-list layer-scroll"></div>            
             
-            <div id="timelineContainer" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); text-align: center;">
+            <div id="timelineContainer" style="text-align: center;">
                 <label style="font-size: 0.85rem; display: block; margin-bottom: 5px;">Map Timeline: <span id="currentDateDisplay" style="font-weight: bold; color: var(--accent-color);">Latest</span></label>
                 <input type="range" id="timelineSlider" min="0" max="0" value="0" style="width: 100%;" disabled>
             </div>
