@@ -120,7 +120,7 @@
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.id = 'chk_' + filename;
-                    checkbox.checked = true;
+                    checkbox.checked = isFrontline;
                     
                     const label = document.createElement('label');
                     label.htmlFor = 'chk_' + filename;
@@ -283,7 +283,10 @@
                     map.removeLayer(activeLayers[filename]);
                 }
 
-                layer.addTo(map);
+                const chk = document.getElementById('chk_' + filename);
+                if (!chk || chk.checked) {
+                    layer.addTo(map);
+                }
                 activeLayers[filename] = layer;
 
             } catch (err) {
@@ -565,8 +568,14 @@
                     if (layerItemDiv) layerItemDiv.style.display = 'flex'; // Show in UI list
 
                     const isChecked = chk?.checked;
-                    if (isChecked && !map.hasLayer(activeLayers[filename])) {
-                        map.addLayer(activeLayers[filename]);
+                    if (isChecked) {
+                        if (!map.hasLayer(activeLayers[filename])) {
+                            map.addLayer(activeLayers[filename]);
+                        }
+                    } else {
+                        if (map.hasLayer(activeLayers[filename])) {
+                            map.removeLayer(activeLayers[filename]);
+                        }
                     }
                 } else {
                     if (layerItemDiv) layerItemDiv.style.display = 'none'; // Hide from UI list
