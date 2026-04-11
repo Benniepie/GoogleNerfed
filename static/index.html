@@ -92,7 +92,7 @@
         .collapsed { display: none !important; }
    
 /* --- 4. SCROLLABLE LAYER LISTS (Mobile Friendly) --- */
-        .layer-list { display: flex; flex-direction: column; gap: 2px; }
+        .layer-list { display: flex; flex-direction: column; gap: 8px; }
         .layer-scroll {
             max-height: 180px; /* Forces scrolling if too many layers are open */
             overflow-y: auto;
@@ -140,14 +140,14 @@
         .basemap-switcher { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; }
         .basemap-switcher label { font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
-        .layer-list { max-height: 250px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px; }
+        .layer-list { max-height: 250px; overflow-y: auto; margin-bottom: 0px; padding-right: 5px; }
         
         /* Custom Scrollbar for layer list */
         .layer-list::-webkit-scrollbar { width: 6px; }
         .layer-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
         .layer-list::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
-        .layer-item { display: flex; align-items: center; margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; cursor: grab; transition: background-color 0.2s, transform 0.2s; }
+        .layer-item { display: flex; align-items: center; margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 0px; border-radius: 6px; cursor: grab; transition: background-color 0.2s, transform 0.2s; }
         .layer-item.dragging { opacity: 0.5; background: rgba(255,255,255,0.1); transform: scale(0.98); }
         .layer-item.drag-over { border-top: 2px solid var(--accent-color); }
         .layer-item input[type="checkbox"] { cursor: pointer; accent-color: var(--accent-color); }
