@@ -61,12 +61,7 @@
 
                 for (const filename of finalSortedLayers) {
                     const isFrontline = filename.startsWith('AP Map') || filename.startsWith('AP Pins') || filename.startsWith('SM Map') || filename.startsWith('SM Pins');
-                    if (isFrontline) {
-                        checkbox.checked = true;
-                        fetchAndAddKML(filename); // Load it immediately
-                    } else {
-                        checkbox.checked = false; // Static stays off
-                    }
+
                     const item = document.createElement('div');
                     item.className = 'layer-item';
                     item.dataset.filename = filename;
