@@ -4,12 +4,12 @@
             try {
                 const response = await fetch('/api/layers');
                 const data = await response.json();
-                
+
                 const frontlineListEl = document.getElementById('frontlineLayerList');
                 const staticListEl = document.getElementById('staticLayerList');
                 frontlineListEl.innerHTML = '';
                 staticListEl.innerHTML = '';
-                
+
                 if (data.layers.length === 0) {
                     frontlineListEl.innerHTML = '<em style="font-size: 0.9rem; color: #94a3b8;">No layers available.</em>';
                     staticListEl.innerHTML = '<em style="font-size: 0.9rem; color: #94a3b8;">No layers available.</em>';
@@ -100,9 +100,9 @@
 
                                 const draggingEl = document.querySelector(`.layer-item[data-filename="${draggingFile}"]`);
                                 if (!draggingEl) return;
-                        
+
                                 const layerList = document.getElementById('staticLayerList');
-                            
+
                                 // Determine whether to insert before or after
                                 const allItems = [...layerList.querySelectorAll('.layer-item')];
                                 const dropIdx = allItems.indexOf(item);
@@ -116,12 +116,12 @@
                             });
                         }
                     }
-                    
+
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.id = 'chk_' + filename;
                     checkbox.checked = true;
-                    
+
                     const label = document.createElement('label');
                     label.htmlFor = 'chk_' + filename;
                     label.textContent = filename;
@@ -144,7 +144,7 @@
                         deleteBtn.innerHTML = '🗑️';
                         deleteBtn.title = 'Delete Layer';
                         deleteBtn.onclick = () => deleteLayer(filename);
-                        
+
                         actionsDiv.appendChild(styleBtn);
                         actionsDiv.appendChild(deleteBtn);
                         item.appendChild(actionsDiv);
@@ -226,7 +226,7 @@
             try {
                 const response = await fetch(`/data/${filename}?t=${new Date().getTime()}`);
                 const kmlText = await response.text();
-                
+
                 const parser = new DOMParser();
                 const xmlDoc = parser.parseFromString(kmlText, "text/xml");
                 const geoJsonData = toGeoJSON.kml(xmlDoc);
@@ -252,12 +252,12 @@
                     // Style for points/markers
                     pointToLayer: function (feature, latlng) {
                         const style = getFeatureStyle(feature);
-                        
+
                         // CHANGE 1: Use L.circle instead of L.circleMarker
                         return L.circle(latlng, {
-                            // CHANGE 2: Radius is now in METRES. 
+                            // CHANGE 2: Radius is now in METRES.
                             // Try 50, 100, or 200 depending on how spaced out they are!
-                            radius: 50, 
+                            radius: 50,
                             fillColor: style.color,
                             color: '#ffffff',
                             weight: 1,
@@ -446,7 +446,7 @@
             layers: 'VIIRS_SNPP_Thermal_Anomalies_375m_All',
             format: 'image/png', transparent: true, zIndex: 100
         });
-        
+
         const noaa20Raster = L.tileLayer.wms("https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi", {
             layers: 'VIIRS_NOAA20_Thermal_Anomalies_375m_All',
             format: 'image/png', transparent: true, zIndex: 100
@@ -585,10 +585,10 @@
             const now = new Date();
             // Longitude offset in hours (15 degrees = 1 hour)
             const lngOffsetHours = lng / 15;
-            
+
             // Sentinel-2 crosses equator at ~10:30 AM Local Solar Time
             // VIIRS (SNPP, NOAA-20, NOAA-21) cross at ~13:30 PM Local Solar Time
-            const s2TargetLST = 10.5; 
+            const s2TargetLST = 10.5;
             const viirsTargetLST = 13.5;
 
             // Calculate UTC times for today's passes
@@ -653,14 +653,14 @@
                 <div style="min-width: 220px;">
                     <h3 style="margin: 0 0 8px 0; border-bottom: 1px solid #475569; padding-bottom: 4px;">Location Intelligence</h3>
                     <p style="margin: 4px 0; font-size: 0.85rem;"><b>Lat:</b> ${lat.toFixed(4)}<br><b>Lng:</b> ${lng.toFixed(4)}</p>
-                    
+
                     <h4 style="margin: 10px 0 4px 0; color: #93c5fd;">🛰️ Estimated Daily Passes</h4>
                     <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem;">
                         <li><b>Sentinel-2:</b> ~${estimates.sentinel}</li>
                         <li><b>FIRMS (VIIRS):</b> ~${estimates.viirs}</li>
                     </ul>
                     <em style="font-size: 0.75rem; color: #94a3b8;">*Sun-synchronous estimates based on longitude. High latitudes (e.g. Ukraine) receive multiple overlapping swath looks.</em>
-                    
+
                     <div id="wmsInfo" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #475569; display: none;">
                         <h4 style="margin: 0 0 4px 0; color: #22c55e;">📸 Sentinel Image Data</h4>
                         <div id="wmsLoading">Querying Copernicus...</div>
@@ -676,15 +676,15 @@
             // If the Sentinel layer is currently active on the map, fetch the image date
             if (map.hasLayer(layers.sentinelLive) && map.getZoom() > 9) {
                 document.getElementById('wmsInfo').style.display = 'block';
-                
+
                 const url = getFeatureInfoUrl(map, layers.sentinelLive, e.latlng);
-                
+
                 try {
                     const response = await fetch(url);
                     if (!response.ok) throw new Error("Network response was not ok");
-                    
+
                     const data = await response.json();
-                    
+
                     if (data && data.features && data.features.length > 0) {
                         // Sentinel Hub returns the date in the properties object
                         const date = data.features[0].properties.date || "Date unknown";
@@ -766,6 +766,8 @@
         let isRightMouseDown = false;
         let didScrub = false;
         let scrubTimeout;
+        let timelineOriginalParent = null;
+        let timelineOriginalNextSibling = null;
 
         // 1. Track Right Mouse Button
         document.addEventListener('mousedown', (e) => {
@@ -781,7 +783,7 @@
                 isRightMouseDown = false;
                 map.scrollWheelZoom.enable(); // Re-enable Leaflet zoom
                 // Brief delay to prevent the context menu from flashing if they scrubbed
-                setTimeout(() => { didScrub = false; }, 50); 
+                setTimeout(() => { didScrub = false; }, 50);
             }
         });
 
@@ -800,13 +802,13 @@
                 if (!slider || slider.max === "0") return; // Exit if no timeline exists
 
                 // Determine direction (Up = Future, Down = Past)
-                const step = e.deltaY > 0 ? -1 : 1; 
+                const step = e.deltaY > 0 ? -1 : 1;
                 let newValue = parseInt(slider.value) + step;
-                
+
                 // Clamp values
                 if (newValue < parseInt(slider.min)) newValue = parseInt(slider.min);
                 if (newValue > parseInt(slider.max)) newValue = parseInt(slider.max);
-                
+
                 if (slider.value != newValue) {
                     slider.value = newValue;
                     slider.dispatchEvent(new Event('input')); // Trigger map update
@@ -815,14 +817,28 @@
                 // 4. Floating UI Logic (If panel is closed, pop the timeline into the center of the screen)
                 const panel = document.getElementById('controlPanel');
                 const timelineContainer = document.getElementById('timelineContainer');
-                
+
                 if (!panel.classList.contains('open')) {
+                    if (!timelineOriginalParent) {
+                        timelineOriginalParent = timelineContainer.parentNode;
+                        timelineOriginalNextSibling = timelineContainer.nextSibling;
+                        document.body.appendChild(timelineContainer);
+                    }
                     timelineContainer.classList.add('scrubbing-float');
-                    
+
                     // Reset the disappearance timer
                     clearTimeout(scrubTimeout);
                     scrubTimeout = setTimeout(() => {
                         timelineContainer.classList.remove('scrubbing-float');
+                        if (timelineOriginalParent) {
+                            if (timelineOriginalNextSibling) {
+                                timelineOriginalParent.insertBefore(timelineContainer, timelineOriginalNextSibling);
+                            } else {
+                                timelineOriginalParent.appendChild(timelineContainer);
+                            }
+                            timelineOriginalParent = null;
+                            timelineOriginalNextSibling = null;
+                        }
                     }, 1500); // Hides 1.5s after they stop scrolling
                 }
             }

@@ -197,6 +197,16 @@
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;
         }
+        .scrubbing-float {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            z-index: 9999 !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            color: var(--text-color);
+        }
+
         /* Admin Modals */
         .modal-content { 
             background: rgba(20, 20, 25, 0.45); 
