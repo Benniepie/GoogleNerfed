@@ -43,7 +43,7 @@
             right: -340px; /* Hidden off-screen by default */
             width: 320px;
             height: 100vh;
-            background: rgba(20, 20, 25, 0.75); /* Translucent dark */
+            background: rgba(20, 20, 25, 0.45); /* Translucent dark */
             backdrop-filter: blur(15px); /* Glassmorphism */
             -webkit-backdrop-filter: blur(15px);
             border-left: 1px solid rgba(255, 255, 255, 0.1);
@@ -103,7 +103,7 @@
 /* --- 5. YOUR FUNCTIONAL ITEMS (Kept exactly as they were) --- */
         .layer-item {
             display: flex; align-items: center; justify-content: space-between;
-            background: rgba(255,255,255,0.05); padding: 5px 8px; border-radius: 4px;
+            background: rgba(255,255,255,0.05); padding: 3px 6px; border-radius: 4px;
             font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.05);
         }
         .layer-actions { display: flex; gap: 4px; }
@@ -198,7 +198,19 @@
             background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;
         }
         /* Admin Modals */
-        .modal-content { background: #1e1e24; padding: 20px; border-radius: 8px; width: 300px; color: white; border: 1px solid #475569; text-align: center; }
+        .modal-content { 
+            background: rgba(20, 20, 25, 0.45); 
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px);
+            padding: 20px; 
+            border-radius: 8px; 
+            width: 300px; 
+            color: white; 
+            border: 1px solid rgba(255,255,255,0.2); 
+            text-align: center; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        
         .color-options { display: flex; gap: 10px; justify-content: center; margin: 15px 0; flex-wrap: wrap; }
         .color-swatch { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
         .color-swatch:hover { transform: scale(1.1); }
@@ -211,9 +223,7 @@
     <div class="control-panel" id="controlPanel">
         <h2>
             map.atpgeo.com
-            <div>
-                <button class="icon-btn" id="collapseBtn" title="Toggle Panel" style="font-size: 1rem;">➖</button>
-            </div>
+
         </h2>
 
         <div class="section-header" onclick="toggleSection(this)">

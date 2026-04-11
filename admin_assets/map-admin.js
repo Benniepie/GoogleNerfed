@@ -5,10 +5,10 @@
 
 // Add the Settings Button to the Admin Panel
 document.getElementById('admin-panel-container').innerHTML = `
-    <div class="section-header collapsed" onclick="toggleSection(this)">
+    <div class="section-header " onclick="toggleSection(this)">
         Map Admin <span class="toggle-icon">▼</span>
     </div>
-    <div class="section-content collapsed upload-section" style="border-top: none; padding-top: 10px;">
+    <div class="section-content  upload-section" style="border-top: none; padding-top: 10px;">
         <form id="uploadForm">
             <input type="file" id="kmlFile" accept=".kml,.kmz" multiple required />
             <button type="submit" id="uploadBtn" class="primary-btn">Upload KML / KMZ</button>

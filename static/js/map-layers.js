@@ -216,6 +216,7 @@
                 // Force dispatch the event so the map actually updates to only show the latest
                 const slider = document.getElementById('timelineSlider');
                 slider.dispatchEvent(new Event('input'));
+                document.getElementById('timelineSlider').dispatchEvent(new Event('input'));
             } catch (err) {
                 console.error("Failed to load layers:", err);
             }

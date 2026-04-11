@@ -1,12 +1,11 @@
 
     
-        function toggleSection(header) {
+function toggleSection(header) {
             const content = header.nextElementSibling;
             const sectionName = header.innerText.trim();
-            const isOpening = header.classList.contains('collapsed');
+            const isOpening = content.classList.contains('collapsed'); // Check content, not header!
 
-            // 1. Toggle the clicked section
-            header.classList.toggle('collapsed');
+            // 1. Toggle ONLY the content
             content.classList.toggle('collapsed');
             header.querySelector('.toggle-icon').innerText = isOpening ? '▼' : '▶';
 
@@ -15,16 +14,15 @@
                 const allHeaders = document.querySelectorAll('.section-header');
                 allHeaders.forEach(h => {
                     const name = h.innerText.trim();
-                    if (h === header) return; // Don't close the one we just clicked!
+                    if (h === header) return; 
 
                     let shouldClose = false;
                     if (sectionName.includes('Front Line') && name.includes('Static')) shouldClose = true;
                     if (sectionName.includes('Map Admin') && (name.includes('Front Line') || name.includes('Base Map') || name.includes('Static'))) shouldClose = true;
 
                     if (shouldClose) {
-                        h.classList.add('collapsed');
-                        h.nextElementSibling.classList.add('collapsed');
-                        h.querySelector('.toggle-icon').innerText = '▶';
+                        h.nextElementSibling.classList.add('collapsed'); // Hide content
+                        h.querySelector('.toggle-icon').innerText = '▶'; // Reset arrow
                     }
                 });
             }
@@ -249,7 +247,6 @@
         })
         .addTo(map);
 
-        L.Control.geocoder({ position: 'topright' }).addTo(map);
 
         // Native Leaflet Control for the Hamburger Button
         const HamburgerControl = L.Control.extend({
@@ -335,8 +332,3 @@
         //     }
         // });
 
-        document.getElementById('collapseBtn').addEventListener('click', () => {
-            const panel = document.getElementById('controlPanel');
-            const isCollapsed = panel.classList.toggle('collapsed');
-            document.getElementById('collapseBtn').innerHTML = isCollapsed ? '➕' : '➖';
-        });        
