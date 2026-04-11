@@ -1,9 +1,33 @@
 
     
         function toggleSection(header) {
-            header.classList.toggle('collapsed');
             const content = header.nextElementSibling;
+            const sectionName = header.innerText.trim();
+            const isOpening = header.classList.contains('collapsed');
+
+            // 1. Toggle the clicked section
+            header.classList.toggle('collapsed');
             content.classList.toggle('collapsed');
+            header.querySelector('.toggle-icon').innerText = isOpening ? '▼' : '▶';
+
+            // 2. Auto-close logic
+            if (isOpening) {
+                const allHeaders = document.querySelectorAll('.section-header');
+                allHeaders.forEach(h => {
+                    const name = h.innerText.trim();
+                    if (h === header) return; // Don't close the one we just clicked!
+
+                    let shouldClose = false;
+                    if (sectionName.includes('Front Line') && name.includes('Static')) shouldClose = true;
+                    if (sectionName.includes('Map Admin') && (name.includes('Front Line') || name.includes('Base Map') || name.includes('Static'))) shouldClose = true;
+
+                    if (shouldClose) {
+                        h.classList.add('collapsed');
+                        h.nextElementSibling.classList.add('collapsed');
+                        h.querySelector('.toggle-icon').innerText = '▶';
+                    }
+                });
+            }
         }
         // 2. Base Maps Setup
 	    const esriAttr = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
@@ -225,7 +249,25 @@
         })
         .addTo(map);
 
+        L.Control.geocoder({ position: 'topright' }).addTo(map);
 
+        // Native Leaflet Control for the Hamburger Button
+        const HamburgerControl = L.Control.extend({
+            options: { position: 'topright' },
+            onAdd: function () {
+                const div = L.DomUtil.create('div', 'hamburger-btn');
+                div.innerHTML = '☰';
+                div.title = "Toggle Map Controls";
+                
+                L.DomEvent.disableClickPropagation(div);
+                
+                div.onclick = function() {
+                    document.getElementById('controlPanel').classList.toggle('open');
+                };
+                return div;
+            }
+        });
+        map.addControl(new HamburgerControl());
 
 
 

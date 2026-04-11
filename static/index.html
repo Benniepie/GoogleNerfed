@@ -36,21 +36,29 @@
         body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #1a1a1a; }
         #map { width: 100%; height: 100%; }
         
+        /* --- 2. THE GLASSMORPHISM SLIDE-OUT PANEL --- */
         .control-panel {
-            position: absolute;
-            top: 20px;
-            right: 20px;
+            position: fixed;
+            top: 0;
+            right: -340px; /* Hidden off-screen by default */
             width: 320px;
-            background: var(--bg-color);
-            color: var(--text-color);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            z-index: 1000;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: 100vh;
+            background: rgba(20, 20, 25, 0.75); /* Translucent dark */
+            backdrop-filter: blur(15px); /* Glassmorphism */
+            -webkit-backdrop-filter: blur(15px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            box-sizing: border-box;
+            z-index: 2000;
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth slide */
+            color: #f8fafc;
         }
+
+        .control-panel.open {
+            right: 0; /* Slides into view when this class is added via the Hamburger */
+        }/* --- 2. THE GLASSMORPHISM SLIDE-OUT PANEL --- */
+
+
 
         .control-panel h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
         
@@ -64,45 +72,69 @@
             width: auto;
         }
 
-        /* Collapsible Sections */
+        /* --- 3. ACCORDION SECTIONS --- */
         .section-header {
-            font-size: 1rem;
-            font-weight: bold;
-            padding: 10px;
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            margin-bottom: 5px;
+            padding: 8px 12px;
             cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            margin-top: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             transition: background 0.2s;
         }
         .section-header:hover { background: rgba(255, 255, 255, 0.1); }
-        .section-content {
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border-color);
-            border-top: none;
-            border-radius: 0 0 6px 6px;
-            background: rgba(0, 0, 0, 0.2);
-            display: block; /* Default open */
+        .section-content { padding: 10px 5px; display: flex; flex-direction: column; gap: 8px; }
+        .collapsed { display: none !important; }
+   
+/* --- 4. SCROLLABLE LAYER LISTS (Mobile Friendly) --- */
+        .layer-list { display: flex; flex-direction: column; gap: 8px; }
+        .layer-scroll {
+            max-height: 180px; /* Forces scrolling if too many layers are open */
+            overflow-y: auto;
+            padding-right: 5px;
         }
-        .section-content.collapsed {
-            display: none;
+        .layer-scroll::-webkit-scrollbar { width: 6px; }
+        .layer-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+/* --- 5. YOUR FUNCTIONAL ITEMS (Kept exactly as they were) --- */
+        .layer-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255,255,255,0.05); padding: 5px 8px; border-radius: 4px;
+            font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.05);
         }
-        .section-header.collapsed {
-            margin-bottom: 15px;
-            border-radius: 6px;
+        .layer-actions { display: flex; gap: 4px; }
+        .color-box { width: 14px; height: 14px; display: inline-block; border-radius: 3px; margin-right: 6px; border: 1px solid rgba(255,255,255,0.3); }
+        .icon-btn { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 2px 4px; font-size: 1rem; transition: color 0.2s; }
+        .icon-btn:hover { color: white; }
+        .icon-btn.delete:hover { color: #ef4444; }
+        
+        .primary-btn { background: #3b82f6; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        .primary-btn:hover { opacity: 0.9; }
+        .upload-section { border-top: 1px solid #334155; margin-top: 15px; padding-top: 15px; }
+        .status-msg { margin-top: 8px; font-size: 0.85rem; color: #10b981; display: none; }
+
+ /* --- 6. NEW UI ELEMENTS (Hamburger & Scrubbing) --- */
+        .hamburger-btn {
+            background: rgba(30, 30, 35, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white; width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: background 0.2s;
         }
-        .section-header .toggle-icon {
-            font-size: 0.8rem;
-            transition: transform 0.3s;
+        .hamburger-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+        .scrubbing-float {
+            position: fixed !important; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(20, 20, 25, 0.85) !important; padding: 15px 25px !important;
+            border-radius: 12px; z-index: 3000; width: 400px; border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
-        .section-header.collapsed .toggle-icon {
-            transform: rotate(-90deg);
-        }
+
 
         /* Base Map Switcher */
         .basemap-switcher { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; }
@@ -165,10 +197,8 @@
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;
         }
-        .modal-content {
-            background: var(--bg-color); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);
-            color: white; width: 250px; text-align: center; backdrop-filter: blur(10px);
-        }
+        /* Admin Modals */
+        .modal-content { background: #1e1e24; padding: 20px; border-radius: 8px; width: 300px; color: white; border: 1px solid #475569; text-align: center; }
         .color-options { display: flex; gap: 10px; justify-content: center; margin: 15px 0; flex-wrap: wrap; }
         .color-swatch { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
         .color-swatch:hover { transform: scale(1.1); }
@@ -269,8 +299,7 @@
             Front Line Tracker <span class="toggle-icon">▼</span>
         </div>
         <div class="section-content">
-            <div class="layer-list" id="frontlineLayerList" style="margin-bottom: 0;">
-                <em style="font-size: 0.9rem; color: #94a3b8;">Loading layers...</em>
+            <div id="frontlineLayerList" class="layer-list layer-scroll"></div>                <em style="font-size: 0.9rem; color: #94a3b8;">Loading layers...</em>
             </div>
             <div id="timelineContainer" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); text-align: center;">
                 <label style="font-size: 0.85rem; display: block; margin-bottom: 5px;">Map Timeline: <span id="currentDateDisplay" style="font-weight: bold; color: var(--accent-color);">Latest</span></label>
@@ -282,7 +311,7 @@
             Static Data Layers <span class="toggle-icon">▼</span>
         </div>
         <div class="section-content collapsed">
-            <div class="layer-list" id="staticLayerList" style="margin-bottom: 0;">
+            <div id="staticLayerList" class="layer-list layer-scroll"></div>
                 <em style="font-size: 0.9rem; color: #94a3b8;">Loading layers...</em>
             </div>
         </div>
