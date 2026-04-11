@@ -231,7 +231,7 @@ function toggleSection(header) {
             defaultMarkGeocode: false,
             placeholder: "Search location...",
             collapsed: true,
-            position: 'topleft'
+            position: 'topright'
         })
         .on('markgeocode', function(e) {
             const bbox = e.geocode.bbox;
