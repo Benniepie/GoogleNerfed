@@ -201,6 +201,8 @@
             color: white !important;
             background: transparent !important;
             height: 40px !important;
+            line-height: 40px !important;
+            margin: 0 !important;
             padding: 0 10px !important;
         }
         .leaflet-control-geocoder-form input::placeholder {
@@ -214,9 +216,20 @@
             border-bottom-left-radius: 8px !important;
             border-bottom-right-radius: 8px !important;
             color: white !important;
+            width: 100% !important;
         }
         .leaflet-control-geocoder-alternatives li {
             border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+            white-space: normal !important;
+            height: auto !important;
+            padding: 8px !important;
+        }
+        .leaflet-control-geocoder-alternatives li a {
+            height: auto !important;
+            line-height: 1.4 !important;
+            display: block !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
         }
         .leaflet-control-geocoder-alternatives li:hover,
         .leaflet-control-geocoder-selected {
