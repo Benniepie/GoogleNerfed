@@ -14,9 +14,9 @@ document.getElementById('admin-panel-container').innerHTML = `
             <button type="submit" id="uploadBtn" class="primary-btn">Upload KML / KMZ</button>
             <div id="statusMsg" class="status-msg">Upload complete!</div>
         </form>
-        <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; margin-top: 10px; background: #8b5cf6;">🤖 Automate Map Update</button>
-        <button class="primary-btn" onclick="openSettingsModal()" style="width: 100%; margin-top: 10px; background: #0ea5e9;">⚙️ Map Settings</button>
-        <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-top: 10px; background: var(--border-color);">⬇️ Export Displayed Data</button>
+        <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; background: #8b5cf6;">🤖 Automate Map Update</button>
+        <button class="primary-btn" onclick="openSettingsModal()" style="width: 100%; background: #0ea5e9;">⚙️ Map Settings</button>
+        <button class="primary-btn" onclick="exportKML()" style="width: 100%; background: var(--border-color);">⬇️ Export Displayed Data</button>
     </div>
 `;
 
