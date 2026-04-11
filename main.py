@@ -396,7 +396,7 @@ async def delete_layer(filename: str):
     return {"error": "File not found"}
 
 # Serve the data directory so the frontend can fetch the KML files
-app.mount("data", StaticFiles(directory="/app/data"), name="data")
+app.mount("/data", StaticFiles(directory="/app/data"), name="data")
 
 # Serve the frontend HTML
 @app.get("/")
