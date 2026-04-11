@@ -128,6 +128,99 @@
         }
         .hamburger-btn:hover { background: rgba(255, 255, 255, 0.2); }
 
+        /* Customizing Leaflet Bars (Zoom) to match Hamburger */
+        .leaflet-bar {
+            background: rgba(30, 30, 35, 0.85) !important;
+            backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important;
+            overflow: hidden;
+        }
+        .leaflet-bar a {
+            background-color: transparent !important;
+            color: white !important;
+            width: 40px !important;
+            height: 40px !important;
+            line-height: 40px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 1.2rem !important;
+            font-weight: bold !important;
+            transition: background 0.2s !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+        .leaflet-bar a:hover {
+            background: rgba(255, 255, 255, 0.2) !important;
+            color: white !important;
+        }
+        .leaflet-bar a:last-child {
+            border-bottom: none !important;
+        }
+        .leaflet-control-zoom-in, .leaflet-control-zoom-out {
+            text-decoration: none !important;
+        }
+
+        /* Customizing Geocoder to match Hamburger */
+        .leaflet-control-geocoder {
+            background: rgba(30, 30, 35, 0.85) !important;
+            backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important;
+            transition: background 0.2s;
+            color: white !important;
+        }
+        .leaflet-control-geocoder:hover {
+            background: rgba(50, 50, 55, 0.85) !important;
+        }
+
+        .leaflet-control-geocoder-icon {
+            background-color: transparent !important;
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 8px !important;
+            filter: invert(1) brightness(2) !important;
+        }
+
+        .leaflet-control-geocoder-icon:hover {
+            background: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* Expanded geocoder styling */
+        .leaflet-control-geocoder-expanded {
+            background: rgba(30, 30, 35, 0.95) !important;
+        }
+        .leaflet-control-geocoder-form input {
+            color: white !important;
+            background: transparent !important;
+            height: 40px !important;
+            padding: 0 10px !important;
+        }
+        .leaflet-control-geocoder-form input::placeholder {
+            color: #aaa !important;
+        }
+
+        /* Geocoder results list */
+        .leaflet-control-geocoder-alternatives {
+            background: rgba(30, 30, 35, 0.95) !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-bottom-left-radius: 8px !important;
+            border-bottom-right-radius: 8px !important;
+            color: white !important;
+        }
+        .leaflet-control-geocoder-alternatives li {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+        .leaflet-control-geocoder-alternatives li:hover,
+        .leaflet-control-geocoder-selected {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        .leaflet-control-geocoder-address-context {
+            color: #aaa !important;
+        }
+
         .scrubbing-float {
             position: fixed !important;
             bottom: 90px !important;
