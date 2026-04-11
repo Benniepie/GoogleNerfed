@@ -216,6 +216,7 @@
                 // Force dispatch the event so the map actually updates to only show the latest
                 const slider = document.getElementById('timelineSlider');
                 slider.dispatchEvent(new Event('input'));
+                document.getElementById('timelineSlider').dispatchEvent(new Event('input'));
             } catch (err) {
                 console.error("Failed to load layers:", err);
             }
@@ -761,3 +762,68 @@
                 }
             }
         }
+        // --- RIGHT-CLICK TIMELINE SCRUBBER ---
+        let isRightMouseDown = false;
+        let didScrub = false;
+        let scrubTimeout;
+
+        // 1. Track Right Mouse Button
+        document.addEventListener('mousedown', (e) => {
+            if (e.button === 2) {
+                isRightMouseDown = true;
+                didScrub = false;
+                map.scrollWheelZoom.disable(); // Stop Leaflet from zooming
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (e.button === 2) {
+                isRightMouseDown = false;
+                map.scrollWheelZoom.enable(); // Re-enable Leaflet zoom
+                // Brief delay to prevent the context menu from flashing if they scrubbed
+                setTimeout(() => { didScrub = false; }, 50); 
+            }
+        });
+
+        // 2. Block the context menu ONLY if they used the scroll wheel
+        document.addEventListener('contextmenu', (e) => {
+            if (didScrub) e.preventDefault();
+        });
+
+        // 3. The Scrubbing Logic
+        document.addEventListener('wheel', (e) => {
+            if (isRightMouseDown) {
+                e.preventDefault(); // Stop page scrolling
+                didScrub = true;
+
+                const slider = document.getElementById('timelineSlider');
+                if (!slider || slider.max === "0") return; // Exit if no timeline exists
+
+                // Determine direction (Up = Future, Down = Past)
+                const step = e.deltaY > 0 ? -1 : 1; 
+                let newValue = parseInt(slider.value) + step;
+                
+                // Clamp values
+                if (newValue < parseInt(slider.min)) newValue = parseInt(slider.min);
+                if (newValue > parseInt(slider.max)) newValue = parseInt(slider.max);
+                
+                if (slider.value != newValue) {
+                    slider.value = newValue;
+                    slider.dispatchEvent(new Event('input')); // Trigger map update
+                }
+
+                // 4. Floating UI Logic (If panel is closed, pop the timeline into the center of the screen)
+                const panel = document.getElementById('controlPanel');
+                const timelineContainer = document.getElementById('timelineContainer');
+                
+                if (!panel.classList.contains('open')) {
+                    timelineContainer.classList.add('scrubbing-float');
+                    
+                    // Reset the disappearance timer
+                    clearTimeout(scrubTimeout);
+                    scrubTimeout = setTimeout(() => {
+                        timelineContainer.classList.remove('scrubbing-float');
+                    }, 1500); // Hides 1.5s after they stop scrolling
+                }
+            }
+        }, { passive: false }); // Passive: false is required to preventDefault on wheel events

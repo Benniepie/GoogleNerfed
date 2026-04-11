@@ -1,9 +1,31 @@
 
     
-        function toggleSection(header) {
-            header.classList.toggle('collapsed');
+function toggleSection(header) {
             const content = header.nextElementSibling;
+            const sectionName = header.innerText.trim();
+            const isOpening = content.classList.contains('collapsed'); // Check content, not header!
+
+            // 1. Toggle ONLY the content
             content.classList.toggle('collapsed');
+            header.querySelector('.toggle-icon').innerText = isOpening ? '▼' : '▶';
+
+            // 2. Auto-close logic
+            if (isOpening) {
+                const allHeaders = document.querySelectorAll('.section-header');
+                allHeaders.forEach(h => {
+                    const name = h.innerText.trim();
+                    if (h === header) return; 
+
+                    let shouldClose = false;
+                    if (sectionName.includes('Front Line') && name.includes('Static')) shouldClose = true;
+                    if (sectionName.includes('Map Admin') && (name.includes('Front Line') || name.includes('Base Map') || name.includes('Static'))) shouldClose = true;
+
+                    if (shouldClose) {
+                        h.nextElementSibling.classList.add('collapsed'); // Hide content
+                        h.querySelector('.toggle-icon').innerText = '▶'; // Reset arrow
+                    }
+                });
+            }
         }
         // 2. Base Maps Setup
 	    const esriAttr = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
@@ -17,7 +39,10 @@
         // 1. Initialise the Map
         const map = L.map('map', { zoomControl: false, zoomSnap: 0.25, zoomDelta: 0.25 }).setView([49.0, 31.0], 6); // Default view centered on Ukraine
         L.control.zoom({ position: 'bottomright' }).addTo(map);
-
+        // Auto-close the control panel if the user clicks anywhere on the map
+        map.on('click', function() {
+            document.getElementById('controlPanel').classList.remove('open');
+        });
         // --- NEW CUSTOM PANE FIX ---
         map.createPane('hybridLabels');
         map.getPane('hybridLabels').style.zIndex = 250; // Sits above satellite (200) but below KMLs (400)
@@ -226,6 +251,23 @@
         .addTo(map);
 
 
+        // Native Leaflet Control for the Hamburger Button
+        const HamburgerControl = L.Control.extend({
+            options: { position: 'topright' },
+            onAdd: function () {
+                const div = L.DomUtil.create('div', 'hamburger-btn');
+                div.innerHTML = '☰';
+                div.title = "Toggle Map Controls";
+                
+                L.DomEvent.disableClickPropagation(div);
+                
+                div.onclick = function() {
+                    document.getElementById('controlPanel').classList.toggle('open');
+                };
+                return div;
+            }
+        });
+        map.addControl(new HamburgerControl());
 
 
 
@@ -293,8 +335,3 @@
         //     }
         // });
 
-        document.getElementById('collapseBtn').addEventListener('click', () => {
-            const panel = document.getElementById('controlPanel');
-            const isCollapsed = panel.classList.toggle('collapsed');
-            document.getElementById('collapseBtn').innerHTML = isCollapsed ? '➕' : '➖';
-        });        

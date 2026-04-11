@@ -5,18 +5,18 @@
 
 // Add the Settings Button to the Admin Panel
 document.getElementById('admin-panel-container').innerHTML = `
-    <div class="section-header collapsed" onclick="toggleSection(this)">
+    <div class="section-header " onclick="toggleSection(this)">
         Map Admin <span class="toggle-icon">▼</span>
     </div>
-    <div class="section-content collapsed upload-section" style="border-top: none; padding-top: 10px;">
+    <div class="section-content  upload-section" style="border-top: none; padding-top: 10px;">
         <form id="uploadForm">
             <input type="file" id="kmlFile" accept=".kml,.kmz" multiple required />
             <button type="submit" id="uploadBtn" class="primary-btn">Upload KML / KMZ</button>
             <div id="statusMsg" class="status-msg">Upload complete!</div>
         </form>
-        <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; margin-top: 10px; background: #8b5cf6;">🤖 Automate Map Update</button>
-        <button class="primary-btn" onclick="openSettingsModal()" style="width: 100%; margin-top: 10px; background: #0ea5e9;">⚙️ Map Settings</button>
-        <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-top: 10px; background: var(--border-color);">⬇️ Export Displayed Data</button>
+        <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; background: #8b5cf6;">🤖 Automate Map Update</button>
+        <button class="primary-btn" onclick="openSettingsModal()" style="width: 100%; background: #0ea5e9;">⚙️ Map Settings</button>
+        <button class="primary-btn" onclick="exportKML()" style="width: 100%; background: var(--border-color);">⬇️ Export Displayed Data</button>
     </div>
 `;
 
