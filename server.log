@@ -1,13 +1,22 @@
-INFO:     Started server process [214072]
+INFO:     Started server process [89872]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:41300 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:41300 - "GET /js/map-core.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:41310 - "GET /js/map-layers.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:41300 - "GET /api/settings HTTP/1.1" 200 OK
-INFO:     127.0.0.1:41300 - "GET /api/layers HTTP/1.1" 200 OK
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [214072]
+INFO:     Uvicorn running on http://0.0.0.0:3000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:60862 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60862 - "GET /js/map-core.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60872 - "GET /js/measure-tools.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60870 - "GET /js/map-layers.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60872 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60872 - "GET /api/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53024 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53024 - "GET /js/map-core.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53028 - "GET /js/measure-tools.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53026 - "GET /js/map-layers.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53026 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53026 - "GET /api/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37116 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37116 - "GET /js/map-core.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37128 - "GET /js/map-layers.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37134 - "GET /js/measure-tools.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37128 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37128 - "GET /api/layers HTTP/1.1" 200 OK

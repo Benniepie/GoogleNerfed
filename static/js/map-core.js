@@ -40,6 +40,7 @@ function toggleSection(header) {
         const map = L.map('map', { zoomControl: false, zoomSnap: 0.25, zoomDelta: 0.25 }).setView([49.0, 31.0], 6); // Default view centered on Ukraine
         L.control.zoom({ position: 'bottomright' }).addTo(map);
         L.control.scale({ position: 'bottomleft', imperial: true, metric: true }).addTo(map);
+        window.map = map; // Expose map globally for other scripts
 
         // --- NEW CUSTOM PANE FIX ---
         map.createPane('hybridLabels');
