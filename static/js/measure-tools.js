@@ -56,6 +56,14 @@ function initMeasureTools() {
             padding: 4px 8px;
             border-radius: 4px;
         }
+        /* Suppress pointer events on existing vector layers when measuring */
+        .is-measuring .leaflet-interactive {
+            pointer-events: none !important;
+        }
+        /* Ensure finished measurement layers remain interactable to allow opening their popups and editing */
+        .is-measuring .measure-interactive {
+            pointer-events: auto !important;
+        }
     `;
     document.head.appendChild(style);
 
@@ -74,6 +82,8 @@ function toggleMeasureTool(toolName) {
         document.getElementById(`${toolName}Btn`).classList.add('active');
         window.map.getContainer().style.cursor = 'crosshair';
         window.map.doubleClickZoom.disable();
+        // Add class to map container to suppress interactions with other layers
+        window.map.getContainer().classList.add('is-measuring');
     }
 }
 
@@ -95,6 +105,8 @@ function disableMeasureTools() {
     if (window.map) {
         window.map.getContainer().style.cursor = '';
         window.map.doubleClickZoom.enable();
+        // Remove class to restore interactions
+        window.map.getContainer().classList.remove('is-measuring');
     }
 }
 
@@ -102,20 +114,31 @@ function onMapClick(e) {
     if (!window.currentTool) return;
 
     const latlng = e.latlng;
+    const clickPt = window.map.latLngToContainerPoint(latlng);
 
     if (window.currentTool === 'ruler') {
-        // If there are existing points, check if we clicked near the start point
-        if (points.length >= 2) {
-            const startPt = window.map.latLngToContainerPoint([points[0][1], points[0][0]]);
-            const clickPt = window.map.latLngToContainerPoint(latlng);
-            const distPx = Math.sqrt(Math.pow(clickPt.x - startPt.x, 2) + Math.pow(clickPt.y - startPt.y, 2));
+        if (points.length > 0) {
+            // Deduplicate points (ignore rapid double clicks or microscopic mouse movements)
+            const lastPt = window.map.latLngToContainerPoint([points[points.length-1][1], points[points.length-1][0]]);
+            const distFromLastPx = Math.sqrt(Math.pow(clickPt.x - lastPt.x, 2) + Math.pow(clickPt.y - lastPt.y, 2));
 
-            // If click is within 15 pixels of the start point, close the polygon and finish
-            if (distPx <= 15) {
-                // Snap final point to exactly the first point
-                points.push([...points[0]]);
-                finishRuler();
+            // If click is within 5 pixels of the last point, ignore it completely to prevent double click bugs
+            if (distFromLastPx <= 5) {
                 return;
+            }
+
+            // Check if we clicked near the start point to close a polygon
+            if (points.length >= 3) { // Require at least a triangle before allowing closing
+                const startPt = window.map.latLngToContainerPoint([points[0][1], points[0][0]]);
+                const distFromStartPx = Math.sqrt(Math.pow(clickPt.x - startPt.x, 2) + Math.pow(clickPt.y - startPt.y, 2));
+
+                // If click is within 15 pixels of the start point, close the polygon and finish
+                if (distFromStartPx <= 15) {
+                    // Snap final point to exactly the first point
+                    points.push([...points[0]]);
+                    finishRuler();
+                    return;
+                }
             }
         }
 
@@ -155,6 +178,11 @@ function onMapDblClick(e) {
 function updateRulerDrawing() {
     if (currentDrawLayer) {
         window.map.removeLayer(currentDrawLayer);
+        currentDrawLayer = null;
+    }
+    if (currentTooltip) {
+        window.map.removeLayer(currentTooltip);
+        currentTooltip = null;
     }
 
     const drawPoints = [...points];
@@ -165,8 +193,24 @@ function updateRulerDrawing() {
     if (drawPoints.length > 1) {
         const line = turf.lineString(drawPoints);
         currentDrawLayer = L.geoJSON(line, {
-            style: { color: 'red', weight: 2, dashArray: '5, 5' }
+            style: { color: 'red', weight: 2, dashArray: '5, 5' },
+            interactive: false
         }).addTo(window.map);
+
+        if (points.length > 0 && mouseMovePoint) {
+            const lastPoint = turf.point(points[points.length - 1]);
+            const currentPoint = turf.point(mouseMovePoint);
+            const currentLegDistance = turf.distance(lastPoint, currentPoint, {units: 'kilometers'});
+
+            currentTooltip = L.tooltip({
+                permanent: true,
+                direction: 'right',
+                className: 'measure-tooltip'
+            })
+            .setContent(formatLength(currentLegDistance))
+            .setLatLng([mouseMovePoint[1], mouseMovePoint[0]])
+            .addTo(window.map);
+        }
     }
 }
 
@@ -207,7 +251,8 @@ function updateCircleDrawing() {
             const featureCollection = turf.featureCollection([circle, line]);
 
             currentDrawLayer = L.geoJSON(featureCollection, {
-                style: { color: 'red', weight: 2, fillColor: 'red', fillOpacity: 0.2, dashArray: '5, 5' }
+                style: { color: 'red', weight: 2, fillColor: 'red', fillOpacity: 0.2, dashArray: '5, 5' },
+                interactive: false
             }).addTo(window.map);
 
             currentTooltip = L.tooltip({
@@ -223,22 +268,6 @@ function updateCircleDrawing() {
 }
 
 function finishRuler() {
-    // Clean up points: Leaflet dblclick fires two clicks, resulting in duplicate or near-duplicate final points.
-    // Also, user might accidentally double click in the same spot.
-    const uniquePoints = [points[0]];
-    for (let i = 1; i < points.length; i++) {
-        const prev = uniquePoints[uniquePoints.length - 1];
-        const curr = points[i];
-        // If distance between points is very small (e.g. double click micro-movements), skip it
-        if (curr[0] === prev[0] && curr[1] === prev[1]) continue;
-        const pt1 = turf.point(prev);
-        const pt2 = turf.point(curr);
-        if (turf.distance(pt1, pt2, {units: 'meters'}) > 1) { // Only add if more than 1 meter apart
-            uniquePoints.push(curr);
-        }
-    }
-    points = uniquePoints;
-
     if (points.length < 2) {
         points = [];
         mouseMovePoint = null;
@@ -365,7 +394,7 @@ function addMeasurementToMap(geojson, type) {
     }
 
     const leafletLayer = L.geoJSON(geojson, {
-        style: style
+        style: Object.assign({}, style, {className: 'measure-interactive'})
     }).addTo(measureLayerGroup);
 
     // Save ID on layer
@@ -382,7 +411,12 @@ function addMeasurementToMap(geojson, type) {
         </div>
     `;
 
-    leafletLayer.bindPopup(popupContent, {minWidth: 200});
+    // Ensure our popups stay on top
+    leafletLayer.bindPopup(popupContent, {minWidth: 200, className: 'measure-popup-container'});
+
+    // We want the interactive capabilities of our measurements to be restored despite .is-measuring
+    leafletLayer.options.interactive = true;
+
     leafletLayer.openPopup();
 }
 
