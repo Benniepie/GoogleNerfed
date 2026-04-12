@@ -647,6 +647,11 @@
 
 // The Click Event Listener
         map.on('click', async function(e) {
+            // Suppress Location Intelligence popup if a measurement tool is active
+            if (window.currentTool && (window.currentTool === 'ruler' || window.currentTool === 'circle')) {
+                return;
+            }
+
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
             const estimates = calculatePassEstimates(lng);

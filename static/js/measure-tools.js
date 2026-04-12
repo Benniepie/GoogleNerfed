@@ -1,5 +1,5 @@
 // State for measurement tools
-let currentTool = null; // 'ruler', 'circle', or null
+window.currentTool = null; // 'ruler', 'circle', or null
 let measureLayerGroup = null; // LayerGroup to hold all measurements
 let currentDrawLayer = null; // The temporary layer being drawn
 let points = []; // Store coordinates for current drawing
@@ -57,11 +57,11 @@ function initMeasureTools() {
 }
 
 function toggleMeasureTool(toolName) {
-    if (currentTool === toolName) {
+    if (window.currentTool === toolName) {
         disableMeasureTools();
     } else {
         disableMeasureTools();
-        currentTool = toolName;
+        window.currentTool = toolName;
         document.getElementById(`${toolName}Btn`).classList.add('active');
         window.map.getContainer().style.cursor = 'crosshair';
         window.map.doubleClickZoom.disable();
@@ -73,7 +73,7 @@ function disableMeasureTools() {
         window.map.removeLayer(currentDrawLayer);
         currentDrawLayer = null;
     }
-    currentTool = null;
+    window.currentTool = null;
     points = [];
     mouseMovePoint = null;
 
@@ -86,14 +86,14 @@ function disableMeasureTools() {
 }
 
 function onMapClick(e) {
-    if (!currentTool) return;
+    if (!window.currentTool) return;
 
     const latlng = e.latlng;
 
-    if (currentTool === 'ruler') {
+    if (window.currentTool === 'ruler') {
         points.push([latlng.lng, latlng.lat]);
         updateRulerDrawing();
-    } else if (currentTool === 'circle') {
+    } else if (window.currentTool === 'circle') {
         if (points.length === 0) {
             // First click: center
             points.push([latlng.lng, latlng.lat]);
@@ -105,18 +105,18 @@ function onMapClick(e) {
 }
 
 function onMapMouseMove(e) {
-    if (!currentTool || points.length === 0) return;
+    if (!window.currentTool || points.length === 0) return;
     mouseMovePoint = [e.latlng.lng, e.latlng.lat];
 
-    if (currentTool === 'ruler') {
+    if (window.currentTool === 'ruler') {
         updateRulerDrawing();
-    } else if (currentTool === 'circle') {
+    } else if (window.currentTool === 'circle') {
         updateCircleDrawing();
     }
 }
 
 function onMapDblClick(e) {
-    if (currentTool === 'ruler') {
+    if (window.currentTool === 'ruler') {
         L.DomEvent.stopPropagation(e);
         if (points.length > 1) {
             finishRuler();
