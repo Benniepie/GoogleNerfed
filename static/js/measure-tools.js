@@ -4,6 +4,7 @@ let measureLayerGroup = null; // LayerGroup to hold all measurements
 let currentDrawLayer = null; // The temporary layer being drawn
 let points = []; // Store coordinates for current drawing
 let mouseMovePoint = null;
+let currentTooltip = null; // Temporary tooltip for dynamic measurement text
 
 function initMeasureTools() {
     if (!window.map) {
@@ -47,6 +48,14 @@ function initMeasureTools() {
         .measure-popup-controls input[type="range"] {
             width: 60px;
         }
+        .measure-tooltip {
+            background: rgba(0, 0, 0, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
     `;
     document.head.appendChild(style);
 
@@ -73,6 +82,10 @@ function disableMeasureTools() {
         window.map.removeLayer(currentDrawLayer);
         currentDrawLayer = null;
     }
+    if (currentTooltip) {
+        window.map.removeLayer(currentTooltip);
+        currentTooltip = null;
+    }
     window.currentTool = null;
     points = [];
     mouseMovePoint = null;
@@ -91,6 +104,21 @@ function onMapClick(e) {
     const latlng = e.latlng;
 
     if (window.currentTool === 'ruler') {
+        // If there are existing points, check if we clicked near the start point
+        if (points.length >= 2) {
+            const startPt = window.map.latLngToContainerPoint([points[0][1], points[0][0]]);
+            const clickPt = window.map.latLngToContainerPoint(latlng);
+            const distPx = Math.sqrt(Math.pow(clickPt.x - startPt.x, 2) + Math.pow(clickPt.y - startPt.y, 2));
+
+            // If click is within 15 pixels of the start point, close the polygon and finish
+            if (distPx <= 15) {
+                // Snap final point to exactly the first point
+                points.push([...points[0]]);
+                finishRuler();
+                return;
+            }
+        }
+
         points.push([latlng.lng, latlng.lat]);
         updateRulerDrawing();
     } else if (window.currentTool === 'circle') {
@@ -142,9 +170,28 @@ function updateRulerDrawing() {
     }
 }
 
+function formatLength(km) {
+    if (km < 1) {
+        return `${(km * 1000).toFixed(2)} m`;
+    }
+    return `${km.toFixed(2)} km`;
+}
+
+function formatArea(sqKm) {
+    if (sqKm < 1) {
+        return `${(sqKm * 1000000).toFixed(2)} m²`;
+    }
+    return `${sqKm.toFixed(2)} km²`;
+}
+
 function updateCircleDrawing() {
     if (currentDrawLayer) {
         window.map.removeLayer(currentDrawLayer);
+        currentDrawLayer = null;
+    }
+    if (currentTooltip) {
+        window.map.removeLayer(currentTooltip);
+        currentTooltip = null;
     }
 
     if (points.length > 0 && mouseMovePoint) {
@@ -154,9 +201,23 @@ function updateCircleDrawing() {
 
         if (radius > 0) {
             const circle = turf.circle(center, radius, {steps: 64, units: 'kilometers'});
-            currentDrawLayer = L.geoJSON(circle, {
+            const line = turf.lineString([points[0], mouseMovePoint]);
+
+            // Create a feature collection with both circle and radius line
+            const featureCollection = turf.featureCollection([circle, line]);
+
+            currentDrawLayer = L.geoJSON(featureCollection, {
                 style: { color: 'red', weight: 2, fillColor: 'red', fillOpacity: 0.2, dashArray: '5, 5' }
             }).addTo(window.map);
+
+            currentTooltip = L.tooltip({
+                permanent: true,
+                direction: 'right',
+                className: 'measure-tooltip'
+            })
+            .setContent(formatLength(radius))
+            .setLatLng([mouseMovePoint[1], mouseMovePoint[0]])
+            .addTo(window.map);
         }
     }
 }
@@ -192,15 +253,13 @@ function finishRuler() {
     let geojson;
     let type = 'line';
 
-    // Determine if it's a polygon by checking if the last point is close to the first point
-    const firstPoint = turf.point(points[0]);
-    const lastPoint = turf.point(points[points.length - 1]);
-    const distToStart = turf.distance(firstPoint, lastPoint, {units: 'meters'});
+    // Determine if it's a polygon by checking if the last point is strictly identical
+    // to the first point, which happens if we snap-closed it during onMapClick
+    const isExplicitlyClosed = (points.length > 2 &&
+                                points[0][0] === points[points.length-1][0] &&
+                                points[0][1] === points[points.length-1][1]);
 
-    // If there are >2 points and the path is closed (within 20 meters of start)
-    if (points.length > 2 && distToStart < 20) {
-        // Make it a valid polygon by ensuring the last point matches the first exactly
-        points[points.length - 1] = points[0];
+    if (isExplicitlyClosed) {
         geojson = turf.polygon([points]);
         type = 'polygon';
     } else {
@@ -218,6 +277,10 @@ function finishCircle(latlng) {
     if (currentDrawLayer) {
         window.map.removeLayer(currentDrawLayer);
         currentDrawLayer = null;
+    }
+    if (currentTooltip) {
+        window.map.removeLayer(currentTooltip);
+        currentTooltip = null;
     }
 
     const center = turf.point(points[0]);
@@ -253,25 +316,40 @@ function addMeasurementToMap(geojson, type) {
 
     let contentHTML = '';
 
-    if (type === 'polygon') {
-        const areaSqM = turf.area(geojson);
-        const areaSqKm = areaSqM / 1000000;
-        const line = turf.lineString(geojson.geometry.coordinates[0]);
-        const lengthKm = turf.length(line, {units: 'kilometers'});
+    if (type === 'polygon' || type === 'line') {
+        const coords = type === 'polygon' ? geojson.geometry.coordinates[0] : geojson.geometry.coordinates;
 
-        contentHTML = `
-            <div><b>Type:</b> Polygon</div>
-            <div><b>Perimeter:</b> ${lengthKm.toFixed(2)} km</div>
-            <div><b>Area:</b> ${areaSqKm.toFixed(2)} km²</div>
-        `;
-    } else if (type === 'line') {
-        const lengthKm = turf.length(geojson, {units: 'kilometers'});
-        style.fillOpacity = 0; // No fill for lines
+        let legsHTML = '';
+        for (let i = 0; i < coords.length - 1; i++) {
+            const legLine = turf.lineString([coords[i], coords[i+1]]);
+            const legLength = turf.length(legLine, {units: 'kilometers'});
+            legsHTML += `<div><span style="color:#94a3b8; font-size:0.85em;">Leg ${i+1}:</span> ${formatLength(legLength)}</div>`;
+        }
 
-        contentHTML = `
-            <div><b>Type:</b> Line</div>
-            <div><b>Length:</b> ${lengthKm.toFixed(2)} km</div>
-        `;
+        if (type === 'polygon') {
+            const areaSqM = turf.area(geojson);
+            const areaSqKm = areaSqM / 1000000;
+            const line = turf.lineString(coords);
+            const totalLengthKm = turf.length(line, {units: 'kilometers'});
+
+            contentHTML = `
+                <div><b>Type:</b> Polygon</div>
+                ${legsHTML}
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 4px 0;">
+                <div><b>Total Perimeter:</b> ${formatLength(totalLengthKm)}</div>
+                <div><b>Area:</b> ${formatArea(areaSqKm)}</div>
+            `;
+        } else {
+            const totalLengthKm = turf.length(geojson, {units: 'kilometers'});
+            style.fillOpacity = 0; // No fill for lines
+
+            contentHTML = `
+                <div><b>Type:</b> Line</div>
+                ${legsHTML}
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 4px 0;">
+                <div><b>Total Length:</b> ${formatLength(totalLengthKm)}</div>
+            `;
+        }
     } else if (type === 'circle') {
         const radiusKm = geojson.properties.radiusKm;
         const areaSqKm = Math.PI * Math.pow(radiusKm, 2);
@@ -279,10 +357,10 @@ function addMeasurementToMap(geojson, type) {
 
         contentHTML = `
             <div><b>Type:</b> Circle</div>
-            <div><b>Radius:</b> ${radiusKm.toFixed(2)} km</div>
-            <div><b>Diameter:</b> ${(radiusKm * 2).toFixed(2)} km</div>
-            <div><b>Circumference:</b> ${circumference.toFixed(2)} km</div>
-            <div><b>Area:</b> ${areaSqKm.toFixed(2)} km²</div>
+            <div><b>Radius:</b> ${formatLength(radiusKm)}</div>
+            <div><b>Diameter:</b> ${formatLength(radiusKm * 2)}</div>
+            <div><b>Circumference:</b> ${formatLength(circumference)}</div>
+            <div><b>Area:</b> ${formatArea(areaSqKm)}</div>
         `;
     }
 

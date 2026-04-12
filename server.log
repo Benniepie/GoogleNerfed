@@ -32,3 +32,15 @@ INFO:     127.0.0.1:60858 - "GET /js/map-layers.js HTTP/1.1" 200 OK
 INFO:     127.0.0.1:60864 - "GET /js/measure-tools.js HTTP/1.1" 200 OK
 INFO:     127.0.0.1:60864 - "GET /api/settings HTTP/1.1" 200 OK
 INFO:     127.0.0.1:60864 - "GET /api/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54614 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54614 - "GET /js/map-core.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54618 - "GET /js/map-layers.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54634 - "GET /js/measure-tools.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54614 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54614 - "GET /api/layers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51972 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51972 - "GET /js/map-core.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51998 - "GET /js/measure-tools.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51986 - "GET /js/map-layers.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51986 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51986 - "GET /api/layers HTTP/1.1" 200 OK
