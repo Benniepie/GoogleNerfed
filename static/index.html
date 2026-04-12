@@ -434,6 +434,11 @@
             <div id="timelineContainer" style="text-align: center;">
                 <label style="font-size: 0.85rem; display: block; margin-bottom: 5px;">Map Timeline: <span id="currentDateDisplay" style="font-weight: bold; color: var(--accent-color);">Latest</span></label>
                 <input type="range" id="timelineSlider" min="0" max="0" value="0" style="width: 100%;" disabled>
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 5px;">
+                    <button id="btnTimelineBack" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-color); padding: 4px 10px; border-radius: 4px; cursor: pointer; backdrop-filter: blur(5px);">&lt;</button>
+                    <button id="btnTimelineForward" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-color); padding: 4px 10px; border-radius: 4px; cursor: pointer; backdrop-filter: blur(5px);">&gt;</button>
+                    <button id="btnTimelineLatest" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); color: var(--text-color); padding: 4px 10px; border-radius: 4px; cursor: pointer; backdrop-filter: blur(5px);">Latest</button>
+                </div>
             </div>
         </div>
 

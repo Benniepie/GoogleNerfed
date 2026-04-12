@@ -523,9 +523,15 @@
             availableDates = Array.from(datesSet).sort();
             const slider = document.getElementById('timelineSlider');
             const display = document.getElementById('currentDateDisplay');
+            const btnBack = document.getElementById('btnTimelineBack');
+            const btnForward = document.getElementById('btnTimelineForward');
+            const btnLatest = document.getElementById('btnTimelineLatest');
 
             if (availableDates.length > 0) {
                 slider.disabled = false;
+                if (btnBack) btnBack.disabled = false;
+                if (btnForward) btnForward.disabled = false;
+                if (btnLatest) btnLatest.disabled = false;
                 slider.max = availableDates.length - 1;
 
                 // If this is the very first time we're setting it, or if it was empty, default to latest.
@@ -544,6 +550,9 @@
                 display.textContent = availableDates[newIndex];
             } else {
                 slider.disabled = true;
+                if (btnBack) btnBack.disabled = true;
+                if (btnForward) btnForward.disabled = true;
+                if (btnLatest) btnLatest.disabled = true;
                 slider.value = 0;
                 display.textContent = "Latest";
             }
@@ -583,6 +592,46 @@
             // Reapply z-index ordering after layers are added/removed
             reorderActiveLayers();
         });
+
+        const timelineSlider = document.getElementById('timelineSlider');
+
+        const btnTimelineBack = document.getElementById('btnTimelineBack');
+        if (btnTimelineBack) {
+            btnTimelineBack.addEventListener('click', () => {
+                if (timelineSlider.disabled) return;
+                let val = parseInt(timelineSlider.value, 10);
+                if (val > parseInt(timelineSlider.min, 10)) {
+                    timelineSlider.value = val - 1;
+                    timelineSlider.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+
+        const btnTimelineForward = document.getElementById('btnTimelineForward');
+        if (btnTimelineForward) {
+            btnTimelineForward.addEventListener('click', () => {
+                if (timelineSlider.disabled) return;
+                let val = parseInt(timelineSlider.value, 10);
+                if (val < parseInt(timelineSlider.max, 10)) {
+                    timelineSlider.value = val + 1;
+                    timelineSlider.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+
+        const btnTimelineLatest = document.getElementById('btnTimelineLatest');
+        if (btnTimelineLatest) {
+            btnTimelineLatest.addEventListener('click', () => {
+                if (timelineSlider.disabled) return;
+                let val = parseInt(timelineSlider.value, 10);
+                let maxVal = parseInt(timelineSlider.max, 10);
+                if (val !== maxVal) {
+                    timelineSlider.value = maxVal;
+                    timelineSlider.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+
     // Helper function to calculate estimated sun-synchronous pass times
         function calculatePassEstimates(lng) {
             const now = new Date();
