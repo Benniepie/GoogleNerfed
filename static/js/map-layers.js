@@ -7,6 +7,16 @@
 
                 const frontlineListEl = document.getElementById('frontlineLayerList');
                 const staticListEl = document.getElementById('staticLayerList');
+
+                // Save current checked states before clearing
+                const previousCheckedStates = {};
+                document.querySelectorAll('#frontlineLayerList input[type="checkbox"], #staticLayerList input[type="checkbox"]').forEach(chk => {
+                    if (chk.id && chk.id.startsWith('chk_')) {
+                        const filename = chk.id.substring(4);
+                        previousCheckedStates[filename] = chk.checked;
+                    }
+                });
+
                 frontlineListEl.innerHTML = '';
                 staticListEl.innerHTML = '';
 
@@ -120,7 +130,11 @@
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.id = 'chk_' + filename;
-                    checkbox.checked = isFrontline;
+                    if (previousCheckedStates[filename] !== undefined) {
+                        checkbox.checked = previousCheckedStates[filename];
+                    } else {
+                        checkbox.checked = isFrontline;
+                    }
 
                     const label = document.createElement('label');
                     label.htmlFor = 'chk_' + filename;
@@ -161,7 +175,18 @@
                     }
 
                     // Load KML
-                    await fetchAndAddKML(filename);
+                    if (!activeLayers[filename]) {
+                        await fetchAndAddKML(filename);
+                    } else {
+                        // Ensure map matches restored checkbox state
+                        if (checkbox.checked) {
+                            if (!isFrontline || extractDateFromFilename(filename) === document.getElementById('currentDateDisplay').textContent) {
+                                if (!map.hasLayer(activeLayers[filename])) map.addLayer(activeLayers[filename]);
+                            }
+                        } else {
+                            if (map.hasLayer(activeLayers[filename])) map.removeLayer(activeLayers[filename]);
+                        }
+                    }
 
                     // Toggle visibility
                     checkbox.addEventListener('change', (e) => {
