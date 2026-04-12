@@ -21,6 +21,8 @@
     <!-- ToGeoJSON / ToKML-->
     <script src="https://unpkg.com/tokml/tokml.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
+    <!-- Turf.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
 
     <style>
         :root {
@@ -343,7 +345,11 @@
     <div class="control-panel" id="controlPanel">
         <h2 style="margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
             map.atpgeo.com
-            <button class="icon-btn" onclick="document.getElementById('controlPanel').classList.remove('open')" title="Close Menu" style="font-size: 1.2rem;">✖</button>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="icon-btn measure-btn" id="rulerBtn" title="Measure Ruler" style="font-size: 1.2rem;" onclick="toggleMeasureTool('ruler')">📏</button>
+                <button class="icon-btn measure-btn" id="circleBtn" title="Measure Circle" style="font-size: 1.2rem;" onclick="toggleMeasureTool('circle')">⭕</button>
+                <button class="icon-btn" onclick="document.getElementById('controlPanel').classList.remove('open')" title="Close Menu" style="font-size: 1.2rem;">✖</button>
+            </div>
         </h2>
 
         <div class="section-header" onclick="toggleSection(this)">
@@ -460,6 +466,7 @@
  
     <script src="/js/map-core.js"></script>
     <script src="/js/map-layers.js"></script>
+    <script src="/js/measure-tools.js"></script>
     <script>
         // If the user has passed the Python Basic Auth and is on the admin route...
         if (window.location.pathname === '/admin') {
