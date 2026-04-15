@@ -45,7 +45,7 @@ function toggleSection(header) {
         // --- MiniMap Setup ---
         // A single minimap basemap using the specified dark OpenFreeMap tiles
         window.minimapLayer = L.maplibreGL({
-            style: 'https://tiles.openfreemap.org/styles/dark',
+            style: 'https://tiles.openfreemap.org/styles/liberty',
             attribution: '&copy; OpenFreeMap'
         });
         const minimapLayer = window.minimapLayer; // Keep local ref for rest of function
