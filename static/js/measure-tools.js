@@ -202,13 +202,18 @@ function updateRulerDrawing() {
             const currentPoint = turf.point(mouseMovePoint);
             const currentLegDistance = turf.distance(lastPoint, currentPoint, {units: 'kilometers'});
 
+            const midPoint = [
+                (points[points.length - 1][0] + mouseMovePoint[0]) / 2,
+                (points[points.length - 1][1] + mouseMovePoint[1]) / 2
+            ];
+
             currentTooltip = L.tooltip({
                 permanent: true,
-                direction: 'right',
+                direction: 'center',
                 className: 'measure-tooltip'
             })
             .setContent(formatLength(currentLegDistance))
-            .setLatLng([mouseMovePoint[1], mouseMovePoint[0]])
+            .setLatLng([midPoint[1], midPoint[0]])
             .addTo(window.map);
         }
     }
@@ -255,13 +260,18 @@ function updateCircleDrawing() {
                 interactive: false
             }).addTo(window.map);
 
+            const midPoint = [
+                (points[0][0] + mouseMovePoint[0]) / 2,
+                (points[0][1] + mouseMovePoint[1]) / 2
+            ];
+
             currentTooltip = L.tooltip({
                 permanent: true,
-                direction: 'right',
+                direction: 'center',
                 className: 'measure-tooltip'
             })
             .setContent(formatLength(radius))
-            .setLatLng([mouseMovePoint[1], mouseMovePoint[0]])
+            .setLatLng([midPoint[1], midPoint[0]])
             .addTo(window.map);
         }
     }
