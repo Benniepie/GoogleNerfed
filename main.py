@@ -137,12 +137,15 @@ async def upload_file(files: List[UploadFile] = File(...)):
                         kml_filename = safe_filename[:-4] + ".kml"
                         final_kml_path = DATA_DIR / kml_filename
                         shutil.move(extracted_path, final_kml_path)
+                        results.append({"message": "KMZ extracted and saved successfully", "filename": kml_filename})
+                    else:
+                        target_path.unlink(missing_ok=True)
+                        return JSONResponse(status_code=400, content={"message": f"No KML file found inside {file.filename}"})
                 # Remove the original KMZ file
                 target_path.unlink(missing_ok=True)
-                results.append({"message": "KMZ extracted and saved successfully", "filename": kml_filename})
-            except zipfile.BadZipFile:
+            except Exception as e:
                 target_path.unlink(missing_ok=True)
-                results.append({"error": f"Invalid KMZ file: {file.filename}"})
+                return JSONResponse(status_code=400, content={"message": f"Failed to extract {file.filename}: {str(e)}"})
         else:
             results.append({"message": "KML saved successfully", "filename": safe_filename})
             
