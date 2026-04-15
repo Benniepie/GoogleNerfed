@@ -176,7 +176,9 @@
 
                     // Load KML
                     if (!activeLayers[filename]) {
-                        await fetchAndAddKML(filename);
+                        if (checkbox.checked || isFrontline) {
+                            await fetchAndAddKML(filename);
+                        }
                     } else {
                         // Ensure map matches restored checkbox state
                         if (checkbox.checked) {
@@ -189,7 +191,7 @@
                     }
 
                     // Toggle visibility
-                    checkbox.addEventListener('change', (e) => {
+                    checkbox.addEventListener('change', async (e) => {
                         const isChecked = e.target.checked;
 
                         // If it's a frontline layer, toggle all related dates to match
@@ -225,7 +227,9 @@
 
                         // Handle current target specifically
                         if (isChecked) {
-                            if (activeLayers[filename] && (!isFrontline || extractDateFromFilename(filename) === document.getElementById('currentDateDisplay').textContent)) {
+                            if (!activeLayers[filename]) {
+                                await fetchAndAddKML(filename);
+                            } else if (!isFrontline || extractDateFromFilename(filename) === document.getElementById('currentDateDisplay').textContent) {
                                 map.addLayer(activeLayers[filename]);
                             }
                         } else {
