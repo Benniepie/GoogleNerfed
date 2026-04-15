@@ -1,5 +1,5 @@
 
-    
+
 function toggleSection(header) {
             const content = header.nextElementSibling;
             const sectionName = header.innerText.trim();
@@ -14,7 +14,7 @@ function toggleSection(header) {
                 const allHeaders = document.querySelectorAll('.section-header');
                 allHeaders.forEach(h => {
                     const name = h.innerText.trim();
-                    if (h === header) return; 
+                    if (h === header) return;
 
                     let shouldClose = false;
                     if (sectionName.includes('Front Line') && name.includes('Static')) shouldClose = true;
@@ -42,6 +42,37 @@ function toggleSection(header) {
         L.control.scale({ position: 'bottomleft', imperial: true, metric: true }).addTo(map);
         window.map = map; // Expose map globally for other scripts
 
+        // --- MiniMap Setup ---
+        // A single minimap basemap using the specified dark OpenFreeMap tiles
+        window.minimapLayer = L.maplibreGL({
+            style: 'https://tiles.openfreemap.org/styles/dark',
+            attribution: '&copy; OpenFreeMap'
+        });
+        const minimapLayer = window.minimapLayer; // Keep local ref for rest of function
+
+
+        minimapLayer.on('add', function() {
+            const glMap = this.getMaplibreMap();
+            glMap.once('load', function() {
+                                if (glMap.getLayer('boundary_state')) {
+                    glMap.setLayoutProperty('boundary_state', 'visibility', 'none');
+                }
+                if (glMap.getLayer('place_state')) {
+                    glMap.setLayoutProperty('place_state', 'visibility', 'none');
+                }
+            });
+        });
+
+        const miniMap = new L.Control.MiniMap(minimapLayer, {
+            position: 'bottomleft',
+            zoomLevelFixed: 4,
+            toggleDisplay: true,
+            minimized: false,
+            width: 200,
+            height: 150
+        }).addTo(map);
+        window.miniMap = miniMap;
+
         // --- NEW CUSTOM PANE FIX ---
         map.createPane('hybridLabels');
         map.getPane('hybridLabels').style.zIndex = 250; // Sits above satellite (200) but below KMLs (400)
@@ -55,9 +86,9 @@ function toggleSection(header) {
         let layerStyles = {};
         let currentStylingLayer = null;
 
-        
 
-        	    // Individual Layers
+
+		    // Individual Layers
         const layers = {
             openFreeDark: L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/dark',
@@ -99,7 +130,7 @@ function toggleSection(header) {
             hot: L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors, Humanitarian OpenStreetMap Team'
             }),
-            
+
             // NASA GIBS MODIS (Daily, 250m) - Good for global/regional overview
             modisDaily: L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg', {
                 attribution: 'NASA Global Imagery Browse Services (GIBS)',
@@ -132,7 +163,7 @@ function toggleSection(header) {
             }),
 
 
-        	//topography: L.tileLayer('/api/dynamic-topo/{z}/{x}/{y}.png', {
+		//topography: L.tileLayer('/api/dynamic-topo/{z}/{x}/{y}.png', {
             //	attribution: 'Elevation data &copy; Copernicus',
             //	opacity: 0.8, // Slight transparency looks great over a dark base map
             //	maxNativeZoom: 14 // DEM data gets blurry past zoom 14, this scales it smoothly
@@ -146,7 +177,7 @@ function toggleSection(header) {
         // --- The Hybrid Live Satellite Logic ---
         // Swaps from MODIS to Sentinel automatically based on zoom
         const liveSatelliteHybrid = L.layerGroup();
-        
+
         map.on('zoomend', function() {
             if (map.hasLayer(liveSatelliteHybrid)) {
                 liveSatelliteHybrid.clearLayers();
@@ -162,7 +193,7 @@ function toggleSection(header) {
         });
 
 
-        
+
                 // Grouped Options for the UI
         const baseMaps = {
             dark: layers.openFreeDark,
@@ -186,7 +217,7 @@ function toggleSection(header) {
         // Listen for Leaflet adding the layer to the map
         layers.vectorLabels.on('add', function() {
             const glMap = this.getMaplibreMap();
-            
+
             // Wait for MapLibre to finish drawing its default solid map
             glMap.once('load', function() {
                 const style = glMap.getStyle();
@@ -197,7 +228,7 @@ function toggleSection(header) {
                     if (layer.type === 'background' || layer.type === 'fill' || layer.id.includes('water') || layer.id.includes('land') || layer.id.includes('building')) {
                         glMap.setLayoutProperty(layer.id, 'visibility', 'none');
                     }
-                    
+
                     // 2. Make text white with a dark outline
                     if (layer.type === 'symbol' && layer.layout && layer.layout['text-field']) {
                         glMap.setPaintProperty(layer.id, 'text-color', '#ffffff');
@@ -208,7 +239,7 @@ function toggleSection(header) {
                     // 3. Make the roads translucent white
                     if (layer.type === 'line' && (layer.id.includes('road') || layer.id.includes('highway') || layer.id.includes('bridge') || layer.id.includes('tunnel'))) {
                         glMap.setPaintProperty(layer.id, 'line-color', '#ffffff');
-                        glMap.setPaintProperty(layer.id, 'line-opacity', 0.4); 
+                        glMap.setPaintProperty(layer.id, 'line-opacity', 0.4);
                     }
                 });
             });
@@ -241,7 +272,7 @@ function toggleSection(header) {
                 bbox.getSouthWest()
             ]);
             map.fitBounds(poly.getBounds());
-            
+
             // Optional: Drop a temporary marker at search result
             //L.marker(e.geocode.center).addTo(map)
             //    .bindPopup(e.geocode.name)
@@ -257,9 +288,9 @@ function toggleSection(header) {
                 const div = L.DomUtil.create('div', 'hamburger-btn');
                 div.innerHTML = '☰';
                 div.title = "Toggle Map Controls";
-                
+
                 L.DomEvent.disableClickPropagation(div);
-                
+
                 div.onclick = function() {
                     document.getElementById('controlPanel').classList.toggle('open');
                 };
@@ -334,3 +365,69 @@ function toggleSection(header) {
         //     }
         // });
 
+
+// Dynamic MiniMap Resizing based on screen aspect ratio
+function resizeMiniMap() {
+    if (!window.miniMap) return;
+
+    // If the minimap is minimized, don't force our custom responsive dimensions
+    if (window.miniMap._minimized) {
+        return; // Let the leaflet-minimap plugin handle the minimized dimensions
+    }
+
+    // We want it to be small enough not to get in the way.
+    const baseWidthVW = 15;
+    const minWidth = 120;
+    const maxWidth = 300;
+
+    let targetWidth = (window.innerWidth * baseWidthVW) / 100;
+    targetWidth = Math.max(minWidth, Math.min(maxWidth, targetWidth));
+
+    // Calculate aspect ratio
+    const ratio = window.innerHeight / window.innerWidth;
+    const targetHeight = targetWidth * ratio;
+
+    // Update the miniMap plugin's internal size settings so transitions restore properly
+    window.miniMap.options.width = targetWidth;
+    window.miniMap.options.height = targetHeight;
+
+    // Update the miniMap container size
+    const container = window.miniMap._container;
+    if (container) {
+        container.style.width = targetWidth + 'px';
+        container.style.height = targetHeight + 'px';
+
+        // When restoring from minimize, there's a CSS transition.
+        // We need to invalidate size *after* the container has reached its final state.
+        // We'll run it immediately (for normal window resize) AND after 350ms (transition duration).
+        const triggerMapResize = () => {
+            if (window.miniMap._miniMap) {
+                window.miniMap._miniMap.invalidateSize();
+
+                // Force maplibre map to resize if present globally
+                if (window.minimapLayer && window.minimapLayer.getMaplibreMap) {
+                    const glMap = window.minimapLayer.getMaplibreMap();
+                    if (glMap) {
+                        glMap.resize();
+                    }
+                }
+            }
+        };
+
+        setTimeout(triggerMapResize, 10);
+        setTimeout(triggerMapResize, 400); // 400ms is a safe buffer for CSS transitions
+    }
+}
+
+// Ensure the minimap catches up with its container right after being added to the map.
+if (window.miniMap) {
+    window.miniMap.on('toggle', function() {
+        setTimeout(resizeMiniMap, 50);
+    });
+}
+
+// Call on load and on resize
+window.addEventListener('resize', resizeMiniMap);
+// Wait a bit for the control to be fully added and rendered
+setTimeout(resizeMiniMap, 100);
+setTimeout(resizeMiniMap, 500); // extra safety net for initial load
