@@ -42,6 +42,23 @@ function toggleSection(header) {
         L.control.scale({ position: 'bottomleft', imperial: true, metric: true }).addTo(map);
         window.map = map; // Expose map globally for other scripts
 
+        // --- MiniMap Setup ---
+        // A single minimap basemap using the specified dark OpenFreeMap tiles
+        const minimapLayer = L.maplibreGL({
+            style: 'https://tiles.openfreemap.org/styles/dark',
+            attribution: '&copy; OpenFreeMap'
+        });
+
+        const miniMap = new L.Control.MiniMap(minimapLayer, {
+            position: 'bottomleft',
+            zoomLevelFixed: 5,
+            toggleDisplay: true,
+            minimized: false,
+            width: 200,
+            height: 150
+        }).addTo(map);
+        window.miniMap = miniMap;
+
         // --- NEW CUSTOM PANE FIX ---
         map.createPane('hybridLabels');
         map.getPane('hybridLabels').style.zIndex = 250; // Sits above satellite (200) but below KMLs (400)
@@ -334,3 +351,35 @@ function toggleSection(header) {
         //     }
         // });
 
+
+// Dynamic MiniMap Resizing based on screen aspect ratio
+function resizeMiniMap() {
+    if (!window.miniMap) return;
+
+    // We want it to be small enough not to get in the way.
+    const baseWidthVW = 15;
+    const minWidth = 120;
+    const maxWidth = 300;
+
+    let targetWidth = (window.innerWidth * baseWidthVW) / 100;
+    targetWidth = Math.max(minWidth, Math.min(maxWidth, targetWidth));
+
+    // Calculate aspect ratio
+    const ratio = window.innerHeight / window.innerWidth;
+    const targetHeight = targetWidth * ratio;
+
+    // Update the miniMap container size
+    const container = window.miniMap._container;
+    if (container) {
+        container.style.width = targetWidth + 'px';
+        container.style.height = targetHeight + 'px';
+        if (window.miniMap._miniMap) {
+            window.miniMap._miniMap.invalidateSize();
+        }
+    }
+}
+
+// Call on load and on resize
+window.addEventListener('resize', resizeMiniMap);
+// Wait a bit for the control to be fully added and rendered
+setTimeout(resizeMiniMap, 100);

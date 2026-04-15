@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "leaflet-minimap": "^3.6.1"
+  }
+}
