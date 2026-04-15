@@ -44,10 +44,12 @@ function toggleSection(header) {
 
         // --- MiniMap Setup ---
         // A single minimap basemap using the specified dark OpenFreeMap tiles
-        const minimapLayer = L.maplibreGL({
+        window.minimapLayer = L.maplibreGL({
             style: 'https://tiles.openfreemap.org/styles/dark',
             attribution: '&copy; OpenFreeMap'
         });
+        const minimapLayer = window.minimapLayer; // Keep local ref for rest of function
+
 
         minimapLayer.on('add', function() {
             const glMap = this.getMaplibreMap();
@@ -385,26 +387,35 @@ function resizeMiniMap() {
     const ratio = window.innerHeight / window.innerWidth;
     const targetHeight = targetWidth * ratio;
 
+    // Update the miniMap plugin's internal size settings so transitions restore properly
+    window.miniMap.options.width = targetWidth;
+    window.miniMap.options.height = targetHeight;
+
     // Update the miniMap container size
     const container = window.miniMap._container;
     if (container) {
         container.style.width = targetWidth + 'px';
         container.style.height = targetHeight + 'px';
 
-        // Wait a tick for the DOM to update the container size
-        setTimeout(() => {
+        // When restoring from minimize, there's a CSS transition.
+        // We need to invalidate size *after* the container has reached its final state.
+        // We'll run it immediately (for normal window resize) AND after 350ms (transition duration).
+        const triggerMapResize = () => {
             if (window.miniMap._miniMap) {
                 window.miniMap._miniMap.invalidateSize();
 
-                // Also force maplibre map to resize if present
-                if (minimapLayer && minimapLayer.getMaplibreMap) {
-                    const glMap = minimapLayer.getMaplibreMap();
+                // Force maplibre map to resize if present globally
+                if (window.minimapLayer && window.minimapLayer.getMaplibreMap) {
+                    const glMap = window.minimapLayer.getMaplibreMap();
                     if (glMap) {
                         glMap.resize();
                     }
                 }
             }
-        }, 10);
+        };
+
+        setTimeout(triggerMapResize, 10);
+        setTimeout(triggerMapResize, 400); // 400ms is a safe buffer for CSS transitions
     }
 }
 
