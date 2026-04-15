@@ -52,15 +52,18 @@ function toggleSection(header) {
         minimapLayer.on('add', function() {
             const glMap = this.getMaplibreMap();
             glMap.once('load', function() {
-                if (glMap.getLayer('boundary_state')) {
+                                if (glMap.getLayer('boundary_state')) {
                     glMap.setLayoutProperty('boundary_state', 'visibility', 'none');
+                }
+                if (glMap.getLayer('place_state')) {
+                    glMap.setLayoutProperty('place_state', 'visibility', 'none');
                 }
             });
         });
 
         const miniMap = new L.Control.MiniMap(minimapLayer, {
             position: 'bottomleft',
-            zoomLevelFixed: 5,
+            zoomLevelFixed: 4,
             toggleDisplay: true,
             minimized: false,
             width: 200,
@@ -364,6 +367,11 @@ function toggleSection(header) {
 // Dynamic MiniMap Resizing based on screen aspect ratio
 function resizeMiniMap() {
     if (!window.miniMap) return;
+
+    // If the minimap is minimized, don't force our custom responsive dimensions
+    if (window.miniMap._minimized) {
+        return; // Let the leaflet-minimap plugin handle the minimized dimensions
+    }
 
     // We want it to be small enough not to get in the way.
     const baseWidthVW = 15;
