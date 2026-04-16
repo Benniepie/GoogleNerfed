@@ -46,7 +46,7 @@ function toggleSection(header) {
         // A single minimap basemap using the specified dark OpenFreeMap tiles
         window.minimapLayer = L.maplibreGL({
             style: 'https://tiles.openfreemap.org/styles/liberty',
-            attribution: '&copy; OpenFreeMap'
+            attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
         });
         const minimapLayer = window.minimapLayer; // Keep local ref for rest of function
 
@@ -92,11 +92,11 @@ function toggleSection(header) {
         const layers = {
             openFreeDark: L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/dark',
-                attribution: '&copy; OpenFreeMap'
+                attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
             }),
             openFreeLight: L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/liberty',
-                attribution: '&copy; OpenFreeMap'
+                attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
             }),
             esriSatellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: esriAttr
@@ -119,16 +119,16 @@ function toggleSection(header) {
             // Modern Vector Labels (Transparent Overlay via OpenFreeMap)
             vectorLabels: L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/liberty',
-                attribution: '&copy; OpenStreetMap contributors',
+                attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
                 pane: 'hybridLabels',
                 interactive: false
             }),
 
             topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-                attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap'
+                attribution: 'Map data: &copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors, SRTM | Map style: &copy; <a href="https://opentopomap.org/" target="_blank">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">CC-BY-SA</a>)'
             }),
             hot: L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors, Humanitarian OpenStreetMap Team'
+                attribution: '&copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors, <a href="https://hotosm.org" target="_blank">Humanitarian OpenStreetMap Team</a>'
             }),
 
             // NASA GIBS MODIS (Daily, 250m) - Good for global/regional overview
@@ -147,7 +147,7 @@ function toggleSection(header) {
                 format: 'image/png',
                 transparent: true,
                 maxcc: 20, // Only show images with < 20% cloud cover
-                attribution: '&copy; Sentinel Hub / Copernicus',
+                attribution: &copy; <a href="https://dataspace.copernicus.eu/" target="_blank">Copernicus Sentinel data 2026</a>',
                 tileSize: 512, // Sentinel Hub works better with larger tiles
                 zIndex: 10
             }),
@@ -157,7 +157,7 @@ function toggleSection(header) {
                 format: 'image/png',
                 transparent: true,
                 maxcc: 20,
-                attribution: '&copy; Sentinel Hub / Copernicus',
+                attribution: '&copy; <a href="https://dataspace.copernicus.eu/" target="_blank">Copernicus Sentinel data 2026</a>',
                 tileSize: 512,
                 zIndex: 10
             }),
