@@ -147,7 +147,7 @@ function toggleSection(header) {
                 format: 'image/png',
                 transparent: true,
                 maxcc: 20, // Only show images with < 20% cloud cover
-                attribution: &copy; <a href="https://dataspace.copernicus.eu/" target="_blank">Copernicus Sentinel data 2026</a>',
+                attribution: '&copy; <a href="https://dataspace.copernicus.eu/" target="_blank">Copernicus Sentinel data 2026</a>',
                 tileSize: 512, // Sentinel Hub works better with larger tiles
                 zIndex: 10
             }),
