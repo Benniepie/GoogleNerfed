@@ -2,6 +2,7 @@ import os
 import shutil
 import zipfile
 import json
+import httpx
 import urllib.request
 import tempfile
 import os
@@ -12,7 +13,7 @@ from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, UploadFile, File, Body, Form, HTTPException, Request, Response, Depends, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from geoprocessing import load_kml, save_kml, run_ap_model, run_sm_model, copy_kml_styles
@@ -40,15 +41,59 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- ADD TITILER ROUTER HERE ---
+# --- 1. ADD TITILER ROUTER ---
 # This instantly gives your FastAPI app the ability to serve map tiles from COGs!
-#cog_tiler = TilerFactory()
-#app.include_router(
-#    cog_tiler.router,
-#    prefix="/cog",
-#    tags=["Cloud Optimized GeoTIFF"]
-#)
-# -------------------------------
+cog_tiler = TilerFactory()
+app.include_router(
+    cog_tiler.router,
+    prefix="/cog",
+    tags=["Cloud Optimized GeoTIFF"]
+)
+
+# --- 2. ADD SENTINEL STAC DISCOVERY ENDPOINT ---
+@app.get("/api/sentinel-latest/{z}/{x}/{y}.png")
+async def get_latest_sentinel(z: int, x: int, y: int):
+    """
+    Intercepts Leaflet's XYZ tile request, queries Copernicus STAC for the latest
+    Sentinel-2 pass, extracts the S3 path, and redirects to Titiler to render it.
+    """
+    # Calculate the geographical bounding box of the requested map tile
+    bounds = mercantile.bounds(x, y, z)
+    
+    # Query the Copernicus STAC API
+    stac_url = "https://stac.dataspace.copernicus.eu/v1/search"
+    payload = {
+        "bbox": [bounds.west, bounds.south, bounds.east, bounds.north],
+        "collections": ["SENTINEL-2"],
+        "query": {"eo:cloud_cover": {"lt": 20}},
+        "sortby": [{"field": "properties.datetime", "direction": "desc"}],
+        "limit": 1
+    }
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(stac_url, json=payload)
+        if response.status_code != 200:
+            return Response(status_code=502, content="Failed to reach STAC API")
+        data = response.json()
+        
+    if not data.get("features"):
+        return Response(status_code=404, content="No imagery found for this area")
+        
+    item = data["features"][0]
+    
+    # Extract the S3 URL for the True Colour Image (TCI)
+    # The CDSE STAC puts direct S3 links in the 'alternate' object
+    visual_asset = item["assets"].get("visual", {})
+    s3_url = visual_asset.get("alternate", {}).get("s3", {}).get("href")
+    
+    if not s3_url:
+        return Response(status_code=500, content="Could not find S3 path in STAC item")
+        
+    # Redirect internally to the Titiler endpoint
+    # We pass the discovered S3 URL straight to the local Titiler instance
+    titiler_url = f"/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url={s3_url}"
+    
+    return RedirectResponse(url=titiler_url)
 
 #@app.get("/api/dynamic-topo/{z}/{x}/{y}.png")
 #async def get_dynamic_topo(z: int, x: int, y: int):
