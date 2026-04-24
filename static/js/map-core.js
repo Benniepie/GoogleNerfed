@@ -161,7 +161,12 @@ function toggleSection(header) {
                 tileSize: 512,
                 zIndex: 10
             }),
-
+			const sentinelLayer = L.tileLayer('https://map.atpgeo.com/api/sentinel-latest/{z}/{x}/{y}.png', {
+    			maxZoom: 14, // Sentinel 2 max native resolution limit
+    			tileSize: 512,
+    			zoomOffset: -1,
+    			attribution: '&copy; <a href="https://dataspace.copernicus.eu/" target="_blank">Copernicus Sentinel data 2026</a>'
+			});
 
 		//topography: L.tileLayer('/api/dynamic-topo/{z}/{x}/{y}.png', {
             //	attribution: 'Elevation data &copy; Copernicus',
@@ -211,6 +216,7 @@ function toggleSection(header) {
             topo: layers.topo,
             hot: layers.hot,
             liveSat: liveSatelliteHybrid,
+			s2latest: layers.sentinelLayer,
         };
 
                 // --- THIS IS THE NEW TRANSPARENCY FIX ---
