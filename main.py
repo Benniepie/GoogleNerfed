@@ -62,7 +62,7 @@ async def get_latest_sentinel(z: int, x: int, y: int):
     bounds = mercantile.bounds(x, y, z)
     
     # Query the Copernicus STAC API
-    stac_url = "https://stac.dataspace.copernicus.eu/v1/search"
+    stac_url = "https://earth-search.aws.element84.com/v1/search"
     payload = {
         "bbox": [bounds.west, bounds.south, bounds.east, bounds.north],
         "collections": ["sentinel-2-l2a"],
