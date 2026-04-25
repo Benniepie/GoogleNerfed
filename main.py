@@ -84,16 +84,15 @@ async def get_latest_sentinel(z: int, x: int, y: int):
     
     # Extract the S3 URL for the True Colour Image (TCI)
     # The CDSE STAC puts direct S3 links in the 'alternate' object
-    visual_asset = item["assets"].get("visual", {})
-    s3_url = visual_asset.get("alternate", {}).get("s3", {}).get("href")
-    
-    if not s3_url:
-        return Response(status_code=500, content="Could not find S3 path in STAC item")
-        
+    visual_href = item["assets"].get("visual", {}).get("href")
+    print("--- DEBUG ---")
+    print(f"Discovered URL: {visual_href}")
+
+    if not visual_href:
+        return Response(status_code=500, content="Could not find TCI asset in STAC item")
     # Redirect internally to the Titiler endpoint
     # We pass the discovered S3 URL straight to the local Titiler instance
-    titiler_url = f"/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url={s3_url}"
-    
+    titiler_url = f"/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url={visual_href}"
     return RedirectResponse(url=titiler_url)
 
 #@app.get("/api/dynamic-topo/{z}/{x}/{y}.png")
