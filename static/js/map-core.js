@@ -167,7 +167,7 @@ function toggleSection(header) {
     			zoomOffset: -1,
     			attribution: '&copy; <a href="https://dataspace.copernicus.eu/" target="_blank">Copernicus Sentinel data 2026</a>'
 				
-			});
+			}),
 
 		//topography: L.tileLayer('/api/dynamic-topo/{z}/{x}/{y}.png', {
             //	attribution: 'Elevation data &copy; Copernicus',
