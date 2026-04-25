@@ -164,8 +164,9 @@ function toggleSection(header) {
 			sentinelLayer: L.tileLayer('/api/sentinel-latest/{z}/{x}/{y}.png', {
     			maxZoom: 14, // Sentinel 2 max native resolution limit
     			tileSize: 512,
-    			attribution: '&copy; <a href="https://dataspace.copernicus.eu/" target="_blank">Copernicus Sentinel data 2026</a>'
+    			attribution: '&copy; <a href="https://dataspace.copernicus.eu/" target="_blank">Copernicus Sentinel data 2026</a>',
 				zoomOffset: -1,
+				zIndex: 10
 			}),
 
 		//topography: L.tileLayer('/api/dynamic-topo/{z}/{x}/{y}.png', {
