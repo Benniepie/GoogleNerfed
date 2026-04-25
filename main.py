@@ -68,7 +68,7 @@ async def get_latest_sentinel(z: int, x: int, y: int):
         "collections": ["sentinel-2-l2a"],
         "query": {"eo:cloud_cover": {"lt": 20}},
         "sortby": [{"field": "properties.datetime", "direction": "desc"}],
-        "limit": 1000
+        "limit": 50,
     }
     
     async with httpx.AsyncClient() as client:
