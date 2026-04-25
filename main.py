@@ -65,7 +65,7 @@ async def get_latest_sentinel(z: int, x: int, y: int):
     stac_url = "https://stac.dataspace.copernicus.eu/v1/search"
     payload = {
         "bbox": [bounds.west, bounds.south, bounds.east, bounds.north],
-        "collections": ["SENTINEL-2"],
+        "collections": ["sentinel-2-l2a"],
         "query": {"eo:cloud_cover": {"lt": 20}},
         "sortby": [{"field": "properties.datetime", "direction": "desc"}],
         "limit": 1
