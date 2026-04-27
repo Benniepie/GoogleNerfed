@@ -54,7 +54,11 @@ app.include_router(
     prefix="/cog",
     tags=["Cloud Optimized GeoTIFF"]
 )
-
+def boxes_intersect(tile_bounds, item_bbox):
+    """Checks if the Leaflet tile physically overlaps the STAC image footprint"""
+    t_west, t_south, t_east, t_north = tile_bounds
+    i_west, i_south, i_east, i_north = item_bbox
+    return not (t_east < i_west or t_west > i_east or t_north < i_south or t_south > i_north)
 
 @cached(cache=stac_cache)
 def get_stac_urls(lat: float, lng: float, z: int):
@@ -104,8 +108,16 @@ def get_latest_sentinel(z: int, x: int, y: int):
     center_lng = round((bounds.east + bounds.west) / 2 * 2) / 2
     
     # 2. Get the URLs (Hits the lightning-fast memory cache 14 out of 15 times)
-    urls = get_stac_urls(center_lat, center_lng, z)
-    
+    urls = []
+    features = get_stac_features(center_lat, center_lng, z)
+    #urls = get_stac_urls(center_lat, center_lng, z)
+    for item in features:
+        item_bbox = item.get("bbox")
+        # ONLY add the URL if the image physically touches this specific map tile
+        if item_bbox and boxes_intersect((bounds.west, bounds.south, bounds.east, bounds.north), item_bbox):
+            href = item["assets"].get("visual", {}).get("href")
+            if href:
+                urls.append(href)
     if not urls:
         return Response(status_code=404, content="No imagery found")
 
