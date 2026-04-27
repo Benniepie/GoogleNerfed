@@ -164,7 +164,8 @@ function toggleSection(header) {
 			sentinelLayer: L.tileLayer('/api/sentinel-latest/{z}/{x}/{y}.png', {
     			tileSize: 512,
     			attribution: '&copy; <a href="https://dataspace.copernicus.eu/" target="_blank">Copernicus Sentinel data 2026</a>',
-				zIndex: 10
+				zIndex: 10,
+				zoomOffset: -1
 			}),
 
 		//topography: L.tileLayer('/api/dynamic-topo/{z}/{x}/{y}.png', {
