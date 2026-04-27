@@ -85,8 +85,7 @@ def get_stac_urls(lat: float, lng: float):
 
 def read_single_tile(url: str, x: int, y: int, z: int):
     with Reader(url) as src:
-        return src.tile(x, y, z)
-
+        return src.tile(x, y, z, tilesize=512)
 
 @app.get("/api/sentinel-latest/{z}/{x}/{y}.png")
 def get_latest_sentinel(z: int, x: int, y: int):
