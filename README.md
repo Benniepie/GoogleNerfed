@@ -1,4 +1,4 @@
-###Oi! Map It!###
+## **Oi! Map It!**
 
 Google Earth's view of Google MyMaps was totally broken and every single map marker had a label that wouldn't go away. With Google MyMaps KML styles being ignored by Google Earth when viewing a MyMap and no sign of it ever being fixed by Google, it was time to jump ship and ditch the cloud.
 
