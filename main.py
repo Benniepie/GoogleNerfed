@@ -61,7 +61,7 @@ def boxes_intersect(tile_bounds, item_bbox):
     return not (t_east < i_west or t_west > i_east or t_north < i_south or t_south > i_north)
 
 @cached(cache=stac_cache)
-def get_stac_urls(lat: float, lng: float, z: int):
+def get_stac_features(lat: float, lng: float, z: int):
     """Fetches the 5 latest AWS COG URLs for a 50km area, cached for speed."""
     stac_url = "https://earth-search.aws.element84.com/v1/search"
     
@@ -80,18 +80,21 @@ def get_stac_urls(lat: float, lng: float, z: int):
     if response.status_code != 200:
         logger.error("STAC API failed to respond")
         return []
-        
-    urls = []
-    for item in response.json().get("features", []):
-        href = item["assets"].get("visual", {}).get("href")
-        if href:
-            urls.append(href)
-    logger.info(f"--- STAC SEARCH FOR ZOOM {z} ---")
-    logger.info(f"Found {len(urls)} scenes.")
-    for u in urls:
-        logger.info(f"COG: {u}")
-        
-    return urls
+    return response.json().get("features", [])    
+    
+@app.get("/api/sentinel-metadata")
+def get_sentinel_metadata(lat: float, lng: float, z: int):
+    """Returns a GeoJSON FeatureCollection of the cached STAC data."""
+    # We round the coordinates just like the tile endpoint to hit the same cache key
+    center_lat = round(lat * 2) / 2
+    center_lng = round(lng * 2) / 2
+    
+    features = get_stac_features(center_lat, center_lng, z)
+    
+    return Response(
+        content={"type": "FeatureCollection", "features": features},
+        media_type="application/json"
+    )
 
 def read_single_tile(url: str, x: int, y: int, z: int):
     with Reader(url) as src:
@@ -108,9 +111,10 @@ def get_latest_sentinel(z: int, x: int, y: int):
     center_lng = round((bounds.east + bounds.west) / 2 * 2) / 2
     
     # 2. Get the URLs (Hits the lightning-fast memory cache 14 out of 15 times)
-    urls = []
+    
     features = get_stac_features(center_lat, center_lng, z)
-    #urls = get_stac_urls(center_lat, center_lng, z)
+    
+    urls = []
     for item in features:
         item_bbox = item.get("bbox")
         # ONLY add the URL if the image physically touches this specific map tile
