@@ -63,7 +63,7 @@ def get_stac_urls(lat: float, lng: float, z: int):
     
     # Create a bounding box roughly 100km wide around the center
     bbox = [lng - 0.5, lat - 0.5, lng + 0.5, lat + 0.5]
-    search_limit = 20 if z <= 10 else 5
+    search_limit = 20 if z <= 12 else 10
     payload = {
         "bbox": bbox,
         "collections": ["sentinel-2-l2a"],
