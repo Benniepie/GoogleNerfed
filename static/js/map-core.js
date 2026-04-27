@@ -163,11 +163,24 @@ function toggleSection(header) {
             }),
 			sentinelLayer: L.tileLayer('/api/sentinel-latest/{z}/{x}/{y}.webp', {
     			tileSize: 512,
+				minZoom: 11,
+				maxZoom: 15,
     			attribution: '&copy; <a href="https://dataspace.copernicus.eu/" target="_blank">Copernicus Sentinel data 2026</a>',
 				zIndex: 10,
 				zoomOffset: -1
 			}),
 
+			//footprintLayer: L.geoJSON(null, {
+			//	style: #ff00000",
+			//	weight: 2,
+			//	fillOpacity: 0.1
+			//},
+			//onEachFeature: function (feature, layer) {
+     		//   	const captureDate = new Date(feature.properties.datetime).toLocaleString('en-GB');
+        	//	layer.bindPopup(`<strong>Imagery Captured:</strong><br>${captureDate}`);
+		 	//	}
+    		//  }),
+			
 		//topography: L.tileLayer('/api/dynamic-topo/{z}/{x}/{y}.png', {
             //	attribution: 'Elevation data &copy; Copernicus',
             //	opacity: 0.8, // Slight transparency looks great over a dark base map
@@ -217,6 +230,7 @@ function toggleSection(header) {
             hot: layers.hot,
             liveSat: liveSatelliteHybrid,
 			s2latest: layers.sentinelLayer,
+			s2latesthybrid: L.layerGroup([layers.sentinelLayer, layers.vectorLabels]),
         };
 
                 // --- THIS IS THE NEW TRANSPARENCY FIX ---
