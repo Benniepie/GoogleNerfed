@@ -57,7 +57,7 @@ app.include_router(
 
 
 @cached(cache=stac_cache)
-def get_stac_urls(lat: float, lng: float):
+def get_stac_urls(lat: float, lng: float, z: int):
     """Fetches the 5 latest AWS COG URLs for a 50km area, cached for speed."""
     stac_url = "https://earth-search.aws.element84.com/v1/search"
     
