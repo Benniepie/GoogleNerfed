@@ -194,21 +194,9 @@ function toggleSection(header) {
         // ----------------------------------------
         // --- The Hybrid Live Satellite Logic ---
         // Swaps from MODIS to Sentinel automatically based on zoom
-        const liveSatelliteHybrid = L.layerGroup();
+        // const liveSatelliteHybrid = L.layerGroup();
 
-        map.on('zoomend', function() {
-            if (map.hasLayer(liveSatelliteHybrid)) {
-                liveSatelliteHybrid.clearLayers();
-                if (map.getZoom() > 9) {
-                    liveSatelliteHybrid.addLayer(layers.sentinelNRT);
-                } else {
-                    liveSatelliteHybrid.addLayer(layers.modisDaily);
-                }
-                // Always add labels and roads over live satellite
-                liveSatelliteHybrid.addLayer(layers.roads);
-                liveSatelliteHybrid.addLayer(layers.labels);
-            }
-        });
+
 
 
 
@@ -229,9 +217,23 @@ function toggleSection(header) {
             topo: layers.topo,
             hot: layers.hot,
             liveSat: liveSatelliteHybrid,
-			s2latest: layers.sentinelLayer,
+			s2latest: L.layerGroup([layers.sentinelLayer]),
 			s2latesthybrid: L.layerGroup([layers.sentinelLayer, layers.vectorLabels]),
         };
+
+        map.on('zoomend', function() {
+            if (map.hasLayer(s2latest)) {
+                s2latest.clearLayers();
+                if (map.getZoom() >= 11) {
+                    s2latest.addLayer(layers.sentinelLayer);
+                } else {
+                    s2latest.addLayer(layers.sentinel2);
+                }
+                // Always add labels and roads over live satellite
+                // liveSatelliteHybrid.addLayer(layers.roads);
+                // liveSatelliteHybrid.addLayer(layers.labels);
+            }
+        });
 
                 // --- THIS IS THE NEW TRANSPARENCY FIX ---
         // Listen for Leaflet adding the layer to the map
