@@ -67,7 +67,7 @@ def get_stac_features(lat: float, lng: float, z: int):
     
     # Create a bounding box roughly 100km wide around the center
     bbox = [lng - 0.5, lat - 0.5, lng + 0.5, lat + 0.5]
-    search_limit = 20 if z <= 12 else 10
+    search_limit = 40 if z <= 12 else 20
     payload = {
         "bbox": bbox,
         "collections": ["sentinel-2-l2a"],
@@ -122,6 +122,12 @@ def get_latest_sentinel(z: int, x: int, y: int):
             href = item["assets"].get("visual", {}).get("href")
             if href:
                 urls.append(href)
+
+    logger.info(f"--- STAC SEARCH FOR ZOOM {z} ---")
+    logger.info(f"Found {len(urls)} scenes.")
+    for u in urls:
+        logger.info(f"COG: {u}")
+        
     if not urls:
         return Response(status_code=404, content="No imagery found")
 
