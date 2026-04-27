@@ -107,6 +107,10 @@ function toggleSection(header) {
             sentinel2: L.tileLayer('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg', {
                 attribution: eoxAttr
             }),
+            sentinel2Grayscale: L.tileLayer('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg', {
+                attribution: eoxAttr,
+                className: 'grayscale-tile'
+            }),
             // Transparent overlays for Hybrid views
             roads: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
                 pane: 'hybridLabels'
@@ -216,22 +220,24 @@ function toggleSection(header) {
             s2nchybrid: L.layerGroup([layers.sentinelNatural, layers.vectorLabels]),
             topo: layers.topo,
             hot: layers.hot,
-			s2latest: L.layerGroup([layers.sentinelLayer]),
-			s2latesthybrid: L.layerGroup([layers.sentinelLayer, layers.vectorLabels]),
+			s2latest: L.layerGroup([layers.sentinel2Grayscale, layers.sentinelLayer]),
+			s2latesthybrid: L.layerGroup([layers.sentinel2Grayscale, layers.sentinelLayer, layers.vectorLabels]),
         };
-		const s2latest = L.layerGroup();
-        map.on('zoomend', function() {
-            if (map.hasLayer(s2latest)) {
-                s2latest.clearLayers();
-                if (map.getZoom() >= 11) {
-                    s2latest.addLayer(layers.sentinelLayer);
-                } else {
-                    s2latest.addLayer(layers.sentinel2);
-                }
-                // Always add labels and roads over live satellite
-                // liveSatelliteHybrid.addLayer(layers.roads);
-                // liveSatelliteHybrid.addLayer(layers.labels);
-            }
+
+        // Add loading indicator events to sentinelLayer
+        layers.sentinelLayer.on('tileloadstart', function(e) {
+            e.tile.classList.add('sentinel-loading');
+            e.tile.title = "Fetching imagery...";
+        });
+
+        layers.sentinelLayer.on('tileload', function(e) {
+            e.tile.classList.remove('sentinel-loading');
+            e.tile.removeAttribute('title');
+        });
+
+        layers.sentinelLayer.on('tileerror', function(e) {
+            e.tile.classList.remove('sentinel-loading');
+            e.tile.title = "Failed to load imagery";
         });
 
                 // --- THIS IS THE NEW TRANSPARENCY FIX ---

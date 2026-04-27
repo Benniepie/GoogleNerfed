@@ -339,6 +339,21 @@
         .color-options { display: flex; gap: 10px; justify-content: center; margin: 15px 0; flex-wrap: wrap; }
         .color-swatch { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
         .color-swatch:hover { transform: scale(1.1); }
+
+        /* Greyscale Map Tile */
+        .grayscale-tile {
+            filter: grayscale(100%);
+            -webkit-filter: grayscale(100%);
+        }
+
+        /* Loading Spinner on Sentinel Tiles */
+        .sentinel-loading {
+            /* Use a simple CSS SVG spinner as a background image */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='xMidYMid'%3E%3Ccircle cx='50' cy='50' fill='none' stroke='%23ffffff' stroke-width='10' r='35' stroke-dasharray='164.93361431346415 56.97787143782138'%3E%3CanimateTransform attributeName='transform' type='rotate' repeatCount='indefinite' dur='1s' values='0 50 50;360 50 50' keyTimes='0;1'/%3E%3C/circle%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 5px 5px; /* Top left with slight padding */
+            background-size: 30px 30px;
+        }
     </style>
 </head>
 <body>
