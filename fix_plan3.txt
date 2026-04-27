@@ -1,0 +1,44 @@
+Alright, the logs are super spammy from the backend server trying to query AWS when Sentinel isn't requested at zoom 5 (or shouldn't be).
+Let's see what happens if I change `minZoom: 11` to `minZoom: 12` given `zoomOffset: -1`? No, if the user zooms to 10, offset -1 means it fetches 9.
+Actually, wait: Leaflet's `TileLayer` determines `minZoom` based on the map's zoom level.
+BUT the issue is that it fetches data at zoom 5! And in my test script `test_pw.js`, it didn't fetch UNTIL the user switched the layer!
+Ah! Wait. The log shows:
+```
+--- SWITCHING ---
+REQ: http://localhost:3000/api/sentinel-latest/10/600/351.webp
+...
+--- ZOOMING TO 11 ---
+```
+So, AT ZOOM 6, right after switching to the layer, it fetches tiles for zoom 10!
+Wait, if it's at zoom 6, how does it fetch `z=10`?
+Because `zoomOffset: -1` isn't making zoom 6 -> 10!
+Ah! Wait... `x=600`, `y=351` ARE coordinates for zoom 10!
+Wait! The map is at zoom 6. But Leaflet requests `z=10` tiles?
+Why would Leaflet request `z=10` tiles when the map is at zoom 6?
+Because Leaflet tries to load the smallest available tiles if the current zoom is below `minZoom`?!
+NO! `TileLayer` has a property `minNativeZoom`. If `minNativeZoom: 11` is set, and you are at zoom 6, it won't fetch anything if `minZoom` is NOT set, wait...
+Actually, if you just set `minZoom: 11`, it shouldn't show it at all.
+Wait! Did I set `minNativeZoom` instead of `minZoom`?
+In `map-core.js`:
+```javascript
+			sentinelLayer: L.tileLayer('/api/sentinel-latest/{z}/{x}/{y}.webp', {
+			tileSize: 512,
+				minZoom: 11,
+				maxZoom: 15,
+...
+```
+I used `minZoom: 11`.
+If `minZoom` is 11, why does Leaflet fetch?
+Wait, if I put `minZoom: 11`, DOES Leaflet request tiles at zoom 10? Yes, if `zoomOffset: -1`!
+Wait, `11 + (-1) = 10`. BUT if the map is at zoom 6, it shouldn't fetch!
+Why did it fetch?
+Maybe it's the `minimapLayer`? No, `minimapLayer` uses openfreemap.
+Let's look at `static/js/map-core.js` again.
+Is there a `maxNativeZoom` or `minNativeZoom`?
+Let's check the Leaflet documentation.
+If `minZoom` is set, the layer shouldn't be visible at zoom 6.
+BUT I put the layer in an `L.layerGroup([layers.sentinel2Grayscale, layers.sentinelLayer])`.
+When `L.layerGroup` is added to the map at zoom 6, `sentinel2Grayscale` is added (it has no `minZoom` so it loads).
+And `sentinelLayer` is added. Since its `minZoom` is 11, it SHOULD NOT LOAD.
+BUT wait, what if I set `minNativeZoom: 11` and `maxNativeZoom: 15`?
+Let's modify `map-core.js` and see!

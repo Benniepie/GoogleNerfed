@@ -353,6 +353,9 @@
             background-repeat: no-repeat;
             background-position: 5px 5px; /* Top left with slight padding */
             background-size: 30px 30px;
+            /* Force visibility during loading since Leaflet hides tiles until loaded */
+            visibility: visible !important;
+            opacity: 1 !important;
         }
     </style>
 </head>

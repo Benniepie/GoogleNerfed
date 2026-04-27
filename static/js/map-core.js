@@ -168,7 +168,8 @@ function toggleSection(header) {
 			sentinelLayer: L.tileLayer('/api/sentinel-latest/{z}/{x}/{y}.webp', {
     			tileSize: 512,
 				minZoom: 11,
-				maxZoom: 15,
+				maxNativeZoom: 15,
+				maxZoom: 22,
     			attribution: '&copy; <a href="https://dataspace.copernicus.eu/" target="_blank">Copernicus Sentinel data 2026</a>',
 				zIndex: 10,
 				zoomOffset: -1
@@ -220,9 +221,37 @@ function toggleSection(header) {
             s2nchybrid: L.layerGroup([layers.sentinelNatural, layers.vectorLabels]),
             topo: layers.topo,
             hot: layers.hot,
-			s2latest: L.layerGroup([layers.sentinel2Grayscale, layers.sentinelLayer]),
-			s2latesthybrid: L.layerGroup([layers.sentinel2Grayscale, layers.sentinelLayer, layers.vectorLabels]),
         };
+
+        // Define dynamic layer groups that only add sentinelLayer when zoom >= 11
+        // This prevents Leaflet from forcing the map's minZoom to 11.
+        function createDynamicSentinelGroup(baseLayers) {
+            const group = L.layerGroup(baseLayers);
+
+            function updateDynamicLayer() {
+                if (!map.hasLayer(group)) return;
+                if (map.getZoom() >= 11) {
+                    if (!group.hasLayer(layers.sentinelLayer)) group.addLayer(layers.sentinelLayer);
+                } else {
+                    if (group.hasLayer(layers.sentinelLayer)) group.removeLayer(layers.sentinelLayer);
+                }
+            }
+
+            group.on('add', () => {
+                map.on('zoomend', updateDynamicLayer);
+                updateDynamicLayer();
+            });
+
+            group.on('remove', () => {
+                map.off('zoomend', updateDynamicLayer);
+                if (group.hasLayer(layers.sentinelLayer)) group.removeLayer(layers.sentinelLayer);
+            });
+
+            return group;
+        }
+
+        baseMaps.s2latest = createDynamicSentinelGroup([layers.sentinel2Grayscale]);
+        baseMaps.s2latesthybrid = createDynamicSentinelGroup([layers.sentinel2Grayscale, layers.vectorLabels]);
 
         // Add loading indicator events to sentinelLayer
         layers.sentinelLayer.on('tileloadstart', function(e) {
