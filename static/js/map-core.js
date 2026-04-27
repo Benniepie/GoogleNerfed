@@ -216,7 +216,6 @@ function toggleSection(header) {
             s2nchybrid: L.layerGroup([layers.sentinelNatural, layers.vectorLabels]),
             topo: layers.topo,
             hot: layers.hot,
-            liveSat: liveSatelliteHybrid,
 			s2latest: L.layerGroup([layers.sentinelLayer]),
 			s2latesthybrid: L.layerGroup([layers.sentinelLayer, layers.vectorLabels]),
         };
