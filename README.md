@@ -1,6 +1,12 @@
-# **Self-Hosted MyMaps Clone**
+###Oi! Map It!###
 
-A lightweight, open-source, and fully self-hosted clone of Google MyMaps. This project allows you to easily view, upload, manage, and style your KML and KMZ mapping data over beautiful vector and satellite base maps.
+Google Earth's view of Google MyMaps was totally broken and every single map marker had a label that wouldn't go away. With Google MyMaps KML styles being ignored by Google Earth when viewing a MyMap and no sign of it ever being fixed by Google, it was time to jump ship and ditch the cloud.
+
+This is a lightweight, open-source, and fully self-hosted map app. This project allows you to easily view, upload, manage, and style your KML and KMZ mapping data over beautiful vector and satellite base maps. And a few other bits and pieces. 
+
+Written by Bennie, map expertise by JR for JP @ ATP Geopolitics: https://map.atpgeo.com
+Track updates to the map on Youtube: https://youtube.com/@atpgeo
+
 
 ## **✨ Features**
 
@@ -20,6 +26,11 @@ A lightweight, open-source, and fully self-hosted clone of Google MyMaps. This p
 * **MapLibre GL JS**: Used alongside a Leaflet binding (@maplibre/maplibre-gl-leaflet) to render modern, crisp Vector Tiles inside the Leaflet environment.  
 * **toGeoJSON**: A robust JavaScript library to parse XML/KML files into GeoJSON on the fly.  
 * **Vanilla HTML/CSS/JS**: No heavy frontend frameworks required. Uses CSS variables for a clean dark mode theme.
+* **Custom Timeline Scrubber** to Browse changes to the map through time
+* **Experimental 3D front-ends using CesiumJS and Maplibre-GL
+* **Scale, Mini-map, Intuitive measurement tools and other bits and pieces**
+* **Secure Admin functionality** behind Basic Auth and read only front line
+* **Persistent Styles**
 
 ### **Backend**
 
@@ -27,6 +38,9 @@ A lightweight, open-source, and fully self-hosted clone of Google MyMaps. This p
 * **FastAPI**: A lightning-fast, production-grade web framework that serves both the API endpoints and the static frontend files.  
 * **Uvicorn**: ASGI web server implementation for Python.  
 * **Python-Multipart**: For handling raw file uploads.
+* **Rio-Tiler / GDAL / Cloud Optimised GeoTiff Mosaic Implementation** for Map Tiling / API and Sentinel-2 Imagery with caching
+* **Doris is in there somewhere**
+
 
 ### **Mapping Providers**
 
@@ -35,14 +49,16 @@ A lightweight, open-source, and fully self-hosted clone of Google MyMaps. This p
 * **HOT**: Humanitarian Open Street Map tiles
 * **Esri World Imagery**: Providing the high-resolution satellite raster tiles.
 * **Esri Firefly**: Lower Saturation satellite tiles
-* **Sentinel 2 Cloudless Imagery**: Mosaic of Sentinel 2 satellite imagert
-* **Sentinel 2 L2A TRUE COLOUR / NATURAL COLOUR**: Latest Sentinel 2 satellite imagery from Copernicus where cloud cover is <30%
+* **Sentinel 2 Cloudless Imagery**: Mosaic of Sentinel 2 satellite imagery
+* **Sentinel 2 L2A TRUE COLOUR / NATURAL COLOUR**: Latest Sentinel 2 satellite imagery mosaic tiles created on the fly from Sentinel 2 L2A 10m COGs on AWS. 
 * **Custom hybrid layer:** Using OpenFreeMap vector tiles overlaid for each of the 5 satellite imagery providers
+
   
 ### **Data Providers**
-* **Ukraine War FrontLines:** Functionality to load Ukraine war front line data from two mappers, calculate the differences between the two, draw the changes on that map using map markers with the historical data easily browsable using a timeline slider
+* **Ukraine War FrontLines:** Functionality to load Ukraine war front line data from two mappers, calculate the differences between the two, draw the changes on that map using map markers with the historical data easily browsable using a timeline slider. Credit to JR for the original QGIS logic
 * **NASA FIRMS:** Last 48 hours VIIRS satellite data (as raster tiles at lower zoom levels & CSV data plotted on the map and higher zoom levels
 * **Sentinel 2 metadata:** To determine the created date of the Sentinel 2 imagery
+* **OpenStreetMap polygon data** from Overpass Turbo API
 
 ## **🚀 Getting Started**
 
@@ -81,7 +97,5 @@ A lightweight, open-source, and fully self-hosted clone of Google MyMaps. This p
 
 ## **🔮 Future Enhancements (Roadmap)**
 
-* Basic HTTP Authentication for admin actions (uploading/deleting).  
-* Integration of live 3rd-party data feeds (e.g. NASA FIRMS).  
-* Full migration to MapLibre GL JS for 3D terrain and 3D building support.  
-* Server-side persistence for layer styling (styles.json).
+* Full migration to MapLibre GL / Cesium JS for 3D terrain and 3D building support.  
+* Some crazy 4D Gaussian Splatting to bring 4D Immersive models & walkable worlds to ATP audience
