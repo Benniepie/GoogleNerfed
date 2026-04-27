@@ -219,7 +219,7 @@ function toggleSection(header) {
 			s2latest: L.layerGroup([layers.sentinelLayer]),
 			s2latesthybrid: L.layerGroup([layers.sentinelLayer, layers.vectorLabels]),
         };
-
+		const s2latest = L.layerGroup();
         map.on('zoomend', function() {
             if (map.hasLayer(s2latest)) {
                 s2latest.clearLayers();
