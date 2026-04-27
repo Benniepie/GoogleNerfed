@@ -9,3 +9,5 @@ lxml
 pyogrio
 titiler.core
 mercantile
+cachetools
+requests
