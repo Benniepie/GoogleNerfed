@@ -27,9 +27,9 @@ Track updates to the map on Youtube: https://youtube.com/@atpgeo
 * **toGeoJSON**: A robust JavaScript library to parse XML/KML files into GeoJSON on the fly.  
 * **Vanilla HTML/CSS/JS**: No heavy frontend frameworks required. Uses CSS variables for a clean dark mode theme.
 * **Custom Timeline Scrubber** to Browse changes to the map through time
-* **Experimental 3D front-ends using CesiumJS and Maplibre-GL
+* **Experimental 3D front-ends using CesiumJS and Maplibre-GL**
 * **Scale, Mini-map, Intuitive measurement tools and other bits and pieces**
-* **Secure Admin functionality** behind Basic Auth and read only front line
+* **Secure Admin functionality** behind Basic Auth and read only frontend
 * **Persistent Styles**
 
 ### **Backend**
