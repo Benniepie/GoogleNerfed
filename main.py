@@ -22,12 +22,16 @@ from titiler.core.factory import TilerFactory
 import math
 import mercantile
 from fastapi.responses import RedirectResponse
-
+from rio_tiler.io import Reader
+from rio_tiler.mosaic import mosaic_reader
+from rio_tiler.errors import TileOutsideBounds
+import requests
+from cachetools import cached, TTLCache
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('mymaps-automation')
 
-
+stac_cache = TTLCache(maxsize=100, ttl=300)
 
 app = FastAPI()
 
@@ -51,49 +55,68 @@ app.include_router(
     tags=["Cloud Optimized GeoTIFF"]
 )
 
-# --- 2. ADD SENTINEL STAC DISCOVERY ENDPOINT ---
-@app.get("/api/sentinel-latest/{z}/{x}/{y}.png")
-async def get_latest_sentinel(z: int, x: int, y: int):
-    """
-    Intercepts Leaflet's XYZ tile request, queries Copernicus STAC for the latest
-    Sentinel-2 pass, extracts the S3 path, and redirects to Titiler to render it.
-    """
-    # Calculate the geographical bounding box of the requested map tile
-    bounds = mercantile.bounds(x, y, z)
-    
-    # Query the Copernicus STAC API
+
+@cached(cache=stac_cache)
+def get_stac_urls(lat: float, lng: float):
+    """Fetches the 5 latest AWS COG URLs for a 50km area, cached for speed."""
     stac_url = "https://earth-search.aws.element84.com/v1/search"
+    
+    # Create a bounding box roughly 100km wide around the center
+    bbox = [lng - 0.5, lat - 0.5, lng + 0.5, lat + 0.5]
+    
     payload = {
-        "bbox": [bounds.west, bounds.south, bounds.east, bounds.north],
+        "bbox": bbox,
         "collections": ["sentinel-2-l2a"],
         "query": {"eo:cloud_cover": {"lt": 20}},
         "sortby": [{"field": "properties.datetime", "direction": "desc"}],
-        "limit": 1
+        "limit": 5  # Grab enough MGRS squares to stitch together seamlessly
     }
     
-    async with httpx.AsyncClient() as client:
-        response = await client.post(stac_url, json=payload)
-        if response.status_code != 200:
-            return Response(status_code=502, content="Failed to reach STAC API")
-        data = response.json()
+    response = requests.post(stac_url, json=payload)
+    if response.status_code != 200:
+        return []
         
-    if not data.get("features"):
-        return Response(status_code=404, content="No imagery found for this area")
-        
-    item = data["features"][0]
-    
-    # Extract the S3 URL for the True Colour Image (TCI)
-    # The CDSE STAC puts direct S3 links in the 'alternate' object
-    visual_href = item["assets"].get("visual", {}).get("href")
-    print("--- DEBUG ---")
-    print(f"Discovered URL: {visual_href}")
+    urls = []
+    for item in response.json().get("features", []):
+        href = item["assets"].get("visual", {}).get("href")
+        if href:
+            urls.append(href)
+    return urls
 
-    if not visual_href:
-        return Response(status_code=500, content="Could not find TCI asset in STAC item")
-    # Redirect internally to the Titiler endpoint
-    # We pass the discovered S3 URL straight to the local Titiler instance
-    titiler_url = f"/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url={visual_href}"
-    return RedirectResponse(url=titiler_url)
+def read_single_tile(url: str, x: int, y: int, z: int):
+    with Reader(url) as src:
+        return src.tile(x, y, z)
+
+
+@app.get("/api/sentinel-latest/{z}/{x}/{y}.png")
+def get_latest_sentinel(z: int, x: int, y: int):
+    bounds = mercantile.bounds(x, y, z)
+    
+    # 1. Round the map coordinates to the nearest 0.5 degrees
+    # If Leaflet asks for 15 tiles on a screen, they will all round to the same number,
+    # meaning we only do ONE external STAC search instead of 15!
+    center_lat = round((bounds.north + bounds.south) / 2 * 2) / 2
+    center_lng = round((bounds.east + bounds.west) / 2 * 2) / 2
+    
+    # 2. Get the URLs (Hits the lightning-fast memory cache 14 out of 15 times)
+    urls = get_stac_urls(center_lat, center_lng)
+    
+    if not urls:
+        return Response(status_code=404, content="No imagery found")
+
+    # 3. Stitch the overlapping MGRS squares together on the fly
+    try:
+        img_data, _ = mosaic_reader(urls, read_single_tile, x, y, z)
+        img_buffer = img_data.render(img_format="PNG")
+        return Response(content=img_buffer, media_type="image/png")
+    except TileOutsideBounds:
+        # Expected behaviour if the user pans completely off the data grid
+        return Response(status_code=404, content="Tile outside data bounds")
+    except Exception as e:
+        print(f"Mosaic error: {e}")
+        return Response(status_code=500, content="Failed to render mosaic")
+
+
 
 #@app.get("/api/dynamic-topo/{z}/{x}/{y}.png")
 #async def get_dynamic_topo(z: int, x: int, y: int):
