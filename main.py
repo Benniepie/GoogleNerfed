@@ -63,17 +63,18 @@ def get_stac_urls(lat: float, lng: float):
     
     # Create a bounding box roughly 100km wide around the center
     bbox = [lng - 0.5, lat - 0.5, lng + 0.5, lat + 0.5]
-    
+    search_limit = 20 if z <= 10 else 5
     payload = {
         "bbox": bbox,
         "collections": ["sentinel-2-l2a"],
         "query": {"eo:cloud_cover": {"lt": 20}},
         "sortby": [{"field": "properties.datetime", "direction": "desc"}],
-        "limit": 5  # Grab enough MGRS squares to stitch together seamlessly
+        "limit": search_limit
     }
     
     response = requests.post(stac_url, json=payload)
     if response.status_code != 200:
+        logger.error("STAC API failed to respond")
         return []
         
     urls = []
@@ -81,13 +82,18 @@ def get_stac_urls(lat: float, lng: float):
         href = item["assets"].get("visual", {}).get("href")
         if href:
             urls.append(href)
+    logger.info(f"--- STAC SEARCH FOR ZOOM {z} ---")
+    logger.info(f"Found {len(urls)} scenes.")
+    for u in urls:
+        logger.info(f"COG: {u}")
+        
     return urls
 
 def read_single_tile(url: str, x: int, y: int, z: int):
     with Reader(url) as src:
         return src.tile(x, y, z, tilesize=512, resampling_method="bilinear") # or "cubic" for even softer blending)
 
-@app.get("/api/sentinel-latest/{z}/{x}/{y}.png")
+@app.get("/api/sentinel-latest/{z}/{x}/{y}.webp")
 def get_latest_sentinel(z: int, x: int, y: int):
     bounds = mercantile.bounds(x, y, z)
     
@@ -98,7 +104,7 @@ def get_latest_sentinel(z: int, x: int, y: int):
     center_lng = round((bounds.east + bounds.west) / 2 * 2) / 2
     
     # 2. Get the URLs (Hits the lightning-fast memory cache 14 out of 15 times)
-    urls = get_stac_urls(center_lat, center_lng)
+    urls = get_stac_urls(center_lat, center_lng, z)
     
     if not urls:
         return Response(status_code=404, content="No imagery found")
@@ -106,8 +112,12 @@ def get_latest_sentinel(z: int, x: int, y: int):
     # 3. Stitch the overlapping MGRS squares together on the fly
     try:
         img_data, _ = mosaic_reader(urls, read_single_tile, x, y, z)
-        img_buffer = img_data.render(img_format="PNG")
-        return Response(content=img_buffer, media_type="image/png")
+        if img_data.mask.max() == 0:
+             return Response(status_code=404, content="Tile has no valid data pixels")
+        
+        img_buffer = img_data.render(img_format="WEBP", **{"quality": 80})
+        return Response(content=img_buffer, media_type="image/webp")
+        
     except TileOutsideBounds:
         # Expected behaviour if the user pans completely off the data grid
         return Response(status_code=404, content="Tile outside data bounds")
