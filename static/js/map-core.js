@@ -357,6 +357,29 @@ function toggleSection(header) {
 
 
 
+        window.updateSentinelStatus = function() {
+            const statusTextEl = document.getElementById('sentinelStatusText');
+            if (!statusTextEl) return;
+
+            const activeBasemapEl = document.querySelector('input[name="basemap"]:checked');
+            const activeBasemap = activeBasemapEl ? activeBasemapEl.value : null;
+
+            if (activeBasemap === 's2latest' || activeBasemap === 's2latesthybrid') {
+                if (map.getZoom() < 11) {
+                    statusTextEl.innerText = "For the most recent Sentinel Imagery Zoom in!";
+                    statusTextEl.style.color = "#ef4444"; // Red
+                } else {
+                    statusTextEl.innerText = "Creating colour map tiles for latest Sentinel-2 Imagery!";
+                    statusTextEl.style.color = "#eab308"; // Yellow
+                }
+            } else {
+                statusTextEl.innerText = "Sentinel-2 Latest imagery is back! - Map tiles are made on the fly from the satellite imagery mosaics. Performance improvements coming soon!";
+                statusTextEl.style.color = "#94a3b8"; // Black/gray equivalent
+            }
+        };
+
+        map.on('zoomend', window.updateSentinelStatus);
+
         // Handle Base Map Switching
         document.querySelectorAll('input[name="basemap"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
@@ -378,6 +401,8 @@ function toggleSection(header) {
                     map.panBy([1, 0], { animate: false });
                     map.panBy([-1, 0], { animate: false });
                 }, 50);
+
+                window.updateSentinelStatus();
 
             });
         });

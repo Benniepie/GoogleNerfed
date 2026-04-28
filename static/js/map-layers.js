@@ -810,6 +810,8 @@
                     baseMaps.dark.addTo(map);
                 }
 
+                if (window.updateSentinelStatus) window.updateSentinelStatus();
+
             } catch (err) {
                 console.error("Failed to load settings:", err);
                 baseMaps.dark.addTo(map); // Fallback
