@@ -98,6 +98,18 @@ function toggleSection(header) {
                 style: 'https://tiles.openfreemap.org/styles/liberty',
                 attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
             }),
+            openFreeBright: L.maplibreGL({
+                style: 'https://tiles.openfreemap.org/styles/bright',
+                attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+            }),
+            openFreeFiord: L.maplibreGL({
+                style: 'https://tiles.openfreemap.org/styles/fiord',
+                attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+            }),
+            openFreePositron: L.maplibreGL({
+                style: 'https://tiles.openfreemap.org/styles/positron',
+                attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+            }),
             esriSatellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: esriAttr
             }),
@@ -209,6 +221,9 @@ function toggleSection(header) {
         const baseMaps = {
             dark: layers.openFreeDark,
             light: layers.openFreeLight,
+            bright: layers.openFreeBright,
+            fiord: layers.openFreeFiord,
+            positron: layers.openFreePositron,
             satellite: layers.esriSatellite,
             satellitehybrid: L.layerGroup([layers.esriSatellite, layers.vectorLabels]),
             firefly: layers.esriFirefly,
