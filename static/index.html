@@ -289,7 +289,7 @@
             border: 2px solid transparent;
             cursor: pointer;
             transition: transform 0.2s, border-color 0.2s;
-            background-size: cover;
+            background-size: 200%;
             background-position: center;
             display: flex;
             align-items: flex-end;
@@ -486,7 +486,7 @@
                         <input type="radio" name="basemap" value="satellite">
                         <span class="basemap-label">Satellite</span>
                     </label>
-                    <label class="basemap-option" style="background-image: url('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/6/21/37'); border-top: 3px solid #3b82f6;">
+                    <label class="basemap-option" style="background-image: url('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/6/21/37'), url('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/6/21/37'); border-top: 3px solid #3b82f6;">
                         <input type="radio" name="basemap" value="satellitehybrid">
                         <span class="basemap-label">Sat Hybrid</span>
                     </label>
@@ -494,7 +494,7 @@
                         <input type="radio" name="basemap" value="firefly">
                         <span class="basemap-label">Firefly</span>
                     </label>
-                    <label class="basemap-option" style="background-image: url('https://fly.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Firefly/MapServer/tile/6/21/37'); border-top: 3px solid #3b82f6;">
+                    <label class="basemap-option" style="background-image: url('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/6/21/37'), url('https://fly.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Firefly/MapServer/tile/6/21/37'); border-top: 3px solid #3b82f6;">
                         <input type="radio" name="basemap" value="fireflyhybrid">
                         <span class="basemap-label">FF Hybrid</span>
                     </label>
@@ -503,20 +503,20 @@
                         <input type="radio" name="basemap" value="s2cloud">
                         <span class="basemap-label">S2 Cloud</span>
                     </label>
-                    <label class="basemap-option" style="background-image: url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg'); border-top: 3px solid #3b82f6;">
+                    <label class="basemap-option" style="background-image: url('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/6/21/37'), url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg'); border-top: 3px solid #3b82f6;">
                         <input type="radio" name="basemap" value="s2cloudhybrid">
                         <span class="basemap-label">S2C Hybrid</span>
                     </label>
                 </div>
 
                 <div style="border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 6px; margin-top: 10px; margin-bottom: 5px;">
-                    <div class="basemap-category" style="margin-top: 0;">Sentinel Latest</div>
+                    <div class="basemap-category" style="margin-top: 0;">🛰️ Sentinel Latest</div>
                     <div class="basemap-grid" style="margin-bottom: 5px;">
                         <label class="basemap-option" style="background-image: url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg');">
                             <input type="radio" name="basemap" value="s2latest">
-                            <span class="basemap-label">🛰️ S2 TRUE</span>
+                            <span class="basemap-label">S2 TRUE</span>
                         </label>
-                        <label class="basemap-option" style="background-image: url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg'); border-top: 3px solid #3b82f6;">
+                        <label class="basemap-option" style="background-image: url('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/6/21/37'), url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg'); border-top: 3px solid #3b82f6;">
                             <input type="radio" name="basemap" value="s2latesthybrid">
                             <span class="basemap-label">S2T Hybrid</span>
                         </label>
