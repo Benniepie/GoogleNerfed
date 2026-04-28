@@ -179,6 +179,17 @@
             text-decoration: none !important;
         }
 
+        .leaflet-bottom.leaflet-left {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-end;
+            pointer-events: none;
+        }
+        .leaflet-bottom.leaflet-left .leaflet-control {
+            pointer-events: auto;
+            margin-bottom: 10px;
+        }
+
         .leaflet-control-scale-line {
             background: rgba(255, 255, 255, 0.4) !important;
             text-shadow: none !important;
