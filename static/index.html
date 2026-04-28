@@ -45,8 +45,8 @@
         .control-panel {
             position: fixed;
             top: 0;
-            right: -340px; /* Hidden off-screen by default */
-            width: 320px;
+            right: -360px; /* Hidden off-screen by default */
+            width: 340px;
             height: 100vh;
             background: rgba(20, 20, 25, 0.45); /* Translucent dark */
             backdrop-filter: blur(15px); /* Glassmorphism */
@@ -57,11 +57,23 @@
             z-index: 2000;
             transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth slide */
             color: #f8fafc;
+            overflow-y: auto;
+        }
+
+        .control-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        .control-panel::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        .control-panel::-webkit-scrollbar-track {
+            background: transparent;
         }
 
         .control-panel.open {
             right: 0; /* Slides into view when this class is added via the Hamburger */
-        }/* --- 2. THE GLASSMORPHISM SLIDE-OUT PANEL --- */
+        }
 
 
 
@@ -406,12 +418,19 @@
                 <label>
                     <input type="radio" name="basemap" value="s2cloudhybrid"> S2C (Hybrid)
                 </label><br>
-                <label>
-                    <input type="radio" name="basemap" value="s2latest"> 🛰️  Sentinel2 TRUE
-                </label>
-                <label>
-                    <input type="radio" name="basemap" value="s2latesthybrid"> S2T (Hybrid)
-                </label><br>
+                <div style="border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 6px; margin-top: 10px; margin-bottom: 5px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 5px;">
+                        <label style="width: auto;">
+                            <input type="radio" name="basemap" value="s2latest"> 🛰️ Sentinel2 TRUE
+                        </label>
+                        <label style="width: auto;">
+                            <input type="radio" name="basemap" value="s2latesthybrid"> S2T (Hybrid)
+                        </label>
+                    </div>
+                    <div id="sentinelStatusText" style="font-size: 0.8rem; font-weight: bold; margin-top: 5px; color: #94a3b8; line-height: 1.3;">
+                        Sentinel-2 Latest imagery is back! - Map tiles are made on the fly from the satellite imagery mosaics. Performance improvements coming soon!
+                    </div>
+                </div>
                 <!-- <label>
                     <input type="radio" name="basemap" value="s2nc"> 🛰️  Sentinel2 NATURAL
                 </label>
@@ -433,9 +452,9 @@
 
             
 
-            <select id="firmsStyleMode" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 6px; background: #ffffff00; color: white; border-radius: 4px;">
-                <option value="simple">Simple (All Red)</option>
-                <option value="time">Time Since Detection</option>
+            <select id="firmsStyleMode" style="width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 6px; background: rgba(30, 30, 35, 0.85); color: white; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                <option value="simple" style="background: #1e1e23; color: white;">Simple (All Red)</option>
+                <option value="time" style="background: #1e1e23; color: white;">Time Since Detection</option>
             </select>
 
             <div id="firmsTimeKey" style="display: none; margin-bottom: 10px; font-size: 0.8rem; background: rgba(0,0,0,0.01); padding: 8px; border-radius: 4px;">
