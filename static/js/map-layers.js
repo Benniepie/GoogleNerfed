@@ -1,3 +1,4 @@
+const activeKMLGeoJSON = {};
 
         // 3. Fetch and Render Layers
         async function loadLayers() {
@@ -273,19 +274,15 @@
                 }
 
                 const layer = L.geoJSON(geoJsonData, {
-                    // Style for polygons/lines
+                    interactive: false, // CRITICAL: Lets clicks pass through to the map
                     style: function (feature) {
                         const style = getFeatureStyle(feature);
                         return { color: style.color, weight: 2, fillOpacity: style.opacity };
                     },
-                    // Style for points/markers
                     pointToLayer: function (feature, latlng) {
                         const style = getFeatureStyle(feature);
-
-                        // CHANGE 1: Use L.circle instead of L.circleMarker
                         return L.circle(latlng, {
-                            // CHANGE 2: Radius is now in METRES.
-                            // Try 50, 100, or 200 depending on how spaced out they are!
+                            interactive: false, // Let clicks pass through points too
                             radius: 50,
                             fillColor: style.color,
                             color: '#ffffff',
@@ -293,20 +290,12 @@
                             opacity: 1,
                             fillOpacity: style.opacity
                         });
-                    },
-                    onEachFeature: function (feature, layer) {
-                        let popupContent = "";
-                        if (feature.properties && feature.properties.name) {
-                            popupContent += "<h3>" + feature.properties.name + "</h3>";
-                        }
-                        if (feature.properties && feature.properties.description) {
-                            popupContent += "<p>" + feature.properties.description + "</p>";
-                        }
-                        if (popupContent) {
-                            layer.bindPopup(popupContent);
-                        }
                     }
+                    // REMOVED onEachFeature bindPopup logic entirely
                 });
+
+                // Store the raw GeoJSON for our master click event
+                activeKMLGeoJSON[filename] = geoJsonData;
 
                 if (activeLayers[filename]) {
                     map.removeLayer(activeLayers[filename]);
@@ -724,44 +713,170 @@
 
 
 // The Click Event Listener
-        map.on('click', async function(e) {
-            // Suppress Location Intelligence popup if a measurement tool is active
+        // The Master Unified Click Event Listener
+
+// Helper to look up what a location actually is
+async function reverseGeocodeLocation(lat, lng) {
+    try {
+        // Zoom 18 targets specific buildings and POIs (Points of Interest)
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+
+        const response = await fetch(url, {
+            headers: {
+                'Accept-Language': 'en-GB' // Forces English results where available
+            }
+        });
+
+        const data = await response.json();
+
+        if (data && data.address) {
+            let featureDescription = '';
+
+            // OSM categorises things nicely. Let's extract that if it exists.
+            if (data.category && data.type && data.category !== 'boundary') {
+                // Capitalise and clean up the tags (e.g., turns "power" and "substation" into "Power - Substation")
+                const cat = data.category.charAt(0).toUpperCase() + data.category.slice(1);
+                const type = data.type.charAt(0).toUpperCase() + data.type.slice(1).replace(/_/g, ' ');
+                featureDescription = `<div style="margin-bottom: 4px; color: #facc15;"><b>Feature:</b> ${cat} - ${type}</div>`;
+            }
+
+            // Display name usually contains the full address string
+            const addressString = data.display_name ? `<div><b>Address:</b> ${data.display_name}</div>` : '';
+
+            return `${featureDescription}${addressString}`;
+        }
+        return '<em style="color: #94a3b8;">No detailed location data found.</em>';
+    } catch (error) {
+        console.error("Geocoding lookup failed:", error);
+        return '<em style="color: #ef4444;">Failed to look up location.</em>';
+    }
+}
+
+map.on('click', async function(e) {
             if (window.currentTool && (window.currentTool === 'ruler' || window.currentTool === 'circle')) {
                 return;
             }
 
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
+            const clickPoint = turf.point([lng, lat]);
             const estimates = calculatePassEstimates(lng);
 
-            // Create a loading popup
-            let popupContent = `
-                <div style="min-width: 220px;">
-                    <h3 style="margin: 0 0 8px 0; border-bottom: 1px solid #475569; padding-bottom: 4px;">Location Intelligence</h3>
-                    <p style="margin: 4px 0; font-size: 0.85rem;"><b>Lat:</b> ${lat.toFixed(4)}<br><b>Lng:</b> ${lng.toFixed(4)}</p>
+            // We will build one giant, scrollable HTML string
+            let popupHTML = `<div style="min-width: 250px; max-width: 320px; max-height: 400px; overflow-y: auto; padding-right: 5px;">`;
 
-                    <h4 style="margin: 10px 0 4px 0; color: #93c5fd;">🛰️ Estimated Daily Passes</h4>
-                    <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem;">
-                        <li><b>Sentinel-2:</b> ~${estimates.sentinel}</li>
-                        <li><b>FIRMS (VIIRS):</b> ~${estimates.viirs}</li>
-                    </ul>
-                    <em style="font-size: 0.75rem; color: #94a3b8;">*Sun-synchronous estimates based on longitude. High latitudes (e.g. Ukraine) receive multiple overlapping swath looks.</em>
+            // --- 1. Location Intelligence (Always shows) ---
+            popupHTML += `
+                <h3 style="margin: 0 0 8px 0; border-bottom: 1px solid #475569; padding-bottom: 4px;">Location Intelligence</h3>
+                <p style="margin: 4px 0; font-size: 0.85rem;"><b>Lat:</b> ${lat.toFixed(4)}<br><b>Lng:</b> ${lng.toFixed(4)}</p>
 
-                    <div id="wmsInfo" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #475569; display: none;">
-                        <h4 style="margin: 0 0 4px 0; color: #22c55e;">📸 Sentinel Image Data</h4>
-                        <div id="wmsLoading">Querying Copernicus...</div>
-                    </div>
+                <div id="osmGeoLookup" style="margin: 8px 0; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 0.85rem; border-left: 2px solid #3b82f6;">
+                    <em style="color: #94a3b8;">Scanning location data...</em>
+                </div>
+
+                <h4 style="margin: 10px 0 4px 0; color: #93c5fd;">🛰️ Estimated Daily Passes</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem;">
+                    <li><b>Sentinel-2:</b> ~${estimates.sentinel}</li>
+                    <li><b>FIRMS (VIIRS):</b> ~${estimates.viirs}</li>
+                </ul>
+                <em style="font-size: 0.75rem; color: #94a3b8;">*Sun-synchronous estimates based on longitude. High latitudes (e.g. Ukraine) receive multiple overlapping swath looks.</em>
+
+                <div id="wmsInfo" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #475569; display: none;">
+                    <h4 style="margin: 0 0 4px 0; color: #22c55e;">📸 Sentinel Image Data</h4>
+                    <div id="wmsLoading">Querying Copernicus...</div>
                 </div>
             `;
 
+            // --- 2. KML Data & Metadata Extraction ---
+            let kmlHitsHTML = '';
+            for (const filename in activeKMLGeoJSON) {
+                // Only drill down if the layer is visibly checked on the map
+                if (activeLayers[filename] && map.hasLayer(activeLayers[filename])) {
+                    turf.featureEach(activeKMLGeoJSON[filename], function (currentFeature) {
+                        let isHit = false;
+
+                        // Mathematical intersection based on geometry type
+                        if (currentFeature.geometry.type === 'Polygon' || currentFeature.geometry.type === 'MultiPolygon') {
+                            isHit = turf.booleanPointInPolygon(clickPoint, currentFeature);
+                        } else if (currentFeature.geometry.type === 'Point') {
+                            const dist = turf.distance(clickPoint, currentFeature, {units: 'meters'});
+                            isHit = dist < 500; // 500m hit tolerance for points
+                        } else if (currentFeature.geometry.type === 'LineString' || currentFeature.geometry.type === 'MultiLineString') {
+                            const dist = turf.pointToLineDistance(clickPoint, currentFeature, {units: 'meters'});
+                            isHit = dist < 500; // 500m hit tolerance for lines
+                        }
+
+                        if (isHit) {
+                            kmlHitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
+                            kmlHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #facc15;">📁 ${filename}</h4>`;
+
+                            // The Magic Loop: Extracts ALL metadata dynamically
+                            if (currentFeature.properties) {
+                                for (const key in currentFeature.properties) {
+                                    // Ignore useless internal styling keys generated by toGeoJSON
+                                    if (key !== 'styleUrl' && key !== 'styleHash' && key !== 'styleMapHash') {
+                                        const val = currentFeature.properties[key];
+                                        // Format links cleanly if they exist
+                                        if (val) {
+                                            const displayVal = String(val).startsWith('http') ? `<a href="${val}" target="_blank" style="color:#3b82f6;">Link</a>` : val;
+                                            kmlHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px; word-wrap: break-word;"><b>${key}:</b> ${displayVal}</div>`;
+                                        }
+                                    }
+                                }
+                            }
+                            kmlHitsHTML += `</div>`;
+                        }
+                    });
+                }
+            }
+            if (kmlHitsHTML) popupHTML += kmlHitsHTML;
+
+            // --- 3. FIRMS Data Drill-down ---
+            if (map.hasLayer(firmsVectorGroup)) {
+                let firmsHitsHTML = '';
+                currentFirmsData.forEach(fire => {
+                    const firePt = turf.point([parseFloat(fire.longitude), parseFloat(fire.latitude)]);
+                    const dist = turf.distance(clickPoint, firePt, {units: 'meters'});
+
+                    // If click is within 1km of a fire center, count it as a hit
+                    if (dist < 1000) {
+                        const timeStr = fire.acq_time.padStart(4, '0');
+                        firmsHitsHTML += `
+                            <div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">
+                                <h4 style="margin: 0 0 4px 0; color: #ef4444;">🔥 Thermal Anomaly</h4>
+                                <div style="font-size: 0.85rem;">
+                                    <b>Detected:</b> ${fire.acq_date} at ${timeStr} UTC<br>
+                                    <b>Confidence:</b> ${fire.confidence}
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                if (firmsHitsHTML) popupHTML += firmsHitsHTML;
+            }
+
+            // Close the master container and trigger Leaflet
+            popupHTML += `</div>`;
+
             const popup = L.popup()
                 .setLatLng(e.latlng)
-                .setContent(popupContent)
+                .setContent(popupHTML)
                 .openOn(map);
+
+            // Fire the reverse geocoding API in the background
+            if (typeof reverseGeocodeLocation === 'function') {
+                reverseGeocodeLocation(lat, lng).then(resultHTML => {
+                    const lookupDiv = document.getElementById('osmGeoLookup');
+                    if (lookupDiv) {
+                        lookupDiv.innerHTML = resultHTML;
+                    }
+                });
+            }
 
             // If the Sentinel layer is currently active on the map, fetch the image date
             if (map.hasLayer(layers.sentinelLive) && map.getZoom() > 9) {
-                document.getElementById('wmsInfo').style.display = 'block';
+                const wmsInfo = document.getElementById('wmsInfo');
+                if (wmsInfo) wmsInfo.style.display = 'block';
 
                 const url = getFeatureInfoUrl(map, layers.sentinelLive, e.latlng);
 
@@ -775,15 +890,20 @@
                         // Sentinel Hub returns the date in the properties object
                         const date = data.features[0].properties.date || "Date unknown";
                         const time = data.features[0].properties.time || "";
-                        document.getElementById('wmsLoading').innerHTML = `
-                            <b>Acquired:</b> ${date} ${time} UTC
-                        `;
+                        const wmsLoading = document.getElementById('wmsLoading');
+                        if (wmsLoading) {
+                            wmsLoading.innerHTML = `
+                                <b>Acquired:</b> ${date} ${time} UTC
+                            `;
+                        }
                     } else {
-                        document.getElementById('wmsLoading').innerHTML = `<em style="color: #94a3b8;">No image metadata found for this pixel.</em>`;
+                        const wmsLoading = document.getElementById('wmsLoading');
+                        if (wmsLoading) wmsLoading.innerHTML = `<em style="color: #94a3b8;">No image metadata found for this pixel.</em>`;
                     }
                 } catch (error) {
                     console.error("WMS GetFeatureInfo Error:", error);
-                    document.getElementById('wmsLoading').innerHTML = `<em style="color: #ef4444;">Failed to retrieve image data.</em>`;
+                    const wmsLoading = document.getElementById('wmsLoading');
+                    if (wmsLoading) wmsLoading.innerHTML = `<em style="color: #ef4444;">Failed to retrieve image data.</em>`;
                 }
             }
         });
