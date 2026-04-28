@@ -275,10 +275,10 @@
 
         /* Base Map Switcher */
         .basemap-switcher { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; }
-        .basemap-switcher label { font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .basemap-switcher label { font-size: 0.9rem; cursor: pointer; display: flex; gap: 5px; }
 
-        .basemap-category { margin-top: 10px; margin-bottom: 5px; font-weight: bold; font-size: 0.95rem; color: #cbd5e1; }
-        .basemap-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
+        .basemap-category { margin-top: 0px; margin-bottom: 0px; font-weight: bold; font-size: 0.95rem; color: #cbd5e1; }
+        .basemap-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 0px; }
 
         .basemap-option {
             position: relative;
@@ -320,7 +320,7 @@
 
         .basemap-label {
             width: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.3);
             color: #e2e8f0;
             font-size: 0.7rem;
             text-align: center;
@@ -511,12 +511,12 @@
 
                 <div style="border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 6px; margin-top: 10px; margin-bottom: 5px;">
                     <div class="basemap-category" style="margin-top: 0;">Sentinel Latest</div>
-                    <div class="basemap-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 5px;">
-                        <label class="basemap-option" style="background-image: url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg'); filter: grayscale(100%);">
+                    <div class="basemap-grid" style="margin-bottom: 5px;">
+                        <label class="basemap-option" style="background-image: url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg');">
                             <input type="radio" name="basemap" value="s2latest">
                             <span class="basemap-label">🛰️ S2 TRUE</span>
                         </label>
-                        <label class="basemap-option" style="background-image: url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg'); filter: grayscale(100%); border-top: 3px solid #3b82f6;">
+                        <label class="basemap-option" style="background-image: url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg'); border-top: 3px solid #3b82f6;">
                             <input type="radio" name="basemap" value="s2latesthybrid">
                             <span class="basemap-label">S2T Hybrid</span>
                         </label>
