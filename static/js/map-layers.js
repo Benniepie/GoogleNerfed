@@ -799,12 +799,15 @@ map.on('click', async function(e) {
             // We will build one giant, scrollable HTML string
             let popupHTML = `<div style="min-width: 250px; max-width: 320px; max-height: 400px; overflow-y: auto; padding-right: 5px;">`;
 
+            // Generate a unique ID for this specific popup instance
+            const popupId = 'osmGeoLookup_' + Math.random().toString(36).substr(2, 9);
+
             // --- 1. Location Intelligence (Always shows) ---
             popupHTML += `
                 <h3 style="margin: 0 0 8px 0; border-bottom: 1px solid #475569; padding-bottom: 4px;">Location Intelligence</h3>
                 <p style="margin: 4px 0; font-size: 0.85rem;"><b>Lat:</b> ${lat.toFixed(4)}<br><b>Lng:</b> ${lng.toFixed(4)}</p>
 
-                <div id="osmGeoLookup" style="margin: 8px 0; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 0.85rem; border-left: 2px solid #3b82f6;">
+                <div id="${popupId}" style="margin: 8px 0; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 0.85rem; border-left: 2px solid #3b82f6;">
                     <em style="color: #94a3b8;">Scanning location data...</em>
                 </div>
 
@@ -943,7 +946,7 @@ map.on('click', async function(e) {
             // Fire the reverse geocoding API in the background
             if (typeof reverseGeocodeLocation === 'function') {
                 reverseGeocodeLocation(lat, lng).then(resultHTML => {
-                    const lookupDiv = document.getElementById('osmGeoLookup');
+                    const lookupDiv = document.getElementById(popupId);
                     if (lookupDiv) {
                         lookupDiv.innerHTML = resultHTML;
                     }
