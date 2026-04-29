@@ -714,35 +714,41 @@ const activeKMLGeoJSON = {};
 async function reverseGeocodeLocation(lat, lng) {
     try {
         // Zoom 18 targets specific buildings and POIs (Points of Interest)
-        // Added extratags=1 and namedetails=1 for more specific building/use identification
-        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&extratags=1&namedetails=1`;
+        // Added extratags=1, namedetails=1, and accept-language=en for more specific English identification
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&extratags=1&namedetails=1&accept-language=en`;
 
         const response = await fetch(url, {
             headers: {
-                'Accept-Language': 'en-GB' // Forces English results where available
+                'Accept-Language': 'en' // Forces English results where available
             }
         });
 
         const data = await response.json();
 
-        if (data && data.address) {
+        if (data && (data.address || data.class || data.type)) {
             let featureDescription = '';
             let specificName = '';
 
             // Try to extract a specific name from namedetails or address dictionary
-            if (data.namedetails && data.namedetails.name) {
-                specificName = data.namedetails.name;
-            } else if (data.address.amenity) {
+            if (data.namedetails && (data.namedetails.name || data.namedetails['name:en'])) {
+                specificName = data.namedetails['name:en'] || data.namedetails.name;
+            } else if (data.address && data.address.amenity) {
                 specificName = data.address.amenity;
-            } else if (data.address.building) {
+            } else if (data.address && data.address.building) {
                 specificName = data.address.building;
+            } else if (data.name) {
+                specificName = data.name;
             }
 
+            // Fallback for missing category (older API uses class/type)
+            const catRaw = data.class || data.category;
+            const typeRaw = data.type;
+
             // OSM categorises things nicely. Let's extract that if it exists.
-            if (data.category && data.type && data.category !== 'boundary') {
+            if (catRaw && typeRaw && catRaw !== 'boundary') {
                 // Capitalise and clean up the tags (e.g., turns "power" and "substation" into "Power - Substation")
-                const cat = data.category.charAt(0).toUpperCase() + data.category.slice(1);
-                const type = data.type.charAt(0).toUpperCase() + data.type.slice(1).replace(/_/g, ' ');
+                const cat = catRaw.charAt(0).toUpperCase() + catRaw.slice(1).replace(/_/g, ' ');
+                const type = typeRaw.charAt(0).toUpperCase() + typeRaw.slice(1).replace(/_/g, ' ');
 
                 let titleHtml = `<b>Feature:</b> ${cat} - ${type}`;
 
@@ -890,8 +896,8 @@ map.on('click', async function(e) {
                     const firePt = turf.point([parseFloat(fire.longitude), parseFloat(fire.latitude)]);
                     const dist = turf.distance(clickPoint, firePt, {units: 'meters'});
 
-                    // If click is within 1km of a fire center, count it as a hit
-                    if (dist < 1000) {
+                    // If click is within the visual radius of the drawn circle (187.5m), count it as a hit
+                    if (dist < 187.5) {
                         const timeStr = fire.acq_time.padStart(4, '0');
                         const fireDate = new Date(`${fire.acq_date}T${timeStr.substring(0, 2)}:${timeStr.substring(2, 4)}:00Z`);
                         const ageHours = (now - fireDate) / (1000 * 60 * 60);
