@@ -277,13 +277,15 @@
         .basemap-switcher { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; }
         .basemap-switcher label { font-size: 0.9rem; cursor: pointer; display: flex; gap: 5px; }
 
-        .basemap-category { margin-top: 0px; margin-bottom: 0px; font-weight: bold; font-size: 0.95rem; color: #cbd5e1; }
-        .basemap-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 0px; }
+        .basemap-category { margin-top: 0px; margin-bottom: 0px; font-weight: bold; font-size: 0.95rem; color: #cbd5e1; width: 100%; }
+        .basemap-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 0px; width: 100%; }
 
         .basemap-option {
             position: relative;
             width: 100%;
+            height: auto;
             aspect-ratio: 1 / 1;
+            box-sizing: border-box;
             border-radius: 8px;
             overflow: hidden;
             border: 2px solid transparent;
@@ -445,7 +447,7 @@
             Base Map <span class="toggle-icon">▼</span>
         </div>
         <div class="section-content">
-            <div class="basemap-switcher" style="flex-wrap: wrap; border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+            <div class="basemap-switcher" style="flex-wrap: wrap; border-bottom: none; margin-bottom: 0; padding-bottom: 0; flex-direction: column;">
 
                 <div class="basemap-category">Street Map</div>
                 <div class="basemap-grid">
@@ -470,11 +472,11 @@
                         <input type="radio" name="basemap" value="bright">
                         <span class="basemap-label">Bright</span>
                     </label>
-                    <label class="basemap-option" style="background-color: #1a2b3c; background-image: linear-gradient(to bottom right, #2c3e50, #1a2b3c);">
+                    <label class="basemap-option" style="background-image: url('https://a.basemaps.cartocdn.com/rastertiles/dark_all/11/1210/685.png');">
                         <input type="radio" name="basemap" value="fiord">
                         <span class="basemap-label">Fiord</span>
                     </label>
-                    <label class="basemap-option" style="background-color: #e2e8f0; background-image: linear-gradient(to bottom right, #f8fafc, #e2e8f0);">
+                    <label class="basemap-option" style="background-image: url('https://a.basemaps.cartocdn.com/rastertiles/light_all/11/1210/685.png');">
                         <input type="radio" name="basemap" value="positron">
                         <span class="basemap-label">Positron</span>
                     </label>
