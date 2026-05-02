@@ -61,7 +61,7 @@ def boxes_intersect(tile_bounds, item_bbox):
     return not (t_east < i_west or t_west > i_east or t_north < i_south or t_south > i_north)
 
 @cached(cache=stac_cache)
-def get_stac_features(lat: float, lng: float, z: int):
+def get_stac_features(lat: float, lng: float, z: float):
     """Fetches the 5 latest AWS COG URLs for a 50km area, cached for speed."""
     stac_url = "https://earth-search.aws.element84.com/v1/search"
     
@@ -83,7 +83,7 @@ def get_stac_features(lat: float, lng: float, z: int):
     return response.json().get("features", [])    
     
 @app.get("/api/sentinel-metadata")
-def get_sentinel_metadata(lat: float, lng: float, z: int):
+def get_sentinel_metadata(lat: float, lng: float, z: float):
     """Returns a GeoJSON FeatureCollection of the cached STAC data."""
     # We round the coordinates just like the tile endpoint to hit the same cache key
     center_lat = round(lat * 2) / 2
@@ -91,10 +91,7 @@ def get_sentinel_metadata(lat: float, lng: float, z: int):
     
     features = get_stac_features(center_lat, center_lng, z)
     
-    return Response(
-        content={"type": "FeatureCollection", "features": features},
-        media_type="application/json"
-    )
+    return {"type": "FeatureCollection", "features": features}
 
 def read_single_tile(url: str, x: int, y: int, z: int):
     with Reader(url) as src:
