@@ -89,6 +89,9 @@ function toggleSection(header) {
 
 
 		    // Individual Layers
+		window.currentCacheBuster = null;
+		window.currentSentinelFeatures = [];
+
         const layers = {
             openFreeDark: L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/dark',
@@ -175,16 +178,15 @@ function toggleSection(header) {
 				zoomOffset: -1
 			}),
 
-			//footprintLayer: L.geoJSON(null, {
-			//	style: #ff00000",
-			//	weight: 2,
-			//	fillOpacity: 0.1
-			//},
-			//onEachFeature: function (feature, layer) {
-     		//   	const captureDate = new Date(feature.properties.datetime).toLocaleString('en-GB');
-        	//	layer.bindPopup(`<strong>Imagery Captured:</strong><br>${captureDate}`);
-		 	//	}
-    		//  }),
+			footprintLayer: L.geoJSON(null, {
+			    style: {
+			        color: "#facc15",
+			        weight: 2,
+			        fillOpacity: 0.05,
+			        dashArray: '5, 5'
+			    },
+			    interactive: false
+			}),
 			
 		//topography: L.tileLayer('/api/dynamic-topo/{z}/{x}/{y}.png', {
             //	attribution: 'Elevation data &copy; Copernicus',

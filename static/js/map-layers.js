@@ -953,37 +953,38 @@ map.on('click', async function(e) {
                 });
             }
 
-            // If the Sentinel layer is currently active on the map, fetch the image date
-            if (map.hasLayer(layers.sentinelLive) && map.getZoom() > 9) {
+            // If the Sentinel layer is currently active on the map, find the image date
+            if (map.hasLayer(layers.sentinelLayer) && map.getZoom() >= 11) {
                 const wmsInfo = document.getElementById('wmsInfo');
                 if (wmsInfo) wmsInfo.style.display = 'block';
 
-                const url = getFeatureInfoUrl(map, layers.sentinelLive, e.latlng);
+                const wmsLoading = document.getElementById('wmsLoading');
+                if (wmsLoading) {
+                    let clickedFeature = null;
 
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error("Network response was not ok");
-
-                    const data = await response.json();
-
-                    if (data && data.features && data.features.length > 0) {
-                        // Sentinel Hub returns the date in the properties object
-                        const date = data.features[0].properties.date || "Date unknown";
-                        const time = data.features[0].properties.time || "";
-                        const wmsLoading = document.getElementById('wmsLoading');
-                        if (wmsLoading) {
-                            wmsLoading.innerHTML = `
-                                <b>Acquired:</b> ${date} ${time} UTC
-                            `;
+                    // Because currentSentinelFeatures is sorted newest-to-oldest by the backend,
+                    // the FIRST footprint we hit is mathematically the one visible on top of the mosaic.
+                    for (const feature of window.currentSentinelFeatures) {
+                        if (feature.geometry && turf.booleanPointInPolygon(clickPoint, feature)) {
+                            clickedFeature = feature;
+                            break;
                         }
-                    } else {
-                        const wmsLoading = document.getElementById('wmsLoading');
-                        if (wmsLoading) wmsLoading.innerHTML = `<em style="color: #94a3b8;">No image metadata found for this pixel.</em>`;
                     }
-                } catch (error) {
-                    console.error("WMS GetFeatureInfo Error:", error);
-                    const wmsLoading = document.getElementById('wmsLoading');
-                    if (wmsLoading) wmsLoading.innerHTML = `<em style="color: #ef4444;">Failed to retrieve image data.</em>`;
+
+                    if (clickedFeature) {
+                        // Extract date and cloud cover from the STAC properties
+                        const captureDate = new Date(clickedFeature.properties.datetime).toLocaleString('en-GB');
+                        const cloudCover = clickedFeature.properties['eo:cloud_cover']
+                            ? clickedFeature.properties['eo:cloud_cover'].toFixed(1)
+                            : "Unknown";
+
+                        wmsLoading.innerHTML = `
+                            <b>Acquired:</b> ${captureDate}<br>
+                            <span style="font-size: 0.8em; color: #94a3b8;">Cloud Cover: ${cloudCover}%</span>
+                        `;
+                    } else {
+                        wmsLoading.innerHTML = `<em style="color: #94a3b8;">No recent imagery data for this exact point.</em>`;
+                    }
                 }
             }
         });
@@ -1132,3 +1133,57 @@ map.on('click', async function(e) {
             }
 
         }, { passive: false }); // Passive: false is required to preventDefault on wheel events
+
+async function syncSentinelMetadata() {
+    // Only bother fetching metadata if the Sentinel layer is actually active and zoomed in
+    // "layers.sentinelLive" was the old check, but here let's check layers.sentinelLayer
+    if (!map.hasLayer(layers.sentinelLayer)) return;
+    const zoom = map.getZoom();
+    if (zoom < 11) {
+        layers.footprintLayer.clearLayers();
+        return;
+    }
+
+    const center = map.getCenter();
+    try {
+        const res = await fetch(`/api/sentinel-metadata?lat=${center.lat}&lng=${center.lng}&z=${zoom}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        window.currentSentinelFeatures = data.features || [];
+
+        // 1. Update footprints if the user has them toggled on
+        if (map.hasLayer(layers.footprintLayer)) {
+            layers.footprintLayer.clearLayers();
+            layers.footprintLayer.addData(data);
+        }
+
+        // 2. The Cloudflare Cache Buster
+        if (window.currentSentinelFeatures.length > 0) {
+            const newestPass = window.currentSentinelFeatures[0].properties.datetime;
+
+            // If the newest image timestamp has changed since we last checked...
+            if (window.currentCacheBuster !== newestPass) {
+                window.currentCacheBuster = newestPass;
+                // Update the URL to force Leaflet (and Cloudflare) to fetch fresh WEBP tiles
+                layers.sentinelLayer.setUrl(`/api/sentinel-latest/{z}/{x}/{y}.webp?v=${window.currentCacheBuster}`);
+            }
+        }
+    } catch (e) {
+        console.error("Failed to sync Sentinel metadata", e);
+    }
+}
+
+// Hook it into Leaflet's pan/zoom event
+map.on('moveend', syncSentinelMetadata);
+// Also trigger it when the layer is toggled on manually
+layers.sentinelLayer.on('add', syncSentinelMetadata);
+
+document.getElementById('toggleSentinelFootprint')?.addEventListener('change', function(e) {
+    if (e.target.checked) {
+        map.addLayer(layers.footprintLayer);
+        syncSentinelMetadata(); // Fetch data immediately if needed
+    } else {
+        map.removeLayer(layers.footprintLayer);
+    }
+});
