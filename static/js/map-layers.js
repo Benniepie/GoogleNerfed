@@ -811,16 +811,11 @@ map.on('click', async function(e) {
                     <em style="color: #94a3b8;">Scanning location data...</em>
                 </div>
 
-                <h4 style="margin: 10px 0 4px 0; color: #93c5fd;">🛰️ Estimated Daily Passes</h4>
-                <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem;">
-                    <li><b>Sentinel-2:</b> ~${estimates.sentinel}</li>
-                    <li><b>FIRMS (VIIRS):</b> ~${estimates.viirs}</li>
-                </ul>
-                <em style="font-size: 0.75rem; color: #94a3b8;">*Sun-synchronous estimates based on longitude. High latitudes (e.g. Ukraine) receive multiple overlapping swath looks.</em>
 
-                <div id="wmsInfo" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #475569; display: none;">
+
+                <div id="wmsInfo_${popupId}" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #475569; display: none;">
                     <h4 style="margin: 0 0 4px 0; color: #22c55e;">📸 Sentinel Image Data</h4>
-                    <div id="wmsLoading">Querying Copernicus...</div>
+                    <div id="wmsLoading_${popupId}">Querying Copernicus...</div>
                 </div>
             `;
 
@@ -955,10 +950,10 @@ map.on('click', async function(e) {
 
             // If the Sentinel layer is currently active on the map, find the image date
             if (map.hasLayer(layers.sentinelLayer) && map.getZoom() >= 11) {
-                const wmsInfo = document.getElementById('wmsInfo');
+                const wmsInfo = document.getElementById(`wmsInfo_${popupId}`);
                 if (wmsInfo) wmsInfo.style.display = 'block';
 
-                const wmsLoading = document.getElementById('wmsLoading');
+                const wmsLoading = document.getElementById(`wmsLoading_${popupId}`);
                 if (wmsLoading) {
                     let clickedFeature = null;
 
@@ -1146,7 +1141,7 @@ async function syncSentinelMetadata() {
 
     const center = map.getCenter();
     try {
-        const res = await fetch(`/api/sentinel-metadata?lat=${center.lat}&lng=${center.lng}&z=${zoom}`);
+        const res = await fetch(`/api/sentinel-metadata?lat=${center.lat}&lng=${center.lng}&z=${Math.round(zoom)}`);
         if (!res.ok) return;
         const data = await res.json();
 
@@ -1155,7 +1150,15 @@ async function syncSentinelMetadata() {
         // 1. Update footprints if the user has them toggled on
         if (map.hasLayer(layers.footprintLayer)) {
             layers.footprintLayer.clearLayers();
-            layers.footprintLayer.addData(data);
+
+            // Filter to only add footprints that have valid data and aren't overlapping needlessly
+            // Since data is sorted newest-first, we can just use the most recent ones
+            // that cover the bounding box, or just the top 5 to avoid clutter
+            const topFeatures = window.currentSentinelFeatures.slice(0, 5);
+            layers.footprintLayer.addData({
+                type: 'FeatureCollection',
+                features: topFeatures
+            });
         }
 
         // 2. The Cloudflare Cache Buster
