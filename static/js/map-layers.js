@@ -1,3 +1,4 @@
+const activeKMLGeoJSON = {};
 
         // 3. Fetch and Render Layers
         async function loadLayers() {
@@ -273,19 +274,15 @@
                 }
 
                 const layer = L.geoJSON(geoJsonData, {
-                    // Style for polygons/lines
+                    interactive: false, // CRITICAL: Lets clicks pass through to the map
                     style: function (feature) {
                         const style = getFeatureStyle(feature);
                         return { color: style.color, weight: 2, fillOpacity: style.opacity };
                     },
-                    // Style for points/markers
                     pointToLayer: function (feature, latlng) {
                         const style = getFeatureStyle(feature);
-
-                        // CHANGE 1: Use L.circle instead of L.circleMarker
                         return L.circle(latlng, {
-                            // CHANGE 2: Radius is now in METRES.
-                            // Try 50, 100, or 200 depending on how spaced out they are!
+                            interactive: false, // Let clicks pass through points too
                             radius: 50,
                             fillColor: style.color,
                             color: '#ffffff',
@@ -293,20 +290,12 @@
                             opacity: 1,
                             fillOpacity: style.opacity
                         });
-                    },
-                    onEachFeature: function (feature, layer) {
-                        let popupContent = "";
-                        if (feature.properties && feature.properties.name) {
-                            popupContent += "<h3>" + feature.properties.name + "</h3>";
-                        }
-                        if (feature.properties && feature.properties.description) {
-                            popupContent += "<p>" + feature.properties.description + "</p>";
-                        }
-                        if (popupContent) {
-                            layer.bindPopup(popupContent);
-                        }
                     }
+                    // REMOVED onEachFeature bindPopup logic entirely
                 });
+
+                // Store the raw GeoJSON for our master click event
+                activeKMLGeoJSON[filename] = geoJsonData;
 
                 if (activeLayers[filename]) {
                     map.removeLayer(activeLayers[filename]);
@@ -434,12 +423,7 @@
                     radius: 187.5 // 375m VIIRS footprint
                 });
 
-                fireCircle.bindPopup(`
-                    <b>Thermal Anomaly</b><br>
-                    Detected: ${fire.acq_date} at ${timeStr} UTC<br>
-                    Age: ${Math.round(ageHours)} hours ago<br>
-                    Confidence: ${fire.confidence}
-                `);
+                // REMOVED fireCircle.bindPopup(...) entirely
 
                 firmsVectorGroup.addLayer(fireCircle);
             });
@@ -724,44 +708,255 @@
 
 
 // The Click Event Listener
-        map.on('click', async function(e) {
-            // Suppress Location Intelligence popup if a measurement tool is active
+        // The Master Unified Click Event Listener
+
+// Helper to look up what a location actually is
+async function reverseGeocodeLocation(lat, lng) {
+    try {
+        // Zoom 18 targets specific buildings and POIs (Points of Interest)
+        // Added extratags=1, namedetails=1, and accept-language=en for more specific English identification
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&extratags=1&namedetails=1&accept-language=en`;
+
+        const response = await fetch(url, {
+            headers: {
+                'Accept-Language': 'en' // Forces English results where available
+            }
+        });
+
+        const data = await response.json();
+
+        if (data && (data.address || data.class || data.type)) {
+            let featureDescription = '';
+            let specificName = '';
+
+            // Try to extract a specific name from namedetails or address dictionary
+            if (data.namedetails && (data.namedetails.name || data.namedetails['name:en'])) {
+                specificName = data.namedetails['name:en'] || data.namedetails.name;
+            } else if (data.address && data.address.amenity) {
+                specificName = data.address.amenity;
+            } else if (data.address && data.address.building) {
+                specificName = data.address.building;
+            } else if (data.name) {
+                specificName = data.name;
+            }
+
+            // Fallback for missing category (older API uses class/type)
+            const catRaw = data.class || data.category;
+            const typeRaw = data.type;
+
+            // OSM categorises things nicely. Let's extract that if it exists.
+            if (catRaw && typeRaw && catRaw !== 'boundary') {
+                // Capitalise and clean up the tags (e.g., turns "power" and "substation" into "Power - Substation")
+                const cat = catRaw.charAt(0).toUpperCase() + catRaw.slice(1).replace(/_/g, ' ');
+                const type = typeRaw.charAt(0).toUpperCase() + typeRaw.slice(1).replace(/_/g, ' ');
+
+                let titleHtml = `<b>Feature:</b> ${cat} - ${type}`;
+
+                // If we found a specific name, inject it
+                if (specificName && specificName.toLowerCase() !== type.toLowerCase()) {
+                    titleHtml = `<b>${specificName}</b><br><span style="font-size: 0.8em; color: #cbd5e1;">${cat} - ${type}</span>`;
+                }
+
+                featureDescription = `<div style="margin-bottom: 6px; color: #facc15;">${titleHtml}</div>`;
+            } else if (specificName) {
+                // Fallback if we have a name but no valid category
+                featureDescription = `<div style="margin-bottom: 6px; color: #facc15;"><b>${specificName}</b></div>`;
+            }
+
+            // Check extratags for useful structural metadata
+            let extraInfo = '';
+            if (data.extratags) {
+                if (data.extratags.building) extraInfo += `<div><span style="color:#94a3b8">Building:</span> ${data.extratags.building}</div>`;
+                if (data.extratags.operator) extraInfo += `<div><span style="color:#94a3b8">Operator:</span> ${data.extratags.operator}</div>`;
+                if (data.extratags.usage) extraInfo += `<div><span style="color:#94a3b8">Usage:</span> ${data.extratags.usage}</div>`;
+            }
+            if (extraInfo) {
+                extraInfo = `<div style="font-size: 0.8rem; margin-bottom: 6px; padding-left: 6px; border-left: 2px solid #64748b;">${extraInfo}</div>`;
+            }
+
+            // Display name usually contains the full address string
+            const addressString = data.display_name ? `<div><b style="color: #94a3b8;">Address:</b> ${data.display_name}</div>` : '';
+
+            return `${featureDescription}${extraInfo}${addressString}`;
+        }
+        return '<em style="color: #94a3b8;">No detailed location data found.</em>';
+    } catch (error) {
+        console.error("Geocoding lookup failed:", error);
+        return '<em style="color: #ef4444;">Failed to look up location.</em>';
+    }
+}
+
+map.on('click', async function(e) {
             if (window.currentTool && (window.currentTool === 'ruler' || window.currentTool === 'circle')) {
                 return;
             }
 
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
+            const clickPoint = turf.point([lng, lat]);
             const estimates = calculatePassEstimates(lng);
 
-            // Create a loading popup
-            let popupContent = `
-                <div style="min-width: 220px;">
-                    <h3 style="margin: 0 0 8px 0; border-bottom: 1px solid #475569; padding-bottom: 4px;">Location Intelligence</h3>
-                    <p style="margin: 4px 0; font-size: 0.85rem;"><b>Lat:</b> ${lat.toFixed(4)}<br><b>Lng:</b> ${lng.toFixed(4)}</p>
+            // We will build one giant, scrollable HTML string
+            let popupHTML = `<div style="min-width: 250px; max-width: 320px; max-height: 400px; overflow-y: auto; padding-right: 5px;">`;
 
-                    <h4 style="margin: 10px 0 4px 0; color: #93c5fd;">🛰️ Estimated Daily Passes</h4>
-                    <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem;">
-                        <li><b>Sentinel-2:</b> ~${estimates.sentinel}</li>
-                        <li><b>FIRMS (VIIRS):</b> ~${estimates.viirs}</li>
-                    </ul>
-                    <em style="font-size: 0.75rem; color: #94a3b8;">*Sun-synchronous estimates based on longitude. High latitudes (e.g. Ukraine) receive multiple overlapping swath looks.</em>
+            // Generate a unique ID for this specific popup instance
+            const popupId = 'osmGeoLookup_' + Math.random().toString(36).substr(2, 9);
 
-                    <div id="wmsInfo" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #475569; display: none;">
-                        <h4 style="margin: 0 0 4px 0; color: #22c55e;">📸 Sentinel Image Data</h4>
-                        <div id="wmsLoading">Querying Copernicus...</div>
-                    </div>
+            // --- 1. Location Intelligence (Always shows) ---
+            popupHTML += `
+                <h3 style="margin: 0 0 8px 0; border-bottom: 1px solid #475569; padding-bottom: 4px;">Location Intelligence</h3>
+                <p style="margin: 4px 0; font-size: 0.85rem;"><b>Lat:</b> ${lat.toFixed(4)}<br><b>Lng:</b> ${lng.toFixed(4)}</p>
+
+                <div id="${popupId}" style="margin: 8px 0; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 0.85rem; border-left: 2px solid #3b82f6;">
+                    <em style="color: #94a3b8;">Scanning location data...</em>
+                </div>
+
+                <h4 style="margin: 10px 0 4px 0; color: #93c5fd;">🛰️ Estimated Daily Passes</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem;">
+                    <li><b>Sentinel-2:</b> ~${estimates.sentinel}</li>
+                    <li><b>FIRMS (VIIRS):</b> ~${estimates.viirs}</li>
+                </ul>
+                <em style="font-size: 0.75rem; color: #94a3b8;">*Sun-synchronous estimates based on longitude. High latitudes (e.g. Ukraine) receive multiple overlapping swath looks.</em>
+
+                <div id="wmsInfo" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #475569; display: none;">
+                    <h4 style="margin: 0 0 4px 0; color: #22c55e;">📸 Sentinel Image Data</h4>
+                    <div id="wmsLoading">Querying Copernicus...</div>
                 </div>
             `;
 
+            // --- 2. KML Data & Metadata Extraction ---
+            let kmlHitsHTML = '';
+            for (const filename in activeKMLGeoJSON) {
+                // Only drill down if the layer is visibly checked on the map
+                if (activeLayers[filename] && map.hasLayer(activeLayers[filename])) {
+                    turf.featureEach(activeKMLGeoJSON[filename], function (currentFeature) {
+                        let isHit = false;
+
+                        // Mathematical intersection based on geometry type
+                        if (currentFeature.geometry.type === 'Polygon' || currentFeature.geometry.type === 'MultiPolygon') {
+                            isHit = turf.booleanPointInPolygon(clickPoint, currentFeature);
+                        } else if (currentFeature.geometry.type === 'Point') {
+                            const dist = turf.distance(clickPoint, currentFeature, {units: 'meters'});
+                            isHit = dist < 500; // 500m hit tolerance for points
+                        } else if (currentFeature.geometry.type === 'LineString' || currentFeature.geometry.type === 'MultiLineString') {
+                            const dist = turf.pointToLineDistance(clickPoint, currentFeature, {units: 'meters'});
+                            isHit = dist < 500; // 500m hit tolerance for lines
+                        }
+
+                        if (isHit) {
+                            kmlHitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
+                            kmlHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #facc15;">📁 ${filename}</h4>`;
+
+                            // The Magic Loop: Extracts ALL metadata dynamically
+                            if (currentFeature.properties) {
+                                let metaCount = 0;
+                                let hiddenMetaHTML = '';
+
+                                for (const key in currentFeature.properties) {
+                                    // Ignore useless internal styling keys generated by toGeoJSON
+                                    if (key !== 'styleUrl' && key !== 'styleHash' && key !== 'styleMapHash') {
+                                        const val = currentFeature.properties[key];
+                                        // Format links cleanly if they exist
+                                        if (val) {
+                                            const displayVal = String(val).startsWith('http') ? `<a href="${val}" target="_blank" style="color:#3b82f6;">Link</a>` : val;
+                                            const rowHTML = `<div style="font-size: 0.85rem; margin-bottom: 3px; word-wrap: break-word;"><b>${key}:</b> ${displayVal}</div>`;
+
+                                            if (metaCount < 4) {
+                                                kmlHitsHTML += rowHTML;
+                                            } else {
+                                                hiddenMetaHTML += rowHTML;
+                                            }
+                                            metaCount++;
+                                        }
+                                    }
+                                }
+
+                                // Wrap excess metadata in a details block
+                                if (hiddenMetaHTML) {
+                                    kmlHitsHTML += `
+                                        <details style="margin-top: 6px; font-size: 0.85rem;">
+                                            <summary style="cursor: pointer; color: #94a3b8; user-select: none;">More info...</summary>
+                                            <div style="margin-top: 6px; padding-left: 8px; border-left: 2px solid #475569;">
+                                                ${hiddenMetaHTML}
+                                            </div>
+                                        </details>
+                                    `;
+                                }
+                            }
+                            kmlHitsHTML += `</div>`;
+                        }
+                    });
+                }
+            }
+            if (kmlHitsHTML) popupHTML += kmlHitsHTML;
+
+            // --- 3. FIRMS Data Drill-down ---
+            if (map.hasLayer(firmsVectorGroup)) {
+                const firmsHits = [];
+                const now = new Date();
+
+                currentFirmsData.forEach(fire => {
+                    const firePt = turf.point([parseFloat(fire.longitude), parseFloat(fire.latitude)]);
+                    const dist = turf.distance(clickPoint, firePt, {units: 'meters'});
+
+                    // If click is within the visual radius of the drawn circle (187.5m), count it as a hit
+                    if (dist < 187.5) {
+                        const timeStr = fire.acq_time.padStart(4, '0');
+                        const fireDate = new Date(`${fire.acq_date}T${timeStr.substring(0, 2)}:${timeStr.substring(2, 4)}:00Z`);
+                        const ageHours = (now - fireDate) / (1000 * 60 * 60);
+
+                        firmsHits.push({
+                            fire,
+                            timeStr,
+                            fireDate,
+                            ageHours
+                        });
+                    }
+                });
+
+                if (firmsHits.length > 0) {
+                    // Sort reverse chronological (newest first)
+                    firmsHits.sort((a, b) => b.fireDate - a.fireDate);
+
+                    let firmsHitsHTML = '';
+                    firmsHits.forEach(hit => {
+                        firmsHitsHTML += `
+                            <div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">
+                                <h4 style="margin: 0 0 4px 0; color: #ef4444;">🔥 Thermal Anomaly</h4>
+                                <div style="font-size: 0.85rem;">
+                                    <b>Detected:</b> ${hit.fire.acq_date} at ${hit.timeStr} UTC<br>
+                                    <b>Age:</b> ${Math.round(hit.ageHours)} hours ago<br>
+                                    <b>Confidence:</b> ${hit.fire.confidence}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    popupHTML += firmsHitsHTML;
+                }
+            }
+
+            // Close the master container and trigger Leaflet
+            popupHTML += `</div>`;
+
             const popup = L.popup()
                 .setLatLng(e.latlng)
-                .setContent(popupContent)
+                .setContent(popupHTML)
                 .openOn(map);
+
+            // Fire the reverse geocoding API in the background
+            if (typeof reverseGeocodeLocation === 'function') {
+                reverseGeocodeLocation(lat, lng).then(resultHTML => {
+                    const lookupDiv = document.getElementById(popupId);
+                    if (lookupDiv) {
+                        lookupDiv.innerHTML = resultHTML;
+                    }
+                });
+            }
 
             // If the Sentinel layer is currently active on the map, fetch the image date
             if (map.hasLayer(layers.sentinelLive) && map.getZoom() > 9) {
-                document.getElementById('wmsInfo').style.display = 'block';
+                const wmsInfo = document.getElementById('wmsInfo');
+                if (wmsInfo) wmsInfo.style.display = 'block';
 
                 const url = getFeatureInfoUrl(map, layers.sentinelLive, e.latlng);
 
@@ -775,15 +970,20 @@
                         // Sentinel Hub returns the date in the properties object
                         const date = data.features[0].properties.date || "Date unknown";
                         const time = data.features[0].properties.time || "";
-                        document.getElementById('wmsLoading').innerHTML = `
-                            <b>Acquired:</b> ${date} ${time} UTC
-                        `;
+                        const wmsLoading = document.getElementById('wmsLoading');
+                        if (wmsLoading) {
+                            wmsLoading.innerHTML = `
+                                <b>Acquired:</b> ${date} ${time} UTC
+                            `;
+                        }
                     } else {
-                        document.getElementById('wmsLoading').innerHTML = `<em style="color: #94a3b8;">No image metadata found for this pixel.</em>`;
+                        const wmsLoading = document.getElementById('wmsLoading');
+                        if (wmsLoading) wmsLoading.innerHTML = `<em style="color: #94a3b8;">No image metadata found for this pixel.</em>`;
                     }
                 } catch (error) {
                     console.error("WMS GetFeatureInfo Error:", error);
-                    document.getElementById('wmsLoading').innerHTML = `<em style="color: #ef4444;">Failed to retrieve image data.</em>`;
+                    const wmsLoading = document.getElementById('wmsLoading');
+                    if (wmsLoading) wmsLoading.innerHTML = `<em style="color: #ef4444;">Failed to retrieve image data.</em>`;
                 }
             }
         });
