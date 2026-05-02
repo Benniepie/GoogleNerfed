@@ -37,7 +37,7 @@ function toggleSection(header) {
 
 
         // 1. Initialise the Map
-        const map = L.map('map', { zoomControl: false, zoomSnap: 0.25, zoomDelta: 0.25 }).setView([49.0, 31.0], 6); // Default view centered on Ukraine
+        const map = L.map('map', { zoomControl: false, zoomSnap: 1, zoomDelta: 1 }).setView([49.0, 31.0], 6); // Default view centered on Ukraine
         L.control.zoom({ position: 'bottomright' }).addTo(map);
         L.control.scale({ position: 'bottomleft', imperial: true, metric: true }).addTo(map);
         window.map = map; // Expose map globally for other scripts
@@ -89,6 +89,9 @@ function toggleSection(header) {
 
 
 		    // Individual Layers
+		window.currentCacheBuster = null;
+		window.currentSentinelFeatures = [];
+
         const layers = {
             openFreeDark: L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/dark',
@@ -175,16 +178,15 @@ function toggleSection(header) {
 				zoomOffset: -1
 			}),
 
-			//footprintLayer: L.geoJSON(null, {
-			//	style: #ff00000",
-			//	weight: 2,
-			//	fillOpacity: 0.1
-			//},
-			//onEachFeature: function (feature, layer) {
-     		//   	const captureDate = new Date(feature.properties.datetime).toLocaleString('en-GB');
-        	//	layer.bindPopup(`<strong>Imagery Captured:</strong><br>${captureDate}`);
-		 	//	}
-    		//  }),
+			footprintLayer: L.geoJSON(null, {
+			    style: {
+			        color: "#facc15",
+			        weight: 2,
+			        fillOpacity: 0.05,
+			        dashArray: '5, 5'
+			    },
+			    interactive: false
+			}),
 			
 		//topography: L.tileLayer('/api/dynamic-topo/{z}/{x}/{y}.png', {
             //	attribution: 'Elevation data &copy; Copernicus',
