@@ -286,7 +286,65 @@
 
         /* Base Map Switcher */
         .basemap-switcher { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; }
-        .basemap-switcher label { font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .basemap-switcher label { font-size: 0.9rem; cursor: pointer; display: flex; gap: 5px; }
+
+        .basemap-category { margin-top: 0px; margin-bottom: 0px; font-weight: bold; font-size: 0.95rem; color: #cbd5e1; width: 100%; }
+        .basemap-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 0px; width: 100%; }
+
+        .basemap-option {
+            position: relative;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            box-sizing: border-box;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+            background-size: 200%;
+            background-position: center;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .basemap-option:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .basemap-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .basemap-option input[type="radio"]:checked + .basemap-label {
+            background: var(--accent-color);
+            color: white;
+            font-weight: bold;
+        }
+
+        .basemap-option:has(input[type="radio"]:checked) {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
+        }
+
+        .basemap-label {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            color: #e2e8f0;
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 4px 2px;
+            box-sizing: border-box;
+            backdrop-filter: blur(2px);
+            transition: background 0.2s;
+            pointer-events: none;
+            word-wrap: break-word;
+            line-height: 1.1;
+        }
 
         .layer-list { max-height: 250px; overflow-y: auto; margin-bottom: 0px; padding-right: 5px; }
         
@@ -400,57 +458,86 @@
             Base Map <span class="toggle-icon">▼</span>
         </div>
         <div class="section-content">
-            <div class="basemap-switcher" style="flex-wrap: wrap; border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
-                <label>
-                    <input type="radio" name="basemap" value="dark" checked> Dark
-                </label>
+            <div class="basemap-switcher" style="flex-wrap: wrap; border-bottom: none; margin-bottom: 0; padding-bottom: 0; flex-direction: column;">
 
-                <label>
-                    <input type="radio" name="basemap" value="light"> Light
-                </label>
-<label><input type="radio" name="basemap" value="topo"> Topo</label>
-<label><input type="radio" name="basemap" value="hot"> HOT</label><br>
-                <label>
-                    <input type="radio" name="basemap" value="satellite"> Satellite
-                </label>
-                <label>
-                    <input type="radio" name="basemap" value="satellitehybrid"> Satellite (Hybrid)
-                </label><br>
-                <label>
-                    <input type="radio" name="basemap" value="firefly"> Firefly
-                </label>
+                <div class="basemap-category">Street Map</div>
+                <div class="basemap-grid">
+                    <label class="basemap-option" style="background-image: url('https://a.basemaps.cartocdn.com/dark_all/6/37/21.png');">
+                        <input type="radio" name="basemap" value="dark" checked>
+                        <span class="basemap-label">Dark</span>
+                    </label>
+                    <label class="basemap-option" style="background-image: url('https://a.basemaps.cartocdn.com/light_all/6/37/21.png');">
+                        <input type="radio" name="basemap" value="light">
+                        <span class="basemap-label">Light</span>
+                    </label>
+                    <label class="basemap-option" style="background-image: url('https://a.tile.opentopomap.org/6/37/21.png');">
+                        <input type="radio" name="basemap" value="topo">
+                        <span class="basemap-label">Topo</span>
+                    </label>
+                    <label class="basemap-option" style="background-image: url('https://a.tile.openstreetmap.fr/hot/6/37/21.png');">
+                        <input type="radio" name="basemap" value="hot">
+                        <span class="basemap-label">HOT</span>
+                    </label>
 
-                <label>
-                    <input type="radio" name="basemap" value="fireflyhybrid"> Firefly (Hybrid)
-                </label><br>
-                <label>
-                    <input type="radio" name="basemap" value="s2cloud"> Sentinel2 Cloudless 
-                </label>
-                <label>
-                    <input type="radio" name="basemap" value="s2cloudhybrid"> S2C (Hybrid)
-                </label><br>
+                    <label class="basemap-option" style="background-image: url('https://a.basemaps.cartocdn.com/rastertiles/voyager/6/37/21.png');">
+                        <input type="radio" name="basemap" value="bright">
+                        <span class="basemap-label">Bright</span>
+                    </label>
+                    <label class="basemap-option" style="background-image: url('https://a.basemaps.cartocdn.com/rastertiles/dark_all/11/1210/685.png');">
+                        <input type="radio" name="basemap" value="fiord">
+                        <span class="basemap-label">Fiord</span>
+                    </label>
+                    <label class="basemap-option" style="background-image: url('https://a.basemaps.cartocdn.com/rastertiles/light_all/11/1210/685.png');">
+                        <input type="radio" name="basemap" value="positron">
+                        <span class="basemap-label">Positron</span>
+                    </label>
+                </div>
+
+                <div class="basemap-category">Imagery</div>
+                <div class="basemap-grid">
+                    <label class="basemap-option" style="background-image: url('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/6/21/37');">
+                        <input type="radio" name="basemap" value="satellite">
+                        <span class="basemap-label">Satellite</span>
+                    </label>
+                    <label class="basemap-option" style="background-image: url('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/6/21/37'), url('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/6/21/37'); border-top: 3px solid #3b82f6;">
+                        <input type="radio" name="basemap" value="satellitehybrid">
+                        <span class="basemap-label">Sat Hybrid</span>
+                    </label>
+                    <label class="basemap-option" style="background-image: url('https://fly.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Firefly/MapServer/tile/6/21/37');">
+                        <input type="radio" name="basemap" value="firefly">
+                        <span class="basemap-label">Firefly</span>
+                    </label>
+                    <label class="basemap-option" style="background-image: url('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/6/21/37'), url('https://fly.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Firefly/MapServer/tile/6/21/37'); border-top: 3px solid #3b82f6;">
+                        <input type="radio" name="basemap" value="fireflyhybrid">
+                        <span class="basemap-label">FF Hybrid</span>
+                    </label>
+
+                    <label class="basemap-option" style="background-image: url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg');">
+                        <input type="radio" name="basemap" value="s2cloud">
+                        <span class="basemap-label">S2 Cloud</span>
+                    </label>
+                    <label class="basemap-option" style="background-image: url('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/6/21/37'), url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg'); border-top: 3px solid #3b82f6;">
+                        <input type="radio" name="basemap" value="s2cloudhybrid">
+                        <span class="basemap-label">S2C Hybrid</span>
+                    </label>
+                </div>
+
                 <div style="border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 6px; margin-top: 10px; margin-bottom: 5px;">
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 5px;">
-                        <label style="width: auto;">
-                            <input type="radio" name="basemap" value="s2latest"> 🛰️ Sentinel2 TRUE
+                    <div class="basemap-category" style="margin-top: 0;">🛰️ Sentinel Latest</div>
+                    <div class="basemap-grid" style="margin-bottom: 5px;">
+                        <label class="basemap-option" style="background-image: url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg');">
+                            <input type="radio" name="basemap" value="s2latest">
+                            <span class="basemap-label">S2 TRUE</span>
                         </label>
-                        <label style="width: auto;">
-                            <input type="radio" name="basemap" value="s2latesthybrid"> S2T (Hybrid)
+                        <label class="basemap-option" style="background-image: url('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/6/21/37'), url('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/GoogleMapsCompatible/6/21/37.jpg'); border-top: 3px solid #3b82f6;">
+                            <input type="radio" name="basemap" value="s2latesthybrid">
+                            <span class="basemap-label">S2T Hybrid</span>
                         </label>
                     </div>
                     <div id="sentinelStatusText" style="font-size: 0.8rem; font-weight: bold; margin-top: 5px; color: #94a3b8; line-height: 1.3;">
                         Sentinel-2 Latest imagery is back! - Map tiles are made on the fly from the satellite imagery mosaics. Performance improvements coming soon!
                     </div>
                 </div>
-                <!-- <label>
-                    <input type="radio" name="basemap" value="s2nc"> 🛰️  Sentinel2 NATURAL
-                </label>
-                <label>
-                    <input type="radio" name="basemap" value="s2nchybrid"> S2N (Hybrid)
-                </label> -->
-              <!-- <label>
-                    <input type="radio" name="basemap" value="topopgraphy"> DIY Topographical
-                </label> -->
                               
             </div>
         </div>
