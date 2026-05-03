@@ -35,6 +35,16 @@ stac_cache = TTLCache(maxsize=100, ttl=300)
 
 app = FastAPI()
 
+# Create a global connection pool
+http_client = httpx.AsyncClient(
+    limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),
+    timeout=10.0
+)
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await http_client.aclose()
+
 # Enable CORS just in case
 app.add_middleware(
     CORSMiddleware,
@@ -521,14 +531,12 @@ def proxy_sentinel(request: Request):
         raise HTTPException(status_code=500, detail="Error fetching satellite data")
 
 @app.get("/api/firms/{source}/{bbox}")
-def proxy_firms(source: str, bbox: str):
+async def proxy_firms(source: str, bbox: str):
     """Securely proxies NASA FIRMS requests so the API key never reaches the browser."""
     url = f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{FIRMS_API_KEY}/{source}/{bbox}/2"
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req) as response:
-            csv_data = response.read()
-            return Response(content=csv_data, media_type="text/csv")
+        response = await http_client.get(url)
+        return Response(content=response.text, media_type="text/csv")
     except Exception as e:
         logger.error(f"NASA FIRMS Proxy Error: {e}")
         raise HTTPException(status_code=500, detail="Error fetching thermal data")
