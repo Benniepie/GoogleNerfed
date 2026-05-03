@@ -38,7 +38,7 @@ app = FastAPI()
 # Create a global connection pool
 http_client = httpx.AsyncClient(
     limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),
-    timeout=10.0
+    timeout=4.0
 )
 
 @app.on_event("shutdown")
@@ -536,7 +536,14 @@ async def proxy_firms(source: str, bbox: str):
     url = f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{FIRMS_API_KEY}/{source}/{bbox}/2"
     try:
         response = await http_client.get(url)
+        if response.status_code == 429:
+            logger.warning("NASA FIRMS Rate Limit Hit")
+            return Response(status_code=429, content="")
         return Response(content=response.text, media_type="text/csv")
+    except httpx.TimeoutException:
+        # If NASA tarpits us, drop it immediately and return an empty CSV
+        logger.warning(f"NASA FIRMS timeout for {bbox}")
+        return Response(status_code=204, content="") # 204 No Content
     except Exception as e:
         logger.error(f"NASA FIRMS Proxy Error: {e}")
         raise HTTPException(status_code=500, detail="Error fetching thermal data")
