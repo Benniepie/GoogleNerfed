@@ -40,7 +40,13 @@ http_client = httpx.AsyncClient(
     limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),
     timeout=4.0
 )
+import anyio
 
+@app.on_event("startup")
+async def startup_event():
+    # 3 threads per worker * 4 workers = 12 total background threads max
+    limiter = anyio.to_thread.current_default_thread_limiter()
+    limiter.total_tokens = 3
 @app.on_event("shutdown")
 async def shutdown_event():
     await http_client.aclose()
