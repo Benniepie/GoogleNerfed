@@ -11,3 +11,4 @@ titiler.core
 mercantile
 cachetools
 requests
+anyio
