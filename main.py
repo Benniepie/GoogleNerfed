@@ -25,6 +25,7 @@ from fastapi.responses import RedirectResponse
 from rio_tiler.io import Reader
 from rio_tiler.mosaic import mosaic_reader
 from rio_tiler.errors import TileOutsideBounds
+import rasterio
 import requests
 from cachetools import cached, TTLCache
 import logging
@@ -109,9 +110,22 @@ def get_sentinel_metadata(lat: float, lng: float, z: float):
     
     return {"type": "FeatureCollection", "features": features}
 
+
+
+
 def read_single_tile(url: str, x: int, y: int, z: int):
-    with Reader(url) as src:
-        return src.tile(x, y, z, tilesize=512, resampling_method="bilinear") # or "cubic" for even softer blending)
+    # These settings optimize GDAL for cloud storage
+    env_kwargs = {
+        "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR",
+        "GDAL_HTTP_MAX_RETRY": 3,
+        "GDAL_HTTP_RETRY_DELAY": 1,
+        "VSI_CACHE": True
+    }
+    
+    # The Env block creates the connection pool for this specific thread
+    with rasterio.Env(**env_kwargs):
+        with Reader(url) as src:
+            return src.tile(x, y, z, tilesize=512, resampling_method="bilinear")
 
 @app.get("/api/sentinel-latest/{z}/{x}/{y}.webp")
 def get_latest_sentinel(z: int, x: int, y: int):
