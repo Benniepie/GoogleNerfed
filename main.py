@@ -551,6 +551,65 @@ def proxy_sentinel(request: Request):
         logger.error(f"Sentinel Proxy Error: {e}")
         raise HTTPException(status_code=500, detail="Error fetching satellite data")
 
+
+
+@app.get("/api/firms/combined/{bbox}")
+async def proxy_firms_combined(bbox: str):
+    """Fetches all 3 VIIRS satellites concurrently and returns one stitched CSV."""
+    sources = ["VIIRS_NOAA20_NRT", "VIIRS_NOAA21_NRT", "VIIRS_SNPP_NRT"]
+    
+    # 1. Create the 3 NASA URLs
+    urls = [
+        f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/{FIRMS_API_KEY}/{source}/{bbox}/2"
+        for source in sources
+    ]
+    
+    # 2. Fire all 3 requests to NASA at the exact same time
+    try:
+        responses = await asyncio.gather(
+            *[http_client.get(url) for url in urls],
+            return_exceptions=True # Don't crash if one satellite fails
+        )
+    except Exception as e:
+        logger.error(f"Failed to fetch from NASA: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching thermal data")
+
+    combined_csv_lines = []
+    header_added = False
+
+    # 3. Stitch the CSVs together
+    for response in responses:
+        if isinstance(response, Exception):
+            logger.warning(f"A NASA request failed: {response}")
+            continue
+            
+        if response.status_code == 429:
+            logger.warning("NASA FIRMS Rate Limit Hit")
+            continue
+            
+        if response.status_code == 200 and response.text.strip():
+            lines = response.text.strip().split('\n')
+            if not lines:
+                continue
+                
+            # Only add the CSV header row once
+            if not header_added:
+                combined_csv_lines.append(lines[0])
+                header_added = True
+                
+            # Add the actual data rows (skipping the header)
+            combined_csv_lines.extend(lines[1:])
+
+    # If all 3 failed or returned empty, return 204 No Content
+    if not header_added or len(combined_csv_lines) == 1:
+        return Response(status_code=204, content="")
+
+    final_csv = '\n'.join(combined_csv_lines)
+    return Response(content=final_csv, media_type="text/csv")
+
+
+
+
 @app.get("/api/firms/{source}/{bbox}")
 async def proxy_firms(source: str, bbox: str):
     """Securely proxies NASA FIRMS requests so the API key never reaches the browser."""
