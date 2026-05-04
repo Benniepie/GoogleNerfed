@@ -119,7 +119,8 @@ def read_single_tile(url: str, x: int, y: int, z: int):
         "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR",
         "GDAL_HTTP_MAX_RETRY": 3,
         "GDAL_HTTP_RETRY_DELAY": 1,
-        "VSI_CACHE": True
+        "VSI_CACHE": True,
+        "GDAL_INGESTED_BYTES_AT_OPEN": 32768
     }
     
     # The Env block creates the connection pool for this specific thread
