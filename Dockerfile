@@ -27,5 +27,6 @@ COPY admin_assets/ ./admin_assets/
 # Ensure the data directory exists
 RUN mkdir -p /app/data
 
-# Run the FastAPI server using Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Run Uvicorn with 4 workers to utilise all 4 Ampere OCPUs
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
