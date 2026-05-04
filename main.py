@@ -27,6 +27,7 @@ from rio_tiler.mosaic import mosaic_reader
 from rio_tiler.errors import TileOutsideBounds
 import rasterio
 import requests
+import asyncio
 from cachetools import cached, TTLCache
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
