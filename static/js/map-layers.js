@@ -326,65 +326,59 @@ const activeKMLGeoJSON = {};
             const bounds = map.getBounds();
             const bbox = `${bounds.getWest() - 0.5},${bounds.getSouth() - 0.5},${bounds.getEast() + 0.5},${bounds.getNorth() + 0.5}`;
 
-        // Query all THREE primary VIIRS satellites over 2 days
-        const sources = ['VIIRS_SNPP_NRT', 'VIIRS_NOAA20_NRT', 'VIIRS_NOAA21_NRT'];
+
 
             try {
-            // Fire off all API requests simultaneously
-            const fetchPromises = sources.map(source =>
-                    fetch(`/api/firms/${source}/${bbox}`)
-                );
-
-                const responses = await Promise.all(fetchPromises);
-
-                let allRows = [];
-                let headers = [];
-
-                for (const response of responses) {
-                    if (!response.ok) throw new Error("API limits reached or invalid area.");
-
-                    const csvText = await response.text();
-                    const rows = csvText.split('\n').filter(row => row.trim() !== '');
-
-                    // If we have more than just the header row
-                    if (rows.length > 1) {
-                        if (headers.length === 0) {
-                            headers = rows.shift().split(','); // Keep headers from the first file
-                        } else {
-                        rows.shift(); // Discard headers from subsequent files
-                        }
-                        allRows.push(...rows); // Merge the data
-                    }
+                // --- THE CHANGE IS HERE ---
+                // Fire ONE request to the new combined backend endpoint
+                const response = await fetch(`/api/firms/combined/${bbox}`);
+        
+                if (!response.ok) {
+                    throw new Error("API limits reached or invalid area.");
                 }
-
-                if (allRows.length === 0) {
+        
+                // If the backend returns 204 No Content (meaning no fires or NASA failed)
+                if (response.status === 204) {
                     currentFirmsData = [];
                     firmsVectorGroup.clearLayers();
                     statusEl.textContent = 'No thermal anomalies in this specific view.';
                     statusEl.style.color = '#94a3b8';
                     return;
                 }
-
+        
+                const csvText = await response.text();
+                const rows = csvText.split('\n').filter(row => row.trim() !== '');
+        
+                if (rows.length <= 1) { // Only header, or empty
+                    currentFirmsData = [];
+                    firmsVectorGroup.clearLayers();
+                    statusEl.textContent = 'No thermal anomalies in this specific view.';
+                    statusEl.style.color = '#94a3b8';
+                    return;
+                }
+        
                 // Parse our newly combined massive dataset
-                currentFirmsData = allRows.map(row => {
+                const headers = rows.shift().split(','); // Extract header row once
+        
+                currentFirmsData = rows.map(row => {
                     const values = row.split(',');
                     let data = {};
                     headers.forEach((header, index) => { data[header] = values[index]; });
                     return data;
                 });
-
+        
                 // Sort by date/time ascending so older fires render first, and newer ones render on top
                 currentFirmsData.sort((a, b) => {
                     const timeA = a.acq_date + "T" + a.acq_time.padStart(4, '0');
                     const timeB = b.acq_date + "T" + b.acq_time.padStart(4, '0');
                     return timeA.localeCompare(timeB);
                 });
-
+        
                 renderFirmsVectorData();
-
+        
                 statusEl.textContent = `Loaded ${currentFirmsData.length} active fires from 3 satellites.`;
                 statusEl.style.color = '#22c55e';
-
+        
             } catch (error) {
                 console.error("FIRMS Error:", error);
                 statusEl.textContent = 'Error fetching vector data.';
