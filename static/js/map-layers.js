@@ -72,15 +72,7 @@ const activeKMLGeoJSON = {};
 
                 let latestDate = null;
                 frontlineLayers.forEach(filename => {
-                    const match = filename.match(/(\d{4}-\d{2}-\d{2})/);
-                    let d = match ? match[1] : null;
-                    if (!d) {
-                        const match2 = filename.match(/(\d{2}) (\d{2})/);
-                        if (match2) {
-                            const year = new Date().getFullYear();
-                            d = `${year}-${match2[2]}-${match2[1]}`;
-                        }
-                    }
+                    const d = extractDateFromFilename(filename);
                     if (d && (!latestDate || d > latestDate)) {
                         latestDate = d;
                     }
@@ -344,7 +336,7 @@ const activeKMLGeoJSON = {};
                     let shouldAdd = true;
                     if (isFrontlineLayer) {
                         const selectedDate = document.getElementById('currentDateDisplay').textContent;
-                        if (layerDate && layerDate !== selectedDate) {
+                        if (selectedDate && layerDate && layerDate !== selectedDate) {
                             shouldAdd = false; // It's preloaded, don't show yet
                         }
                     }
@@ -666,6 +658,8 @@ const activeKMLGeoJSON = {};
             // Toggle layer map visibility AND UI list visibility
             document.querySelectorAll('.layer-item').forEach(layerItemDiv => {
                 const filename = layerItemDiv.dataset.filename;
+                if (!filename) return;
+
                 const chk = document.getElementById('chk_' + filename);
                 const isFrontline = filename.startsWith('AP Map') || filename.startsWith('AP Pins') || filename.startsWith('SM Map') || filename.startsWith('SM Pins');
                 const layerDate = extractDateFromFilename(filename);
