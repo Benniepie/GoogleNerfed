@@ -12,3 +12,4 @@ mercantile
 cachetools
 requests
 anyio
+httpx
