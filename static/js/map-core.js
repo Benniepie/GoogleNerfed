@@ -25,6 +25,16 @@ function toggleSection(header) {
                         h.querySelector('.toggle-icon').innerText = '▶'; // Reset arrow
                     }
                 });
+
+                // If opening Front Line Tracker, preload a few layers
+                if (sectionName.includes('Front Line')) {
+                    if (window.availableDates && window.availableDates.length > 0) {
+                        const slider = document.getElementById('timelineSlider');
+                        if (slider) {
+                            slider.dispatchEvent(new Event('input'));
+                        }
+                    }
+                }
             }
         }
         // 2. Base Maps Setup
