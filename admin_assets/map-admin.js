@@ -16,7 +16,8 @@ document.getElementById('admin-panel-container').innerHTML = `
         </form>
         <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; background: #8b5cf6;">🤖 Automate Map Update</button>
         <button class="primary-btn" onclick="openSettingsModal()" style="width: 100%; background: #0ea5e9;">⚙️ Map Settings</button>
-        <button class="primary-btn" onclick="exportKML()" style="width: 100%; background: var(--border-color);">⬇️ Export Displayed Data</button>
+        <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-bottom: 10px; background: var(--border-color);">⬇️ Export Displayed Data</button>
+        <button class="primary-btn" onclick="openStatsModal()" style="width: 100%; background: #0f172a; border: 1px solid #334155;">🤓 Stats for Nerds</button>
     </div>
 `;
 
