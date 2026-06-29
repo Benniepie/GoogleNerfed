@@ -254,6 +254,47 @@ async def get_layers():
             files.append(f.name)
     return {"layers": sorted(files)}
 
+@app.get("/api/custom_layers")
+async def get_custom_layers():
+    """Returns a list of all JSON custom layers."""
+    files = []
+    for f in DATA_DIR.iterdir():
+        if f.is_file() and f.suffix.lower() == '.json' and f.name != 'settings.json':
+            files.append(f.name)
+    return {"layers": sorted(files)}
+
+class CustomLayerRequest(BaseModel):
+    name: str
+    geojson: dict
+
+@app.post("/api/custom_layer", dependencies=[Depends(verify_admin)])
+async def save_custom_layer(layer: CustomLayerRequest):
+    """Saves custom drawn features to a JSON file."""
+    safe_filename = "".join([c for c in layer.name if c.isalpha() or c.isdigit() or c==' ']).rstrip()
+    if not safe_filename:
+        raise HTTPException(status_code=400, detail="Invalid layer name")
+
+    file_path = DATA_DIR / f"{safe_filename}.json"
+    with open(file_path, "w") as f:
+        json.dump(layer.geojson, f)
+
+    return {"message": "Custom layer saved successfully", "filename": f"{safe_filename}.json"}
+
+@app.delete("/api/custom_layer/{filename}", dependencies=[Depends(verify_admin)])
+async def delete_custom_layer(filename: str):
+    """Safeguards the file by renaming it with a .deleted extension."""
+    if not filename.endswith('.json'):
+        raise HTTPException(status_code=400, detail="Invalid file type")
+    if filename == "settings.json":
+        raise HTTPException(status_code=400, detail="Cannot delete settings.json")
+
+    file_path = DATA_DIR / filename
+    if file_path.exists() and file_path.is_file():
+        file_path.rename(file_path.with_suffix('.json.deleted'))
+        return {"message": "Layer archived"}
+    return {"error": "File not found"}
+
+
 @app.post("/api/upload", dependencies=[Depends(verify_admin)])
 async def upload_file(files: List[UploadFile] = File(...)):
     """Handles multiple KML and KMZ uploads, automatically extracting KMZ to KML."""

@@ -277,6 +277,7 @@ const activeKMLGeoJSON = {};
             } catch (err) {
                 console.error("Failed to load layers:", err);
             }
+            await loadCustomLayers();
         }
 
         async function fetchAndAddKML(filename) {
@@ -976,6 +977,75 @@ map.on('click', async function(e) {
                     });
                 }
             }
+
+            // Custom JSON Intersection
+            for (const filename in window.customJSONLayers) {
+                if (activeLayers[filename] && map.hasLayer(activeLayers[filename])) {
+                    turf.featureEach(window.customJSONLayers[filename], function (currentFeature) {
+                        let isHit = false;
+
+                        if (currentFeature.geometry.type === 'Polygon' || currentFeature.geometry.type === 'MultiPolygon') {
+                            isHit = turf.booleanPointInPolygon(clickPoint, currentFeature);
+                        } else if (currentFeature.geometry.type === 'Point') {
+                            const dist = turf.distance(clickPoint, currentFeature, {units: 'meters'});
+                            isHit = dist < 200; // Hit tolerance for points
+                        } else if (currentFeature.geometry.type === 'LineString' || currentFeature.geometry.type === 'MultiLineString') {
+                            const dist = turf.pointToLineDistance(clickPoint, currentFeature, {units: 'meters'});
+                            isHit = dist < 200; // Hit tolerance for lines
+                        }
+
+                        if (isHit) {
+                            kmlHitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
+                            kmlHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #facc15;">${filename.replace('.json', '')}</h4>`;
+
+                            let metaCount = 0;
+                            let hiddenMetaHTML = '';
+
+                            if (currentFeature.properties) {
+                                for (const [key, value] of Object.entries(currentFeature.properties)) {
+                                    // Skip internal drawing properties
+                                    if (key.startsWith('_')) continue;
+
+                                    if (value && String(value).trim() !== '') {
+                                        metaCount++;
+                                        let displayValue = String(value);
+
+                                        // Detect image or link
+                                        if (displayValue.startsWith('http')) {
+                                            if (displayValue.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)) {
+                                                displayValue = `<br><img src="${displayValue}" style="max-width: 100%; max-height: 150px; border-radius: 4px; margin-top: 4px;">`;
+                                            } else {
+                                                displayValue = `<a href="${displayValue}" target="_blank" style="color: #60a5fa; text-decoration: underline;">Link</a>`;
+                                            }
+                                        }
+
+                                        const rowHTML = `<p style="margin: 2px 0; font-size: 0.85rem;"><b>${key}:</b> ${displayValue}</p>`;
+
+                                        if (metaCount <= 4) {
+                                            kmlHitsHTML += rowHTML;
+                                        } else {
+                                            hiddenMetaHTML += rowHTML;
+                                        }
+                                    }
+                                }
+
+                                if (metaCount > 4) {
+                                    kmlHitsHTML += `
+                                        <details style="margin-top: 5px; font-size: 0.85rem; cursor: pointer;">
+                                            <summary style="color: #94a3b8; outline: none;">More info...</summary>
+                                            <div style="margin-top: 5px; padding-left: 5px; border-left: 1px solid #475569;">
+                                                ${hiddenMetaHTML}
+                                            </div>
+                                        </details>
+                                    `;
+                                }
+                            }
+                            kmlHitsHTML += `</div>`;
+                        }
+                    });
+                }
+            }
+
             if (kmlHitsHTML) popupHTML += kmlHitsHTML;
 
             // --- 3. FIRMS Data Drill-down ---
@@ -1107,6 +1177,136 @@ map.on('click', async function(e) {
             }
             loadLayers();
         }
+
+        async function loadCustomLayers() {
+            try {
+                const response = await fetch('/api/custom_layers');
+                if (!response.ok) return;
+                const data = await response.json();
+
+                const staticList = document.getElementById('staticLayerList');
+
+                for (const filename of data.layers) {
+                    if (!document.getElementById(`chk_${filename}`)) {
+                        const item = document.createElement('div');
+                        item.className = 'layer-item';
+                        item.dataset.filename = filename;
+
+                        const isChecked = appSettings.layerOrder?.includes(filename) ? 'checked' : '';
+
+                        item.innerHTML = `
+                            <input type="checkbox" id="chk_${filename}" ${isChecked}>
+                            <label for="chk_${filename}" title="${filename}">${filename}</label>
+                            <div class="layer-actions">
+                                <span class="color-box" style="background: #a78bfa; opacity: 0.8;"></span>
+                                <button class="icon-btn" onclick="openColorPicker('${filename}')" title="Style">🎨</button>
+                                ${window.location.pathname === '/admin' ? `<button class="icon-btn delete" onclick="deleteCustomLayer('${filename}')" title="Delete">🗑️</button>` : ''}
+                            </div>
+                        `;
+
+                        item.draggable = true;
+                        item.addEventListener('dragstart', handleDragStart);
+                        item.addEventListener('dragenter', handleDragEnter);
+                        item.addEventListener('dragover', handleDragOver);
+                        item.addEventListener('dragleave', handleDragLeave);
+                        item.addEventListener('drop', handleDrop);
+                        item.addEventListener('dragend', handleDragEnd);
+
+                        staticList.appendChild(item);
+
+                        const checkbox = item.querySelector(`#chk_${filename}`);
+                        checkbox.addEventListener('change', async (e) => {
+                            if (e.target.checked) {
+                                await fetchAndAddCustomJSON(filename);
+                            } else {
+                                if (activeLayers[filename]) {
+                                    map.removeLayer(activeLayers[filename]);
+                                }
+                            }
+                        });
+
+                        if (isChecked) {
+                            fetchAndAddCustomJSON(filename);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load custom layers", e);
+            }
+        }
+
+        async function fetchAndAddCustomJSON(filename) {
+            if (activeLayers[filename]) {
+                if (!map.hasLayer(activeLayers[filename])) {
+                    activeLayers[filename].addTo(map);
+                }
+                return;
+            }
+
+            try {
+                const res = await fetch(`/data/${filename}`);
+                if (!res.ok) throw new Error("Failed to fetch JSON");
+                const geojson = await res.json();
+
+                window.customJSONLayers[filename] = geojson;
+
+                const styleConf = layerStyles[filename] || { type: 'single', color: '#a78bfa', opacity: 0.6 };
+
+                const layer = L.geoJSON(geojson, {
+                    style: function(feature) {
+                        let col = styleConf.color;
+                        let op = styleConf.opacity !== undefined ? styleConf.opacity : 0.6;
+
+                        if (styleConf.type === 'grouped' && styleConf.styles && feature.properties.name && styleConf.styles[feature.properties.name]) {
+                            col = styleConf.styles[feature.properties.name].color;
+                            op = styleConf.styles[feature.properties.name].opacity;
+                        }
+                        return { color: col, weight: 2, fillColor: col, fillOpacity: op };
+                    },
+                    pointToLayer: function(feature, latlng) {
+                        let col = styleConf.color;
+                        if (styleConf.type === 'grouped' && styleConf.styles && feature.properties.name && styleConf.styles[feature.properties.name]) {
+                            col = styleConf.styles[feature.properties.name].color;
+                        }
+                        // Default marker style
+                        let markerOptions = {
+                            radius: 6,
+                            fillColor: col,
+                            color: "#000",
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        };
+
+                        // Check for custom marker styling from drawing tools
+                        if (feature.properties && feature.properties._markerType) {
+                             if (feature.properties._markerType === 'emoji') {
+                                  const icon = L.divIcon({
+                                      html: `<div style="font-size: ${feature.properties._markerSize || 24}px; line-height: 1; filter: drop-shadow(0px 0px 2px rgba(255,255,255,0.8));">${feature.properties._emoji || '📍'}</div>`,
+                                      className: 'custom-emoji-icon',
+                                      iconSize: [feature.properties._markerSize || 24, feature.properties._markerSize || 24],
+                                      iconAnchor: [(feature.properties._markerSize || 24)/2, feature.properties._markerSize || 24]
+                                  });
+                                  return L.marker(latlng, {icon: icon});
+                             }
+                        }
+                        return L.circleMarker(latlng, markerOptions);
+                    },
+                    interactive: false // Let the master click handle it
+                });
+
+                activeLayers[filename] = layer;
+
+                const chk = document.getElementById(`chk_${filename}`);
+                if (chk && chk.checked) {
+                    layer.addTo(map);
+                    reorderActiveLayers();
+                }
+            } catch (e) {
+                console.error("Error adding custom JSON:", e);
+            }
+        }
+
         function reorderActiveLayers() {
             // We want Static Layers on the BOTTOM and Frontline on the TOP.
             // Because `.bringToFront()` successively pushes layers to the absolute top of the Leaflet pane,
