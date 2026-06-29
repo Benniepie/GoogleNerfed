@@ -33,6 +33,16 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('mymaps-automation')
 
+def secure_filename(filename: str) -> str:
+    if not filename:
+        return "unnamed"
+    # Convert backslashes to forward slashes just in case
+    normalized = filename.replace("\\", "/")
+    basename = os.path.basename(normalized)
+    if not basename or basename in {".", ".."}:
+        return "unnamed"
+    return basename.replace(" ", "_")
+
 stac_cache = TTLCache(maxsize=100, ttl=300)
 
 app = FastAPI()
@@ -247,8 +257,10 @@ async def upload_file(files: List[UploadFile] = File(...)):
     """Handles multiple KML and KMZ uploads, automatically extracting KMZ to KML."""
     results = []
     for file in files:
-        file_ext = file.filename.lower().split('.')[-1]
-        safe_filename = file.filename.replace(" ", "_")
+        if not file.filename:
+            continue
+        safe_filename = secure_filename(file.filename)
+        file_ext = safe_filename.lower().split('.')[-1]
         target_path = DATA_DIR / safe_filename
 
         # Save the uploaded file temporarily
