@@ -271,9 +271,26 @@ const activeKMLGeoJSON = {};
                 updateTimeline();
                 reorderActiveLayers();
                 // Force dispatch the event so the map actually updates to only show the latest
+
                 const slider = document.getElementById('timelineSlider');
                 slider.dispatchEvent(new Event('input'));
                 document.getElementById('timelineSlider').dispatchEvent(new Event('input'));
+
+                if (window.urlLayers !== null) {
+                    for (const filename of data.layers) {
+                        const isFrontline = filename.startsWith('AP Map') || filename.startsWith('AP Pins') || filename.startsWith('SM Map') || filename.startsWith('SM Pins');
+                        if (!isFrontline) {
+                            if (!window.urlLayers.includes(filename) && activeLayers[filename] && map.hasLayer(activeLayers[filename])) {
+                                map.removeLayer(activeLayers[filename]);
+                            } else if (window.urlLayers.includes(filename) && !activeLayers[filename]) {
+                                fetchAndAddKML(filename); // load in bg
+                            } else if (window.urlLayers.includes(filename) && activeLayers[filename] && !map.hasLayer(activeLayers[filename])) {
+                                map.addLayer(activeLayers[filename]);
+                            }
+                        }
+                    }
+                }
+
             } catch (err) {
                 console.error("Failed to load layers:", err);
             }
@@ -342,7 +359,14 @@ const activeKMLGeoJSON = {};
                     }
                     if (shouldAdd) {
                         layer.addTo(map);
+                        if (!window.urlSetLocation && !isFrontlineLayer) {
+                             map.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 12 });
+                        }
                     }
+
+
+
+
                 }
                 activeLayers[filename] = layer;
 
@@ -545,7 +569,18 @@ const activeKMLGeoJSON = {};
             }
         });
         // --- Timeline & Automation Logic ---
+
+        // Parse URL parameters for initialization
+        const urlParamsLayers = new URLSearchParams(window.location.search);
+        let urlLayersGlobal = null;
+        if (urlParamsLayers.has('layers')) {
+            urlLayersGlobal = urlParamsLayers.get('layers').split(',');
+            urlLayersGlobal = urlLayersGlobal.map(l => decodeURIComponent(l).replace(/\+/g, ' '));
+        }
+        window.urlLayers = urlLayersGlobal;
+
         let availableDates = [];
+
         window.availableDates = availableDates;
 
         function extractDateFromFilename(filename) {
@@ -578,6 +613,7 @@ const activeKMLGeoJSON = {};
             const btnForward = document.getElementById('btnTimelineForward');
             const btnLatest = document.getElementById('btnTimelineLatest');
 
+
             if (availableDates.length > 0) {
                 slider.disabled = false;
                 if (btnBack) btnBack.disabled = false;
@@ -585,19 +621,33 @@ const activeKMLGeoJSON = {};
                 if (btnLatest) btnLatest.disabled = false;
                 slider.max = availableDates.length - 1;
 
-                // If this is the very first time we're setting it, or if it was empty, default to latest.
-                // Otherwise, preserve the current selected date index if it's still valid.
-                let newIndex = slider.value;
-                const currentDate = display.textContent;
-                const foundIndex = availableDates.indexOf(currentDate);
+                let newIndex;
+                const urlDateParam = new URLSearchParams(window.location.search).get('date');
 
-                if (currentDate === 'Latest' || foundIndex === -1) {
-                    newIndex = availableDates.length - 1;
+                // If initializing from URL parameter
+                if (window._initialTimelineSet !== true && urlDateParam) {
+                    const tempIdx = availableDates.findIndex(d => d === urlDateParam);
+                    if (tempIdx !== -1) {
+                         newIndex = tempIdx;
+                    } else {
+                         newIndex = availableDates.length - 1;
+                    }
+                    window._initialTimelineSet = true;
                 } else {
-                    newIndex = foundIndex;
+                    // Otherwise, preserve the current selected date index if it's still valid.
+                    // If no date was selected (or 'Latest'), default to the newest date.
+                    const currentDate = display.textContent;
+                    let foundIndex = availableDates.indexOf(currentDate);
+
+                    if (currentDate === 'Latest' || foundIndex === -1) {
+                        newIndex = availableDates.length - 1;
+                    } else {
+                        newIndex = foundIndex;
+                    }
                 }
 
                 slider.value = newIndex;
+
                 display.textContent = availableDates[newIndex];
             } else {
                 slider.disabled = true;
@@ -651,9 +701,12 @@ const activeKMLGeoJSON = {};
                     loadFrontlineLayersForDate(date);
                 }
             }
-
             // Await specifically for the current selected date
             await loadFrontlineLayersForDate(selectedDate);
+            if (window.urlSetLocation && !document.querySelector('.leaflet-container')) {
+                 window.urlSetLocation = false;
+            }
+
 
             // Toggle layer map visibility AND UI list visibility
             document.querySelectorAll('.layer-item').forEach(layerItemDiv => {
@@ -1082,22 +1135,25 @@ map.on('click', async function(e) {
                 appSettings = await response.json();
 
                 layerStyles = appSettings.layerStyles || {};
-
-                // Apply default map settings if available
-                const defaultLat = appSettings.defaultLat ?? 49.0;
-                const defaultLng = appSettings.defaultLng ?? 31.0;
-                const defaultZoom = appSettings.defaultZoom ?? 6;
-                map.setView([defaultLat, defaultLng], defaultZoom);
-
-                const defaultBasemap = appSettings.defaultBasemap ?? 'dark';
-                const radioInput = document.querySelector(`input[name="basemap"][value="${defaultBasemap}"]`);
-                if (radioInput) radioInput.checked = true;
-
-                if (baseMaps[defaultBasemap]) {
-                    baseMaps[defaultBasemap].addTo(map);
-                } else {
-                    baseMaps.dark.addTo(map);
+                // Apply default map settings if available ONLY if URL did not set location
+                if (!window.urlSetLocation) {
+                    const defaultLat = appSettings.defaultLat ?? 49.0;
+                    const defaultLng = appSettings.defaultLng ?? 31.0;
+                    const defaultZoom = appSettings.defaultZoom ?? 6;
+                    map.setView([defaultLat, defaultLng], defaultZoom);
                 }
+                if (!window.urlSetLocation && !new URLSearchParams(window.location.search).has('basemap')) {
+                    const defaultBasemap = appSettings.defaultBasemap ?? 'dark';
+                    const radioInput = document.querySelector(`input[name="basemap"][value="${defaultBasemap}"]`);
+                    if (radioInput) radioInput.checked = true;
+
+                    if (baseMaps[defaultBasemap]) {
+                        baseMaps[defaultBasemap].addTo(map);
+                    } else {
+                        baseMaps.dark.addTo(map);
+                    }
+                }
+
 
                 if (window.updateSentinelStatus) window.updateSentinelStatus();
 

@@ -47,7 +47,23 @@ function toggleSection(header) {
 
 
         // 1. Initialise the Map
-        const map = L.map('map', { zoomControl: false, zoomSnap: 1, zoomDelta: 1 }).setView([49.0, 31.0], 6); // Default view centered on Ukraine
+        // Parse URL parameters for initialization
+        const urlParams = new URLSearchParams(window.location.search);
+
+        let initialZoom = 6;
+        let initialLat = 49.0;
+        let initialLng = 31.0;
+        let urlSetLocation = false;
+
+        if (urlParams.has('zoom')) { initialZoom = parseInt(urlParams.get('zoom')); urlSetLocation = true; }
+        if (urlParams.has('lat')) { initialLat = parseFloat(urlParams.get('lat')); urlSetLocation = true; }
+        if (urlParams.has('lng')) { initialLng = parseFloat(urlParams.get('lng')); urlSetLocation = true; }
+
+        window.urlSetLocation = urlSetLocation;
+
+        const map = L.map('map', { zoomControl: false, zoomSnap: 0.1, zoomDelta: 0.5, center: [initialLat, initialLng], zoom: initialZoom });
+
+
         L.control.zoom({ position: 'bottomright' }).addTo(map);
         L.control.scale({ position: 'bottomleft', imperial: true, metric: true }).addTo(map);
         window.map = map; // Expose map globally for other scripts
@@ -56,8 +72,11 @@ function toggleSection(header) {
         // A single minimap basemap using the specified dark OpenFreeMap tiles
         window.minimapLayer = L.maplibreGL({
             style: 'https://tiles.openfreemap.org/styles/liberty',
-            attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+            attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+            maplibreLogo: true,
+            preserveDrawingBuffer: true
         });
+
         const minimapLayer = window.minimapLayer; // Keep local ref for rest of function
 
 
@@ -105,12 +124,15 @@ function toggleSection(header) {
         const layers = {
             openFreeDark: L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/dark',
-                attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+                attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+                preserveDrawingBuffer: true
             }),
             openFreeLight: L.maplibreGL({
                 style: 'https://tiles.openfreemap.org/styles/liberty',
-                attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+                attribution: '<a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> Data from <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+                preserveDrawingBuffer: true
             }),
+
             esriSatellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: esriAttr
             }),
@@ -315,7 +337,25 @@ function toggleSection(header) {
 
 
         // Add default
-        baseMaps.dark.addTo(map);
+
+        // Handle URL parameter basemap overriding
+        if (urlParams.has('basemap')) {
+            const requestedBasemap = urlParams.get('basemap');
+            if (baseMaps[requestedBasemap]) {
+                setTimeout(() => {
+                    const radio = document.querySelector(`input[name="basemap"][value="${requestedBasemap}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                }, 500);
+                baseMaps[requestedBasemap].addTo(map);
+            } else {
+                baseMaps.dark.addTo(map);
+            }
+        } else {
+            baseMaps.dark.addTo(map);
+        }
+
 
         // Radio button listener
         document.querySelectorAll('input[name="basemap"]').forEach(radio => {
@@ -347,8 +387,6 @@ function toggleSection(header) {
             //    .openPopup();
         })
         .addTo(map);
-
-
         // Native Leaflet Control for the Hamburger Button
         const HamburgerControl = L.Control.extend({
             options: { position: 'topright' },
@@ -367,160 +405,122 @@ function toggleSection(header) {
         });
         map.addControl(new HamburgerControl());
 
+        // Native Leaflet Control for the Share Button
+        const ShareControl = L.Control.extend({
+            options: { position: 'topright' },
+            onAdd: function () {
+                const div = L.DomUtil.create('div', 'share-btn');
+                div.innerHTML = '🔗';
+                div.title = "Share Map";
+
+                L.DomEvent.disableClickPropagation(div);
+
+                div.onclick = function() {
+                    if (window.shareMap) {
+                        window.shareMap();
+                    }
+                };
+                return div;
+            }
+        });
+        map.addControl(new ShareControl());
 
 
-        window.updateSentinelStatus = function() {
-            const statusTextEl = document.getElementById('sentinelStatusText');
-            if (!statusTextEl) return;
+        window.shareMap = async function() {
+            const center = map.getCenter();
+            const zoom = map.getZoom();
 
             const activeBasemapEl = document.querySelector('input[name="basemap"]:checked');
-            const activeBasemap = activeBasemapEl ? activeBasemapEl.value : null;
+            const basemap = activeBasemapEl ? activeBasemapEl.value : 'dark';
 
-            if (activeBasemap === 's2latest' || activeBasemap === 's2latesthybrid') {
-                if (map.getZoom() < 11) {
-                    statusTextEl.innerText = "For the most recent Sentinel Imagery Zoom in!";
-                    statusTextEl.style.color = "#ef4444"; // Red
-                } else {
-                    statusTextEl.innerText = "Creating colour map tiles for latest Sentinel-2 Imagery!";
-                    statusTextEl.style.color = "#eab308"; // Yellow
+            let activeLayerKeys = [];
+            const listItems = document.querySelectorAll('.layer-item');
+            listItems.forEach(item => {
+                const fn = item.dataset.filename;
+                const chk = document.getElementById('chk_' + fn);
+                if (chk && chk.checked && item.style.display !== 'none') {
+                    activeLayerKeys.push(fn);
                 }
-            } else {
-                statusTextEl.innerText = "Sentinel-2 Latest imagery is back! - Map tiles are made on the fly from the satellite imagery mosaics. Performance improvements coming soon!";
-                statusTextEl.style.color = "#94a3b8"; // Black/gray equivalent
+            });
+
+            const dateDisplay = document.getElementById('currentDateDisplay');
+            const date = dateDisplay ? dateDisplay.textContent : '';
+
+            const url = new URL(window.location.origin + window.location.pathname);
+            url.searchParams.set('lat', center.lat.toFixed(4));
+            url.searchParams.set('lng', center.lng.toFixed(4));
+            url.searchParams.set('zoom', zoom);
+            url.searchParams.set('basemap', basemap);
+            if (activeLayerKeys.length > 0) {
+                 url.searchParams.set('layers', activeLayerKeys.join(','));
             }
-        };
+            if (date) url.searchParams.set('date', date);
 
-        map.on('zoomend', window.updateSentinelStatus);
+            const shareUrl = url.toString();
 
-        // Handle Base Map Switching
-        document.querySelectorAll('input[name="basemap"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                // Clear all active base layers and hybrid groups safely
-                Object.values(baseMaps).forEach(layer => {
-                    if (map.hasLayer(layer)) {
-                        map.removeLayer(layer);
+            document.body.style.cursor = 'wait';
+
+            try {
+                // Ensure leaflet map panes have transform reset to capture correctly
+                const mapPanes = document.querySelectorAll('.leaflet-pane');
+                const origTransforms = [];
+                mapPanes.forEach((pane) => {
+                     origTransforms.push(pane.style.transform);
+                     const match = pane.style.transform.match(/translate3d\((.*?)px,\s*(.*?)px/);
+                     if (match) {
+                         pane.style.left = match[1] + 'px';
+                         pane.style.top = match[2] + 'px';
+                     }
+                     pane.style.transform = 'none';
+                });
+                const canvas = await html2canvas(document.body, {
+                    useCORS: true,
+                    allowTaint: false,
+                    backgroundColor: '#1a1a1a',
+                    onclone: function(clonedDoc) {
+                        const glMapLayer = document.querySelector('.maplibregl-canvas');
+                        if (glMapLayer) {
+                            const clonedGlMapLayer = clonedDoc.querySelector('.maplibregl-canvas');
+                            if (clonedGlMapLayer) {
+                                // Provide image copy directly if needed.
+                                const dataUrl = glMapLayer.toDataURL();
+                                const img = clonedDoc.createElement('img');
+                                img.src = dataUrl;
+                                img.style.position = 'absolute';
+                                img.style.width = '100%';
+                                img.style.height = '100%';
+                                img.style.zIndex = clonedGlMapLayer.style.zIndex;
+                                clonedGlMapLayer.parentNode.replaceChild(img, clonedGlMapLayer);
+                            }
+                        }
+                    },
+                    ignoreElements: (element) => {
+                        return element.id === 'shareModal' || (element.classList && element.classList.contains('leaflet-control-container'));
                     }
                 });
 
-                // Add the newly selected map option
-                baseMaps[e.target.value].addTo(map);
-                // --- THE ALIGNMENT FIX ---
-                // Wait 50ms for the new MapLibre canvas to be injected into the DOM
-                setTimeout(() => {
-                    // Force Leaflet to recalculate container sizes
-                    map.invalidateSize();
-                    // Give the map a microscopic, invisible 1-pixel jiggle to force MapLibre to sync!
-                    map.panBy([1, 0], { animate: false });
-                    map.panBy([-1, 0], { animate: false });
-                }, 50);
 
-                window.updateSentinelStatus();
+                // Restore transforms
+                mapPanes.forEach((pane, i) => {
+                     pane.style.transform = origTransforms[i];
+                     pane.style.left = '';
+                     pane.style.top = '';
+                });
 
-            });
-        });
+                const imgData = canvas.toDataURL('image/png');
 
+                const modal = document.getElementById('shareModal');
+                const imgPreview = document.getElementById('shareImagePreview');
+                const urlInput = document.getElementById('shareUrlInput');
 
-		// // --- Topography Legend ---
-        // const topoLegend = L.control({ position: 'bottomright' });
+                imgPreview.src = imgData;
+                urlInput.value = shareUrl;
 
-        // topoLegend.onAdd = function (map) {
-        //     const div = L.DomUtil.create('div', 'info legend');
-        //     // Create a CSS gradient block that matches our 'cfastie' Titiler colormap
-        //     div.innerHTML = `
-        //         <div style="background: rgba(30, 30, 35, 0.85); padding: 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); color: white; font-size: 12px; backdrop-filter: blur(12px);">
-        //             <h4 style="margin: 0 0 5px 0; border-bottom: 1px solid #475569; padding-bottom: 3px;">Elevation</h4>
-        //             <div style="display: flex;">
-        //                 <div style="background: linear-gradient(to top, #0000ff, #00ffff, #00ff00, #ffff00, #ff0000, #ffffff); width: 15px; height: 150px; border-radius: 3px; margin-right: 10px;"></div>
-        //                 <div style="display: flex; flex-direction: column; justify-content: space-between; height: 150px;">
-        //                     <span>1500m+</span>
-        //                     <span>1200m</span>
-        //                     <span>900m</span>
-        //                     <span>600m</span>
-        //                     <span>300m</span>
-        //                     <span>0m</span>
-        //                 </div>
-        //             </div>
-        //         </div>
-        //     `;
-        //     return div;
-        // };
-
-        // // Only show the legend when the topography layer is active
-        // map.on('layeradd', function(event) {
-        //     if (event.layer === layers.topography) {
-        //         topoLegend.addTo(map);
-        //     }
-        // });
-
-        // map.on('layerremove', function(event) {
-        //     if (event.layer === layers.topography) {
-        //         map.removeControl(topoLegend);
-        //     }
-        // });
-
-
-// Dynamic MiniMap Resizing based on screen aspect ratio
-function resizeMiniMap() {
-    if (!window.miniMap) return;
-
-    // If the minimap is minimized, don't force our custom responsive dimensions
-    if (window.miniMap._minimized) {
-        return; // Let the leaflet-minimap plugin handle the minimized dimensions
-    }
-
-    // We want it to be small enough not to get in the way.
-    const baseWidthVW = 15;
-    const minWidth = 120;
-    const maxWidth = 300;
-
-    let targetWidth = (window.innerWidth * baseWidthVW) / 100;
-    targetWidth = Math.max(minWidth, Math.min(maxWidth, targetWidth));
-
-    // Calculate aspect ratio
-    const ratio = window.innerHeight / window.innerWidth;
-    const targetHeight = targetWidth * ratio;
-
-    // Update the miniMap plugin's internal size settings so transitions restore properly
-    window.miniMap.options.width = targetWidth;
-    window.miniMap.options.height = targetHeight;
-
-    // Update the miniMap container size
-    const container = window.miniMap._container;
-    if (container) {
-        container.style.width = targetWidth + 'px';
-        container.style.height = targetHeight + 'px';
-
-        // When restoring from minimize, there's a CSS transition.
-        // We need to invalidate size *after* the container has reached its final state.
-        // We'll run it immediately (for normal window resize) AND after 350ms (transition duration).
-        const triggerMapResize = () => {
-            if (window.miniMap._miniMap) {
-                window.miniMap._miniMap.invalidateSize();
-
-                // Force maplibre map to resize if present globally
-                if (window.minimapLayer && window.minimapLayer.getMaplibreMap) {
-                    const glMap = window.minimapLayer.getMaplibreMap();
-                    if (glMap) {
-                        glMap.resize();
-                    }
-                }
+                modal.style.display = 'flex';
+            } catch (err) {
+                console.error("Failed to generate map snapshot", err);
+                alert("Failed to generate snapshot. You can still copy the URL: " + shareUrl);
+            } finally {
+                document.body.style.cursor = 'default';
             }
         };
-
-        setTimeout(triggerMapResize, 10);
-        setTimeout(triggerMapResize, 400); // 400ms is a safe buffer for CSS transitions
-    }
-}
-
-// Ensure the minimap catches up with its container right after being added to the map.
-if (window.miniMap) {
-    window.miniMap.on('toggle', function() {
-        setTimeout(resizeMiniMap, 50);
-    });
-}
-
-// Call on load and on resize
-window.addEventListener('resize', resizeMiniMap);
-// Wait a bit for the control to be fully added and rendered
-setTimeout(resizeMiniMap, 100);
-setTimeout(resizeMiniMap, 500); // extra safety net for initial load
