@@ -5,12 +5,12 @@ import json
 import httpx
 import urllib.request
 import tempfile
-import os
 import secrets
-import httpx
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+from collections import defaultdict, deque
 from fastapi import FastAPI, UploadFile, File, Body, Form, HTTPException, Request, Response, Depends, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -34,6 +34,16 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger('mymaps-automation')
 
 stac_cache = TTLCache(maxsize=100, ttl=300)
+
+class SentinelMetrics:
+    def __init__(self):
+        self.total_tiles = 0
+        self.total_errors = 0
+        self.tiles_by_ip = defaultdict(int)
+        self.recent_times = deque(maxlen=100)
+        self.start_time = time.time()
+
+sentinel_metrics = SentinelMetrics()
 
 app = FastAPI()
 
@@ -130,7 +140,10 @@ def read_single_tile(url: str, x: int, y: int, z: int):
             return src.tile(x, y, z, tilesize=512, resampling_method="bilinear")
 
 @app.get("/api/sentinel-latest/{z}/{x}/{y}.webp")
-def get_latest_sentinel(z: int, x: int, y: int):
+def get_latest_sentinel(request: Request, z: int, x: int, y: int):
+    start_time = time.time()
+    ip = request.client.host if request.client else "unknown"
+
     bounds = mercantile.bounds(x, y, z)
     
     # 1. Round the map coordinates to the nearest 0.5 degrees
@@ -167,12 +180,20 @@ def get_latest_sentinel(z: int, x: int, y: int):
              return Response(status_code=404, content="Tile has no valid data pixels")
         
         img_buffer = img_data.render(img_format="WEBP", **{"quality": 80})
+
+        # Log metrics
+        duration = time.time() - start_time
+        sentinel_metrics.total_tiles += 1
+        sentinel_metrics.tiles_by_ip[ip] += 1
+        sentinel_metrics.recent_times.append(duration)
+
         return Response(content=img_buffer, media_type="image/webp")
         
     except TileOutsideBounds:
         # Expected behaviour if the user pans completely off the data grid
         return Response(status_code=404, content="Tile outside data bounds")
     except Exception as e:
+        sentinel_metrics.total_errors += 1
         print(f"Mosaic error: {e}")
         return Response(status_code=500, content="Failed to render mosaic")
 
@@ -232,6 +253,24 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return credentials.username
 # ----------------------
+
+@app.get("/api/stats", dependencies=[Depends(verify_admin)])
+async def get_stats(request: Request):
+    """Returns real-time metrics and stats for Sentinel-2 tile generation."""
+    avg_time = sum(sentinel_metrics.recent_times) / len(sentinel_metrics.recent_times) if sentinel_metrics.recent_times else 0
+    uptime = time.time() - sentinel_metrics.start_time
+    user_ip = request.client.host if request.client else "unknown"
+
+    return {
+        "uptime_seconds": uptime,
+        "total_tiles": sentinel_metrics.total_tiles,
+        "total_errors": sentinel_metrics.total_errors,
+        "tiles_by_ip": sentinel_metrics.tiles_by_ip,
+        "avg_render_time": avg_time,
+        "stac_cache_size": len(stac_cache),
+        "stac_cache_max": stac_cache.maxsize,
+        "your_ip": user_ip
+    }
 
 @app.get("/api/layers")
 async def get_layers():

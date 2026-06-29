@@ -125,7 +125,7 @@ const modalsHTML = `
         </div>
     </div>
 
-    
+
 
     <!-- Settings Modal -->
     <div id="settingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;">
@@ -339,7 +339,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             saveStylesToServer(); // Persist to backend
 
             reorderActiveLayers();
-        }        
+        }
 
 
         // --- Export KML ---
@@ -472,7 +472,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
 
         function applyStyle() {
             if (!currentStylingLayer) return;
-            
+
             const type = document.getElementById('styleTypeSelect').value;
             let styleConfig = { type: type };
 
@@ -497,7 +497,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
 
             layerStyles[currentStylingLayer] = styleConfig;
             saveStylesToServer();
-            
+
             // Reload just this layer to apply style
             fetchAndAddKML(currentStylingLayer).then(() => {
                 reorderActiveLayers();
@@ -540,7 +540,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
 
             const btn = document.getElementById('uploadBtn');
             const statusMsg = document.getElementById('statusMsg');
-            
+
             btn.disabled = true;
             btn.textContent = 'Uploading...';
             statusMsg.style.display = 'none';
@@ -625,4 +625,71 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             document.getElementById('defaultLat').value = center.lat.toFixed(5);
             document.getElementById('defaultLng').value = center.lng.toFixed(5);
             document.getElementById('defaultZoom').value = map.getZoom();
-        }      
+        }
+
+        // --- Stats for Nerds Logic ---
+        const statsModalHTML = `
+        <div id="statsModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;">
+            <div class="modal-content" style="max-width: 500px;">
+                <span class="close-btn" onclick="document.getElementById('statsModal').style.display='none'">&times;</span>
+                <h3 style="margin-top: 0;">Stats for Nerds</h3>
+                <div id="statsContent" style="color: #e2e8f0; font-size: 0.9rem; margin-top: 15px;">
+                    Loading stats...
+                </div>
+                <button class="primary-btn" onclick="fetchStats()" style="width: 100%; margin-top: 15px;">Refresh</button>
+            </div>
+        </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', statsModalHTML);
+
+        window.openStatsModal = function() {
+            document.getElementById('statsModal').style.display = 'flex';
+            fetchStats();
+        };
+
+        window.fetchStats = async function() {
+            const content = document.getElementById('statsContent');
+            content.innerHTML = 'Loading stats...';
+            try {
+                const res = await fetch('/api/stats');
+                if (!res.ok) throw new Error('Failed to fetch stats');
+                const data = await res.json();
+
+                let ipStatsHtml = '<ul style="margin: 0; padding-left: 20px;">';
+                for (const [ip, count] of Object.entries(data.tiles_by_ip)) {
+                    const isMyIp = ip === data.your_ip;
+                    ipStatsHtml += `<li ${isMyIp ? 'style="font-weight:bold; color:#fbbf24;"' : ''}>${ip}: ${count} tiles ${isMyIp ? '(You)' : ''}</li>`;
+                }
+                ipStatsHtml += '</ul>';
+
+                content.innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                            <div style="color: #94a3b8; font-size: 0.8rem;">Total Tiles</div>
+                            <div style="font-size: 1.5rem; font-weight: bold;">${data.total_tiles}</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                            <div style="color: #94a3b8; font-size: 0.8rem;">Total Errors</div>
+                            <div style="font-size: 1.5rem; font-weight: bold; color: ${data.total_errors > 0 ? '#ef4444' : 'inherit'}">${data.total_errors}</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                            <div style="color: #94a3b8; font-size: 0.8rem;">Avg Render Time</div>
+                            <div style="font-size: 1.5rem; font-weight: bold;">${data.avg_render_time.toFixed(2)}s</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                            <div style="color: #94a3b8; font-size: 0.8rem;">STAC Cache Size</div>
+                            <div style="font-size: 1.5rem; font-weight: bold;">${data.stac_cache_size} <span style="font-size: 0.8rem; font-weight: normal; color: #94a3b8;">/ ${data.stac_cache_max}</span></div>
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 15px 0 5px 0; border-bottom: 1px solid #334155; padding-bottom: 5px;">Tiles by IP</h4>
+                    ${ipStatsHtml}
+                    <div style="color: #64748b; font-size: 0.8rem; margin-top: 15px;">
+                        Uptime: ${Math.floor(data.uptime_seconds / 3600)}h ${Math.floor((data.uptime_seconds % 3600) / 60)}m
+                        <br>Your IP: ${data.your_ip}
+                    </div>
+                `;
+            } catch (e) {
+                content.innerHTML = `<span style="color: #ef4444;">Error loading stats: ${e.message}</span>`;
+            }
+        };
