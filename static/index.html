@@ -392,6 +392,7 @@
             <div style="display: flex; gap: 8px; align-items: center;">
                 <button class="icon-btn measure-btn" id="rulerBtn" title="Measure Ruler" style="font-size: 1.2rem;" onclick="toggleMeasureTool('ruler')">📏</button>
                 <button class="icon-btn measure-btn" id="circleBtn" title="Measure Circle" style="font-size: 1.2rem;" onclick="toggleMeasureTool('circle')">⭕</button>
+                <button class="icon-btn" onclick="document.getElementById('aboutModal').style.display='flex'" title="About the Map" style="font-size: 1.2rem;">ℹ️</button>
                 <button class="icon-btn" onclick="document.getElementById('controlPanel').classList.remove('open')" title="Close Menu" style="font-size: 1.2rem;">✖</button>
             </div>
         </h2>
@@ -519,6 +520,30 @@
         <div id="admin-panel-container"></div>
 
 
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="width: 450px; text-align: left; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 15px;">
+                <h2 style="margin: 0; font-size: 1.4rem;">About ATP Geopolitics Map</h2>
+                <button class="icon-btn" onclick="document.getElementById('aboutModal').style.display='none'" style="font-size: 1.2rem;">✖</button>
+            </div>
+
+            <p style="font-size: 0.95rem; line-height: 1.5; color: #cbd5e1; margin-bottom: 15px;">
+                The ATP Geopolitics Map is a bespoke, interactive geospatial intelligence platform designed for high-fidelity mapping data and global geopolitical analysis, with a heavy focus on the conflict in Ukraine. It offers open-source, zero-cost tracking of front lines, satellite imagery, thermal data, and more. This map powers the visuals on the ATP Geopolitics YouTube channel.
+            </p>
+
+            <h3 style="font-size: 1.1rem; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">Links & Resources</h3>
+            <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.9rem;">
+                <li style="margin-bottom: 8px;"><a href="https://www.youtube.com/@ATPGeo" target="_blank" style="color: var(--accent-color); text-decoration: none;">📺 YouTube Channel</a></li>
+                <li style="margin-bottom: 8px;"><a href="https://www.youtube.com/playlist?list=PLMkorAeGrPUk" target="_blank" style="color: var(--accent-color); text-decoration: none;">🗺️ Front Line Mapping Updates (Playlist)</a></li>
+                <li style="margin-bottom: 8px;"><a href="https://atpgeo.com/unlocking-the-world-the-features-data-and-ethos-behind-the-atp-geopolitics-map/" target="_blank" style="color: var(--accent-color); text-decoration: none;">📖 Map Explainer & Features</a></li>
+                <li style="margin-bottom: 8px;"><a href="https://atpgeo.com" target="_blank" style="color: var(--accent-color); text-decoration: none;">🌐 ATP Geopolitics Website</a></li>
+                <li style="margin-bottom: 8px;"><a href="https://github.com/Benniepie/GoogleNerfed" target="_blank" style="color: var(--accent-color); text-decoration: none;">💻 Map GitHub Repository</a></li>
+                <li style="margin-top: 15px; font-size: 0.8rem; color: #94a3b8;">Created by <a href="https://www.computerguy.co.uk" target="_blank" style="color: var(--accent-color); text-decoration: none;">BenniePie</a></li>
+            </ul>
+        </div>
     </div>
 
 
