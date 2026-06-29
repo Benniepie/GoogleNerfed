@@ -214,7 +214,10 @@ FIRMS_API_KEY = os.getenv("FIRMS_API_KEY")
 
 # Grab admin credentials with fallbacks just in case the .env is missing
 ADMIN_USER = os.getenv("ADMIN_USER", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+if not ADMIN_PASSWORD:
+    ADMIN_PASSWORD = secrets.token_urlsafe(32)
+    logger.warning(f"No ADMIN_PASSWORD set in environment. Generated temporary password: {ADMIN_PASSWORD}")
 
 # --- SECURITY SETUP ---
 security = HTTPBasic()
