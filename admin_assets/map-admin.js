@@ -17,6 +17,9 @@ document.getElementById('admin-panel-container').innerHTML = `
         <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; background: #8b5cf6;">🤖 Automate Map Update</button>
         <button class="primary-btn" onclick="openSettingsModal()" style="width: 100%; background: #0ea5e9;">⚙️ Map Settings</button>
         <button class="primary-btn" onclick="exportKML()" style="width: 100%; background: var(--border-color);">⬇️ Export Displayed Data</button>
+        <hr style="border-color: #334155; margin: 10px 0;">
+        <input type="text" id="customLayerName" placeholder="Layer Name to Save" style="width: 100%; box-sizing: border-box; margin-bottom: 5px; background: #0f172a; color: white; border: 1px solid #334155; padding: 5px; border-radius: 4px;">
+        <button class="primary-btn" onclick="saveCustomLayer()" style="width: 100%; background: #22c55e;">💾 Publish Layer</button>
     </div>
 `;
 
@@ -625,4 +628,256 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             document.getElementById('defaultLat').value = center.lat.toFixed(5);
             document.getElementById('defaultLng').value = center.lng.toFixed(5);
             document.getElementById('defaultZoom').value = map.getZoom();
-        }      
+        }
+
+// --- DRAWING & CUSTOM METADATA LOGIC ---
+
+window.draftFeatures = { type: "FeatureCollection", features: [] };
+let isDrawMode = false;
+let currentDrawType = null;
+let customDrawLayer = L.geoJSON(window.draftFeatures, {
+    pointToLayer: function(feature, latlng) {
+        if (feature.properties._markerType === 'emoji') {
+            const icon = L.divIcon({
+                html: `<div style="font-size: ${feature.properties._markerSize}px; line-height: 1; filter: drop-shadow(0px 0px 2px rgba(255,255,255,0.8));">${feature.properties._emoji}</div>`,
+                className: 'custom-emoji-icon',
+                iconSize: [feature.properties._markerSize, feature.properties._markerSize],
+                iconAnchor: [feature.properties._markerSize/2, feature.properties._markerSize]
+            });
+            return L.marker(latlng, {icon: icon});
+        }
+        return L.circleMarker(latlng, { radius: 8, fillColor: '#ff0000', color: '#fff', weight: 1, opacity: 1, fillOpacity: 0.8 });
+    }
+}).addTo(map);
+
+let drawPolys = []; // To store Leaflet line elements during drawing
+let currentPolygonCoords = [];
+
+// Inject Drawing Tools UI into map header
+const headerControls = document.getElementById('rulerBtn').parentElement;
+const drawControlUI = document.createElement('div');
+drawControlUI.className = 'measure-btn';
+drawControlUI.style.marginLeft = '10px';
+drawControlUI.innerHTML = `
+    <button id="drawToolsToggle" title="Draw Tools">🖍️</button>
+    <div class="measure-options" id="drawOptions">
+        <button id="drawMarker" title="Drop Marker" onclick="setDrawMode('marker')">📍 Marker</button>
+        <button id="drawEmoji" title="Emoji Marker" onclick="setDrawMode('emoji')">😀 Emoji</button>
+        <button id="drawPolygon" title="Draw Polygon" onclick="setDrawMode('polygon')">⬟ Polygon</button>
+    </div>
+`;
+headerControls.insertBefore(drawControlUI, headerControls.firstChild);
+
+// Inject Draft Metadata Form Popup
+const draftPopupHTML = `
+    <div id="draftMetadataPopup" class="custom-draw-popup" style="display:none; position:absolute; z-index: 1000; background:#1e293b; padding:15px; border-radius:8px; border:1px solid #475569; width: 250px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);">
+        <h4 style="margin:0 0 10px 0; color:#facc15;">Feature Details</h4>
+        <input type="text" id="draftName" placeholder="Name" style="width:100%; box-sizing:border-box; margin-bottom:5px; background:#0f172a; color:white; border:1px solid #334155; padding:5px; border-radius:4px;">
+        <input type="text" id="draftCategory" placeholder="Category" style="width:100%; box-sizing:border-box; margin-bottom:5px; background:#0f172a; color:white; border:1px solid #334155; padding:5px; border-radius:4px;">
+        <input type="date" id="draftDate" style="width:100%; box-sizing:border-box; margin-bottom:5px; background:#0f172a; color:white; border:1px solid #334155; padding:5px; border-radius:4px; color-scheme: dark;">
+        <textarea id="draftDesc" placeholder="Description" rows="3" style="width:100%; box-sizing:border-box; margin-bottom:5px; background:#0f172a; color:white; border:1px solid #334155; padding:5px; border-radius:4px; resize:vertical;"></textarea>
+        <input type="text" id="draftImageUrl" placeholder="Image URL (optional)" style="width:100%; box-sizing:border-box; margin-bottom:10px; background:#0f172a; color:white; border:1px solid #334155; padding:5px; border-radius:4px;">
+        <input type="text" id="draftLinkUrl" placeholder="Link URL (optional)" style="width:100%; box-sizing:border-box; margin-bottom:10px; background:#0f172a; color:white; border:1px solid #334155; padding:5px; border-radius:4px;">
+
+        <div id="emojiConfig" style="display:none; margin-bottom:10px; border-top:1px solid #334155; padding-top:10px;">
+            <label style="font-size:0.8rem; color:#94a3b8;">Emoji:</label>
+            <input type="text" id="draftEmojiVal" value="⚠️" style="width:40px; background:#0f172a; color:white; border:1px solid #334155; padding:2px; text-align:center;">
+            <label style="font-size:0.8rem; color:#94a3b8; margin-left:5px;">Size:</label>
+            <input type="number" id="draftEmojiSize" value="24" style="width:50px; background:#0f172a; color:white; border:1px solid #334155; padding:2px;">
+        </div>
+
+        <div style="display:flex; justify-content:space-between;">
+            <button onclick="cancelDraftFeature()" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Cancel</button>
+            <button onclick="saveDraftFeature()" style="background:#22c55e; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Save Draft</button>
+        </div>
+    </div>
+`;
+document.body.insertAdjacentHTML('beforeend', draftPopupHTML);
+
+let pendingFeatureGeometry = null;
+
+document.getElementById('drawToolsToggle').addEventListener('click', () => {
+    const options = document.getElementById('drawOptions');
+    options.style.display = options.style.display === 'flex' ? 'none' : 'flex';
+    if(options.style.display === 'none') {
+        exitDrawMode();
+    }
+});
+
+window.setDrawMode = function(type) {
+    isDrawMode = true;
+    currentDrawType = type;
+    document.getElementById('map').style.cursor = 'crosshair';
+
+    // Deactivate native measure tools if active
+    if(window.isMeasuring) {
+        document.getElementById('measureToggle').click();
+    }
+}
+
+function exitDrawMode() {
+    isDrawMode = false;
+    currentDrawType = null;
+    document.getElementById('map').style.cursor = '';
+    currentPolygonCoords = [];
+    drawPolys.forEach(p => map.removeLayer(p));
+    drawPolys = [];
+}
+
+// Intercept map clicks for drawing
+map.on('click', function(e) {
+    if (!isDrawMode) return;
+
+    if (currentDrawType === 'marker' || currentDrawType === 'emoji') {
+        pendingFeatureGeometry = {
+            type: "Point",
+            coordinates: [e.latlng.lng, e.latlng.lat]
+        };
+        openDraftPopup(e.originalEvent.clientX, e.originalEvent.clientY, currentDrawType);
+
+    } else if (currentDrawType === 'polygon') {
+        currentPolygonCoords.push([e.latlng.lng, e.latlng.lat]);
+        if (currentPolygonCoords.length > 1) {
+            const latlngs = currentPolygonCoords.map(c => [c[1], c[0]]);
+            const line = L.polyline(latlngs, {color: '#facc15'}).addTo(map);
+            drawPolys.push(line);
+        }
+    }
+});
+
+// Double click to finish polygon
+map.on('dblclick', function(e) {
+    if (isDrawMode && currentDrawType === 'polygon' && currentPolygonCoords.length > 2) {
+        // Close polygon
+        currentPolygonCoords.push(currentPolygonCoords[0]);
+
+        pendingFeatureGeometry = {
+            type: "Polygon",
+            coordinates: [currentPolygonCoords]
+        };
+        openDraftPopup(e.originalEvent.clientX, e.originalEvent.clientY, 'polygon');
+    }
+});
+
+function openDraftPopup(x, y, type) {
+    const popup = document.getElementById('draftMetadataPopup');
+    popup.style.left = x + 'px';
+    popup.style.top = y + 'px';
+    popup.style.display = 'block';
+
+    document.getElementById('draftName').value = '';
+    document.getElementById('draftCategory').value = '';
+    document.getElementById('draftDesc').value = '';
+    document.getElementById('draftImageUrl').value = '';
+    document.getElementById('draftLinkUrl').value = '';
+
+    if (type === 'emoji') {
+        document.getElementById('emojiConfig').style.display = 'block';
+    } else {
+        document.getElementById('emojiConfig').style.display = 'none';
+    }
+}
+
+window.cancelDraftFeature = function() {
+    document.getElementById('draftMetadataPopup').style.display = 'none';
+    pendingFeatureGeometry = null;
+    if (currentDrawType === 'polygon') {
+        currentPolygonCoords = [];
+        drawPolys.forEach(p => map.removeLayer(p));
+        drawPolys = [];
+    }
+};
+
+window.saveDraftFeature = function() {
+    if (!pendingFeatureGeometry) return;
+
+    const props = {
+        name: document.getElementById('draftName').value,
+        category: document.getElementById('draftCategory').value,
+        date: document.getElementById('draftDate').value,
+        description: document.getElementById('draftDesc').value,
+        image_url: document.getElementById('draftImageUrl').value,
+        link_url: document.getElementById('draftLinkUrl').value
+    };
+
+    if (currentDrawType === 'emoji') {
+        props._markerType = 'emoji';
+        props._emoji = document.getElementById('draftEmojiVal').value;
+        props._markerSize = parseInt(document.getElementById('draftEmojiSize').value);
+    }
+
+    const feature = {
+        type: "Feature",
+        geometry: pendingFeatureGeometry,
+        properties: props
+    };
+
+    window.draftFeatures.features.push(feature);
+
+    // Update map layer
+    customDrawLayer.clearLayers();
+    customDrawLayer.addData(window.draftFeatures);
+
+    cancelDraftFeature(); // Reset UI
+};
+
+window.saveCustomLayer = async function() {
+    const nameInput = document.getElementById('customLayerName');
+    const layerName = nameInput.value.trim();
+
+    if (!layerName) {
+        alert("Please enter a layer name.");
+        return;
+    }
+
+    if (window.draftFeatures.features.length === 0) {
+        alert("No features drawn to save.");
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/custom_layer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: layerName,
+                geojson: window.draftFeatures
+            })
+        });
+
+        if (res.ok) {
+            alert("Custom layer saved!");
+            window.draftFeatures.features = [];
+            customDrawLayer.clearLayers();
+            nameInput.value = '';
+            exitDrawMode();
+            loadLayers(); // Refresh sidebar
+        } else {
+            alert("Failed to save custom layer.");
+        }
+    } catch(e) {
+        console.error(e);
+        alert("Error saving custom layer.");
+    }
+};
+
+window.deleteCustomLayer = async function(filename) {
+    if (!confirm(`Are you sure you want to delete ${filename}?`)) return;
+
+    try {
+        const res = await fetch(`/api/custom_layer/${filename}`, { method: 'DELETE' });
+        if (res.ok) {
+            if (activeLayers[filename]) {
+                map.removeLayer(activeLayers[filename]);
+                delete activeLayers[filename];
+                delete window.customJSONLayers[filename];
+            }
+            loadLayers();
+        } else {
+            alert("Failed to delete.");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Error communicating with backend.");
+    }
+};
