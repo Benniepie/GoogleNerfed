@@ -35,15 +35,82 @@ logger = logging.getLogger('mymaps-automation')
 
 stac_cache = TTLCache(maxsize=100, ttl=300)
 
-class SentinelMetrics:
-    def __init__(self):
-        self.total_tiles = 0
-        self.total_errors = 0
-        self.tiles_by_ip = defaultdict(int)
-        self.recent_times = deque(maxlen=100)
-        self.start_time = time.time()
+import sqlite3
 
-sentinel_metrics = SentinelMetrics()
+class SQLiteMetrics:
+    def __init__(self, db_path="/app/data/metrics.db"):
+        self.db_path = db_path
+        # Use a separate thread or just ensure DB exists during init
+        self._init_db()
+
+    def _get_conn(self):
+        conn = sqlite3.connect(self.db_path, timeout=5.0)
+        conn.execute("PRAGMA journal_mode=WAL;")
+        return conn
+
+    def _init_db(self):
+        with self._get_conn() as conn:
+            c = conn.cursor()
+            c.execute('''CREATE TABLE IF NOT EXISTS metrics (
+                            id INTEGER PRIMARY KEY,
+                            total_tiles INTEGER DEFAULT 0,
+                            total_errors INTEGER DEFAULT 0,
+                            start_time REAL
+                        )''')
+            c.execute('''CREATE TABLE IF NOT EXISTS ip_stats (
+                            ip TEXT PRIMARY KEY,
+                            count INTEGER DEFAULT 0
+                        )''')
+            c.execute('''CREATE TABLE IF NOT EXISTS recent_times (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            duration REAL
+                        )''')
+            c.execute("SELECT COUNT(*) FROM metrics")
+            if c.fetchone()[0] == 0:
+                c.execute("INSERT INTO metrics (id, total_tiles, total_errors, start_time) VALUES (1, 0, 0, ?)", (time.time(),))
+            conn.commit()
+
+    def record_tile(self, ip, duration):
+        with self._get_conn() as conn:
+            c = conn.cursor()
+            c.execute("UPDATE metrics SET total_tiles = total_tiles + 1 WHERE id = 1")
+            c.execute("INSERT INTO ip_stats (ip, count) VALUES (?, 1) ON CONFLICT(ip) DO UPDATE SET count = count + 1", (ip,))
+            c.execute("INSERT INTO recent_times (duration) VALUES (?)", (duration,))
+            # Keep table small
+            c.execute("DELETE FROM recent_times WHERE id NOT IN (SELECT id FROM recent_times ORDER BY id DESC LIMIT 100)")
+            conn.commit()
+
+    def record_error(self):
+        with self._get_conn() as conn:
+            c = conn.cursor()
+            c.execute("UPDATE metrics SET total_errors = total_errors + 1 WHERE id = 1")
+            conn.commit()
+
+    def get_stats(self):
+        with self._get_conn() as conn:
+            c = conn.cursor()
+            c.execute("SELECT total_tiles, total_errors, start_time FROM metrics WHERE id = 1")
+            row = c.fetchone()
+            total_tiles = row[0] if row else 0
+            total_errors = row[1] if row else 0
+            start_time = row[2] if row else time.time()
+
+            c.execute("SELECT ip, count FROM ip_stats")
+            tiles_by_ip = {r[0]: r[1] for r in c.fetchall()}
+
+            c.execute("SELECT AVG(duration) FROM recent_times")
+            avg_duration_row = c.fetchone()
+            avg_time = avg_duration_row[0] if avg_duration_row and avg_duration_row[0] is not None else 0
+
+            return {
+                "total_tiles": total_tiles,
+                "total_errors": total_errors,
+                "tiles_by_ip": tiles_by_ip,
+                "avg_render_time": avg_time,
+                "start_time": start_time
+            }
+
+sentinel_metrics = SQLiteMetrics()
 
 app = FastAPI()
 
@@ -183,9 +250,7 @@ def get_latest_sentinel(request: Request, z: int, x: int, y: int):
 
         # Log metrics
         duration = time.time() - start_time
-        sentinel_metrics.total_tiles += 1
-        sentinel_metrics.tiles_by_ip[ip] += 1
-        sentinel_metrics.recent_times.append(duration)
+        sentinel_metrics.record_tile(ip, duration)
 
         return Response(content=img_buffer, media_type="image/webp")
         
@@ -193,7 +258,7 @@ def get_latest_sentinel(request: Request, z: int, x: int, y: int):
         # Expected behaviour if the user pans completely off the data grid
         return Response(status_code=404, content="Tile outside data bounds")
     except Exception as e:
-        sentinel_metrics.total_errors += 1
+        sentinel_metrics.record_error()
         print(f"Mosaic error: {e}")
         return Response(status_code=500, content="Failed to render mosaic")
 
@@ -257,16 +322,16 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
 @app.get("/api/stats", dependencies=[Depends(verify_admin)])
 async def get_stats(request: Request):
     """Returns real-time metrics and stats for Sentinel-2 tile generation."""
-    avg_time = sum(sentinel_metrics.recent_times) / len(sentinel_metrics.recent_times) if sentinel_metrics.recent_times else 0
-    uptime = time.time() - sentinel_metrics.start_time
+    db_stats = sentinel_metrics.get_stats()
+    uptime = time.time() - db_stats["start_time"]
     user_ip = request.client.host if request.client else "unknown"
 
     return {
         "uptime_seconds": uptime,
-        "total_tiles": sentinel_metrics.total_tiles,
-        "total_errors": sentinel_metrics.total_errors,
-        "tiles_by_ip": sentinel_metrics.tiles_by_ip,
-        "avg_render_time": avg_time,
+        "total_tiles": db_stats["total_tiles"],
+        "total_errors": db_stats["total_errors"],
+        "tiles_by_ip": db_stats["tiles_by_ip"],
+        "avg_render_time": db_stats["avg_render_time"],
         "stac_cache_size": len(stac_cache),
         "stac_cache_max": stac_cache.maxsize,
         "your_ip": user_ip
