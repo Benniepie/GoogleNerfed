@@ -4,6 +4,11 @@ import zipfile
 import json
 import httpx
 import urllib.request
+import urllib.error
+import urllib.parse
+import http.client
+import socket
+import ipaddress
 import tempfile
 import os
 import secrets
@@ -333,11 +338,82 @@ def get_latest_layer(prefix: str) -> Optional[Path]:
     # sort by name
     return sorted(layers)[-1]
 
+class SafeHTTPConnection(http.client.HTTPConnection):
+    def connect(self):
+        for res in socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            ip = ipaddress.ip_address(sa[0])
+            if ip.ipv4_mapped:
+                ip = ip.ipv4_mapped
+            if ip.is_loopback or ip.is_private or ip.is_link_local or ip.is_multicast or ip.is_unspecified:
+                raise urllib.error.URLError(f"Unsafe IP address detected: {sa[0]}")
+
+            try:
+                self.sock = socket.socket(af, socktype, proto)
+                if self.timeout is not socket._GLOBAL_DEFAULT_TIMEOUT:
+                    self.sock.settimeout(self.timeout)
+                self.sock.connect(sa)
+                break
+            except OSError:
+                if self.sock is not None:
+                    self.sock.close()
+                self.sock = None
+                continue
+        if self.sock is None:
+            raise OSError("Could not connect securely")
+
+class SafeHTTPSConnection(http.client.HTTPSConnection):
+    def connect(self):
+        for res in socket.getaddrinfo(self.host, self.port, 0, socket.SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            ip = ipaddress.ip_address(sa[0])
+            if ip.ipv4_mapped:
+                ip = ip.ipv4_mapped
+            if ip.is_loopback or ip.is_private or ip.is_link_local or ip.is_multicast or ip.is_unspecified:
+                raise urllib.error.URLError(f"Unsafe IP address detected: {sa[0]}")
+
+            try:
+                self.sock = socket.socket(af, socktype, proto)
+                if self.timeout is not socket._GLOBAL_DEFAULT_TIMEOUT:
+                    self.sock.settimeout(self.timeout)
+                self.sock.connect(sa)
+                break
+            except OSError:
+                if self.sock is not None:
+                    self.sock.close()
+                self.sock = None
+                continue
+        if self.sock is None:
+            raise OSError("Could not connect securely")
+
+        self.sock = self._context.wrap_socket(self.sock, server_hostname=self.host)
+
+class SafeHTTPHandler(urllib.request.HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(SafeHTTPConnection, req)
+
+class SafeHTTPSHandler(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(SafeHTTPSConnection, req, context=self._context)
+
 def download_file(url: str, dest: Path) -> bool:
     if not url: return False
     try:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ('http', 'https'):
+            logger.error(f"Invalid URL scheme: {parsed.scheme}")
+            return False
+
+        # Build a secure opener with strict IP checks, and NO file:// handlers
+        opener = urllib.request.OpenerDirector()
+        opener.add_handler(SafeHTTPHandler())
+        opener.add_handler(SafeHTTPSHandler())
+        opener.add_handler(urllib.request.HTTPRedirectHandler())
+        opener.add_handler(urllib.request.HTTPDefaultErrorHandler())
+        opener.add_handler(urllib.request.HTTPErrorProcessor())
+
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req) as response, open(dest, 'wb') as out_file:
+        with opener.open(req) as response, open(dest, 'wb') as out_file:
             shutil.copyfileobj(response, out_file)
 
         # If it's a KMZ, extract it to KML
