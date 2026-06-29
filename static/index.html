@@ -26,6 +26,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@mapbox/togeojson@0.16.2/togeojson.min.js"></script>
     <!-- Turf.js -->
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         :root {
@@ -135,7 +136,7 @@
         .status-msg { margin-top: 8px; font-size: 0.85rem; color: #10b981; display: none; }
 
  /* --- 6. NEW UI ELEMENTS (Hamburger & Scrubbing) --- */
-        .hamburger-btn {
+        .hamburger-btn, .share-btn {
             background: rgba(30, 30, 35, 0.85);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -143,7 +144,8 @@
             display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: background 0.2s;
         }
-        .hamburger-btn:hover { background: rgba(255, 255, 255, 0.2); }
+        .hamburger-btn:hover, .share-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
 
         /* Customizing Leaflet Bars (Zoom) to match Hamburger */
         .leaflet-bar {
@@ -557,6 +559,22 @@
         loadSettingsAndInit();
     </script>    
   
+
+    <!-- Share Modal -->
+    <div id="shareModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; color: white;">
+        <div style="background: #1e1e23; padding: 20px; border-radius: 8px; max-width: 90%; max-height: 90%; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">Share Map</h3>
+                <button onclick="document.getElementById('shareModal').style.display='none'" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <img id="shareImagePreview" style="max-width: 100%; max-height: 60vh; border: 1px solid #475569; border-radius: 4px;" />
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <input type="text" id="shareUrlInput" readonly style="flex: 1; padding: 8px; background: #334155; border: 1px solid #475569; color: white; border-radius: 4px;" />
+                <button onclick="navigator.clipboard.writeText(document.getElementById('shareUrlInput').value); alert('URL copied to clipboard!');" style="padding: 8px 12px; background: #3b82f6; border: none; color: white; border-radius: 4px; cursor: pointer;">Copy</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
 
