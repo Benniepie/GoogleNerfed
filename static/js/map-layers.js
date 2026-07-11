@@ -486,6 +486,166 @@ const activeKMLGeoJSON = {};
 
 
 
+        // --- LIVE DATA: TELEGRAM RADAR RUSSIA ---
+        let isRadarRussiaActive = false;
+        let radarRussiaPollInterval = null;
+        let radarRussiaLayerGroup = L.layerGroup();
+        let seenRadarAlertIds = new Set();
+        let radarInitialLoad = true;
+        let radarAudioContext = null;
+
+        function playBeep() {
+            try {
+                if (!radarAudioContext) {
+                    radarAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                const oscillator = radarAudioContext.createOscillator();
+                const gainNode = radarAudioContext.createGain();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, radarAudioContext.currentTime); // A5
+
+                gainNode.gain.setValueAtTime(0, radarAudioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.5, radarAudioContext.currentTime + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, radarAudioContext.currentTime + 0.5);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(radarAudioContext.destination);
+
+                oscillator.start();
+                oscillator.stop(radarAudioContext.currentTime + 0.5);
+            } catch (e) {
+                console.error("Audio error", e);
+            }
+        }
+
+        async function fetchRadarRussiaData() {
+            if (!isRadarRussiaActive) return;
+
+            const statusEl = document.getElementById('radarRussiaStatus');
+            statusEl.textContent = 'Fetching latest alerts...';
+
+            try {
+                const res = await fetch('/api/radar-russia');
+                if (!res.ok) throw new Error("API error");
+
+                const data = await res.json();
+
+                let newAlertsFound = false;
+
+                data.features.forEach(f => {
+                    const id = f.properties.id;
+                    if (id && !seenRadarAlertIds.has(id)) {
+                        seenRadarAlertIds.add(id);
+                        // If this isn't the very first load, trigger audio
+                        if (!radarInitialLoad) {
+                            newAlertsFound = true;
+                        }
+                    }
+                });
+
+                if (newAlertsFound && document.getElementById('radarRussiaAudioToggle').checked) {
+                    playBeep();
+                }
+
+                renderRadarRussiaData(data);
+
+                statusEl.textContent = `Tracking ${data.features.length} locations.`;
+                statusEl.style.color = '#22c55e';
+            } catch (e) {
+                console.error("Radar Russia API error:", e);
+                statusEl.textContent = 'Error fetching data.';
+                statusEl.style.color = '#ef4444';
+            }
+        }
+
+        function renderRadarRussiaData(geojsonData) {
+            radarRussiaLayerGroup.clearLayers();
+            const now = new Date();
+
+            // Need to store raw data for popup intersection checking
+            activeKMLGeoJSON['RadarRussia'] = geojsonData;
+
+            geojsonData.features.forEach(feature => {
+                const props = feature.properties;
+                const timeStr = props.time; // ISO 8601 string
+                const alertTime = new Date(timeStr);
+                const ageHours = (now - alertTime) / (1000 * 60 * 60);
+                const ageMinutes = (now - alertTime) / (1000 * 60);
+
+                if (ageHours > 24) return; // Drop older than 24 hours
+
+                let fillColor = '#ef4444'; // Red default
+                if (props.status === 'over') {
+                    fillColor = '#22c55e'; // Green
+                } else {
+                    if (ageMinutes <= 20) {
+                        fillColor = '#ef4444'; // Red
+                    } else if (ageHours <= 12) {
+                        fillColor = '#f97316'; // Orange
+                    } else {
+                        fillColor = '#eab308'; // Yellow
+                    }
+                }
+
+                const layer = L.geoJSON(feature, {
+                    interactive: false,
+                    style: {
+                        color: fillColor,
+                        weight: 2,
+                        fillColor: fillColor,
+                        fillOpacity: 0.4
+                    },
+                    pointToLayer: function(f, latlng) {
+                        const iconHtml = f.properties.icon || '';
+
+                        if (iconHtml) {
+                            const customIcon = L.divIcon({
+                                className: 'radar-custom-icon',
+                                html: `<div style="background:${fillColor}; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; font-size:16px; box-shadow:0 0 10px rgba(0,0,0,0.5);">${iconHtml}</div>`,
+                                iconSize: [30, 30],
+                                iconAnchor: [15, 15]
+                            });
+                            return L.marker(latlng, {icon: customIcon, interactive: false});
+                        } else {
+                            // City/Town label marker
+                            const labelIcon = L.divIcon({
+                                className: 'radar-label-icon',
+                                html: `<div style="background:${fillColor}; color:white; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px; white-space:nowrap; border:1px solid rgba(255,255,255,0.5); box-shadow:0 0 5px rgba(0,0,0,0.5);">${f.properties.name.split(',')[0]}</div>`,
+                                iconSize: [null, null],
+                                iconAnchor: [0, 0] // Depending on design, center it or offset it
+                            });
+                            return L.marker(latlng, {icon: labelIcon, interactive: false});
+                        }
+                    }
+                });
+
+                radarRussiaLayerGroup.addLayer(layer);
+            });
+
+            // Only add to map if active
+            if (isRadarRussiaActive && !map.hasLayer(radarRussiaLayerGroup)) {
+                radarRussiaLayerGroup.addTo(map);
+            }
+        }
+
+        document.getElementById('radarRussiaToggle').addEventListener('change', (e) => {
+            isRadarRussiaActive = e.target.checked;
+            const statusEl = document.getElementById('radarRussiaStatus');
+
+            if (isRadarRussiaActive) {
+                statusEl.style.display = 'block';
+                // Fetch immediately, then every 60s
+                fetchRadarRussiaData();
+                radarRussiaPollInterval = setInterval(fetchRadarRussiaData, 60000);
+            } else {
+                statusEl.style.display = 'none';
+                if (radarRussiaPollInterval) clearInterval(radarRussiaPollInterval);
+                radarRussiaLayerGroup.clearLayers();
+                if (map.hasLayer(radarRussiaLayerGroup)) map.removeLayer(radarRussiaLayerGroup);
+            }
+        });
+
         // --- LIVE DATA: NASA FIRMS (Hybrid Raster/Vector) ---
         const ZOOM_THRESHOLD = 8; // Zoom level at which we switch from Raster to Vector
         let isFirmsActive = false;
@@ -978,7 +1138,42 @@ map.on('click', async function(e) {
             }
             if (kmlHitsHTML) popupHTML += kmlHitsHTML;
 
-            // --- 3. FIRMS Data Drill-down ---
+            // --- 3. Radar Russia Data Drill-down ---
+            if (map.hasLayer(radarRussiaLayerGroup) && activeKMLGeoJSON['RadarRussia']) {
+                let radarHitsHTML = '';
+                turf.featureEach(activeKMLGeoJSON['RadarRussia'], function (currentFeature) {
+                    let isHit = false;
+
+                    if (currentFeature.geometry.type === 'Polygon' || currentFeature.geometry.type === 'MultiPolygon') {
+                        isHit = turf.booleanPointInPolygon(clickPoint, currentFeature);
+                    } else if (currentFeature.geometry.type === 'Point') {
+                        const dist = turf.distance(clickPoint, currentFeature, {units: 'meters'});
+                        isHit = dist < 20000; // Allow 20km hit tolerance for cities/regions point representations
+                    } else if (currentFeature.geometry.type === 'LineString' || currentFeature.geometry.type === 'MultiLineString') {
+                        const dist = turf.pointToLineDistance(clickPoint, currentFeature, {units: 'meters'});
+                        isHit = dist < 5000;
+                    }
+
+                    if (isHit) {
+                        const props = currentFeature.properties;
+                        const timeStr = new Date(props.time).toLocaleString('en-GB');
+                        radarHitsHTML += `
+                            <div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">
+                                <h4 style="margin: 0 0 4px 0; color: #3b82f6;">🚨 Air Alert</h4>
+                                <div style="font-size: 0.85rem;">
+                                    <b>Location:</b> ${props.name}<br>
+                                    <b>Threat:</b> ${props.threat}<br>
+                                    <b>Status:</b> ${props.status === 'over' ? '<span style="color:#22c55e;">Over</span>' : '<span style="color:#ef4444;">Active</span>'}<br>
+                                    <b>Time:</b> ${timeStr}
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                if (radarHitsHTML) popupHTML += radarHitsHTML;
+            }
+
+            // --- 4. FIRMS Data Drill-down ---
             if (map.hasLayer(firmsVectorGroup)) {
                 const firmsHits = [];
                 const now = new Date();

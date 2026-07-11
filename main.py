@@ -4,12 +4,15 @@ import zipfile
 import json
 import httpx
 import urllib.request
+import urllib.parse
 import tempfile
 import os
 import secrets
-from datetime import datetime
+import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, UploadFile, File, Body, Form, HTTPException, Request, Response, Depends, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -244,6 +247,159 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return credentials.username
 # ----------------------
+
+# --- TELEGRAM SCRAPER LOGIC ---
+def get_radar_icon(location_str, threat_str):
+    combined = (location_str + " " + threat_str).lower()
+    if any(kw in combined for kw in ["аэропорт", "аэродром", "airport", "авиабаза"]): return "✈️"
+    if any(kw in combined for kw in ["нпз", "нефте", "oil", "naval base", "порт", "терминал"]): return "🛢️"
+    if any(kw in combined for kw in ["море", "залив", "sea", "вода", "океан", "акватория"]): return "🌊"
+    return ""
+
+def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
+    lines = text.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        line = line.strip()
+        if not line: continue
+        # Filter out boilerplate
+        if any(kw in line for kw in ["❗️", "Обход белых списков", "@radarrussiia", "Радар по всей России", "Internet_Boost_bot", "🌐", "Ускоритель Интернета", "Остались какие-то вопросы"]):
+            continue
+        cleaned_lines.append(line)
+
+    threat_keywords = ["опасность", "фиксация", "отбой", "работа", "пво", "ракет", "бпла", "приготовиться", "тревога", "меры", "сбит", "угроза", "внимание"]
+
+    locations = []
+    threats = []
+
+    for line in cleaned_lines:
+        parts = line.split(' - ')
+        for part in parts:
+            part = part.strip()
+            is_threat = any(kw in part.lower() for kw in threat_keywords)
+            if is_threat or len(part) > 60:
+                threats.append(part)
+            else:
+                for loc in part.split(','):
+                    loc_clean = loc.strip()
+                    loc_clean = re.sub(r'(?i)и близлежащие', '', loc_clean).strip()
+                    if loc_clean:
+                        locations.append(loc_clean)
+
+    status_val = "active"
+    if any("отбой" in t.lower() for t in threats):
+        status_val = "over"
+
+    context = ""
+    for loc in reversed(locations):
+        if any(x in loc.lower() for x in ["область", "край", "республика", "окг", "округ", "крым"]):
+            context = loc
+            break
+
+    final_locs = []
+    combined_threat = " | ".join(threats)
+    for loc in locations:
+        if loc == context:
+            final_locs.append({"name": loc, "icon": get_radar_icon(loc, combined_threat)})
+        elif context:
+            full_name = f"{loc}, {context}"
+            final_locs.append({"name": full_name, "icon": get_radar_icon(full_name, combined_threat)})
+        else:
+            final_locs.append({"name": loc, "icon": get_radar_icon(loc, combined_threat)})
+
+    return {
+        "id": msg_id,
+        "time": time_str,
+        "locations": final_locs,
+        "threat": combined_threat,
+        "status": status_val
+    }
+async def get_cached_geocode(location_name: str) -> Optional[dict]:
+    cache_file = DATA_DIR / "geocode_cache.json"
+    cache = {}
+    if cache_file.exists():
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+        except Exception:
+            pass
+
+    if location_name in cache:
+        return cache[location_name]
+
+    # Not in cache, query Nominatim
+    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&polygon_geojson=1&limit=1&accept-language=ru,en"
+    headers = {'User-Agent': 'ATPGeopolitics/1.0'}
+    try:
+        # Use existing async http_client
+        resp = await http_client.get(url, headers=headers, timeout=10.0)
+        data = resp.json()
+
+        # Respect Nominatim 1 req/sec strict limit
+        await asyncio.sleep(1.5)
+
+        if data:
+            result = data[0]
+            cache[location_name] = result
+            # Save back to cache
+            with open(cache_file, "w", encoding="utf-8") as f:
+                json.dump(cache, f, ensure_ascii=False, indent=2)
+            return result
+    except Exception as e:
+        logger.error(f"Geocode error for {location_name}: {e}")
+
+    return None
+
+@app.get("/api/radar-russia")
+async def get_radar_russia_alerts():
+    """Fetches, parses and geocodes latest Telegram radar alerts into a GeoJSON FeatureCollection."""
+    url = "https://t.me/s/radarrussiia"
+    try:
+        response = await http_client.get(url)
+        html = response.text
+    except Exception as e:
+        logger.error(f"Failed to fetch Telegram channel: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching radar data")
+
+    soup = BeautifulSoup(html, 'html.parser')
+    messages = soup.find_all('div', class_='tgme_widget_message_wrap')
+
+    features = []
+
+    for msg in messages:
+        msg_el = msg.find('div', class_='tgme_widget_message')
+        if not msg_el: continue
+        msg_id = msg_el.get('data-post', '')
+
+        text_div = msg.find('div', class_='tgme_widget_message_text')
+        if not text_div: continue
+        text = text_div.get_text(separator='\n').strip()
+
+        time_tag = msg.find('time')
+        time_str = time_tag['datetime'] if time_tag else ''
+
+        parsed = parse_telegram_message(text, msg_id, time_str)
+
+        for loc_info in parsed["locations"]:
+            geo_data = await get_cached_geocode(loc_info["name"])
+            if geo_data and "geojson" in geo_data:
+                feature = {
+                    "type": "Feature",
+                    "properties": {
+                        "id": parsed["id"],
+                        "time": parsed["time"],
+                        "name": loc_info["name"],
+                        "threat": parsed["threat"],
+                        "status": parsed["status"],
+                        "icon": loc_info["icon"]
+                    },
+                    "geometry": geo_data["geojson"]
+                }
+                features.append(feature)
+
+    return {"type": "FeatureCollection", "features": features}
+
+# ------------------------------
 
 @app.get("/api/layers")
 async def get_layers():
