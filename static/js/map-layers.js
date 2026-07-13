@@ -578,15 +578,19 @@ const activeKMLGeoJSON = {};
                 if (ageHours > 24) return; // Drop older than 24 hours
 
                 let fillColor = '#ef4444'; // Red default
+                let animationClass = '';
                 if (props.status === 'over') {
                     fillColor = '#22c55e'; // Green
                 } else {
                     if (ageMinutes <= 20) {
                         fillColor = '#ef4444'; // Red
-                    } else if (ageHours <= 12) {
+                        animationClass = 'radar-pulse';
+                    } else if (ageMinutes <= 40) {
                         fillColor = '#f97316'; // Orange
-                    } else {
+                    } else if (ageMinutes <= 60) {
                         fillColor = '#eab308'; // Yellow
+                    } else {
+                        fillColor = '#94a3b8'; // Grey
                     }
                 }
 
@@ -603,19 +607,24 @@ const activeKMLGeoJSON = {};
 
                         if (iconHtml) {
                             const customIcon = L.divIcon({
-                                className: 'radar-custom-icon',
+                                className: `radar-custom-icon ${animationClass}`,
                                 html: `<div style="background:${fillColor}; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; font-size:16px; box-shadow:0 0 10px rgba(0,0,0,0.5);">${iconHtml}</div>`,
                                 iconSize: [30, 30],
                                 iconAnchor: [15, 15]
                             });
                             return L.marker(latlng, {icon: customIcon, interactive: false});
                         } else {
-                            // City/Town label marker
+                            // City/Town large marker with a label
                             const labelIcon = L.divIcon({
-                                className: 'radar-label-icon',
-                                html: `<div style="background:${fillColor}; color:white; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px; white-space:nowrap; border:1px solid rgba(255,255,255,0.5); box-shadow:0 0 5px rgba(0,0,0,0.5);">${f.properties.name.split(',')[0]}</div>`,
-                                iconSize: [null, null],
-                                iconAnchor: [0, 0] // Depending on design, center it or offset it
+                                className: `radar-label-icon ${animationClass ? 'radar-pulse-anim' : ''}`,
+                                html: `
+                                    <div style="position: absolute; transform: translate(-50%, -15px); display: flex; flex-direction: column; align-items: center; pointer-events: none;">
+                                        <div style="background:${fillColor}; width:30px; height:30px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:16px;">${f.properties.emoji || ''}</div>
+
+                                    </div>
+                                `,
+                                iconSize: [0, 0],
+                                iconAnchor: [0, 0]
                             });
                             return L.marker(latlng, {icon: labelIcon, interactive: false});
                         }
@@ -634,9 +643,11 @@ const activeKMLGeoJSON = {};
         document.getElementById('radarRussiaToggle').addEventListener('change', (e) => {
             isRadarRussiaActive = e.target.checked;
             const statusEl = document.getElementById('radarRussiaStatus');
+            const legendEl = document.getElementById('radarLegend');
 
             if (isRadarRussiaActive) {
                 statusEl.style.display = 'block';
+                if (legendEl) legendEl.style.display = 'block';
                 // Fetch immediately, then every 60s
                 fetchRadarRussiaData();
                 radarRussiaPollInterval = setInterval(fetchRadarRussiaData, 60000);
@@ -644,7 +655,10 @@ const activeKMLGeoJSON = {};
                 statusEl.style.display = 'none';
                 if (radarRussiaPollInterval) clearInterval(radarRussiaPollInterval);
                 radarRussiaLayerGroup.clearLayers();
-                if (map.hasLayer(radarRussiaLayerGroup)) map.removeLayer(radarRussiaLayerGroup);
+                if (radarRussiaLayerGroup && map.hasLayer(radarRussiaLayerGroup)) {
+                    map.removeLayer(radarRussiaLayerGroup);
+                }
+                if (legendEl) legendEl.style.display = 'none';
             }
         });
 
