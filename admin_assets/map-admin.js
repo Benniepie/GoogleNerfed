@@ -15,7 +15,29 @@ document.getElementById('admin-panel-container').innerHTML = `
             <div id="statusMsg" class="status-msg">Upload complete!</div>
         </form>
         <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; background: #8b5cf6;">🤖 Automate Map Update</button>
-        <button class="primary-btn" onclick="openSettingsModal()" style="width: 100%; background: #0ea5e9;">⚙️ Map Settings</button>
+        <button class="primary-btn" onclick="window.openSettingsModal()" style="width: 100%; background: #0ea5e9;">⚙️ Map Settings</button>
+        <hr style="border-top: 1px solid var(--border-color); margin: 20px 0;">
+        <h3 style="margin-top:0;">Override Geolocation</h3>
+        <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px;">Enforce coordinates for a specific radar text string. This forces it to render as a map marker point at the new coordinates.</p>
+        <form id="overrideForm" style="display: flex; flex-direction: column; gap: 10px;">
+            <div>
+                <label style="font-size: 0.85rem; color: #94a3b8;">Location Name (exact text):</label>
+                <input type="text" id="overrideLocationName" required placeholder="e.g. Орловский район" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 0.85rem; color: #94a3b8;">Latitude:</label>
+                    <input type="number" id="overrideLat" step="any" required placeholder="e.g. 52.96" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 0.85rem; color: #94a3b8;">Longitude:</label>
+                    <input type="number" id="overrideLng" step="any" required placeholder="e.g. 36.07" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+                </div>
+            </div>
+            <button type="submit" id="overrideBtn" class="primary-btn" style="width: 100%; background: #10b981;">Save Override</button>
+            <div id="overrideStatusMsg" style="display: none; font-size: 0.85rem; color: #10b981; margin-top: 5px;"></div>
+        </form>
+
         <button class="primary-btn" onclick="exportKML()" style="width: 100%; background: var(--border-color);">⬇️ Export Displayed Data</button>
     </div>
 `;
