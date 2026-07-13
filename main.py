@@ -320,25 +320,22 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
     if any("отбой" in t.lower() for t in threats):
         status_val = "over"
 
-    # Determine the most specific locations (filter out broad contexts if a town is mentioned)
+    # Determine context keywords to figure out what type of locations we have
     context_keywords = ["область", "край", "республика", "окг", "округ", "крым", "район"]
+
+    # Are ALL our locations regions/districts? (Like "Moscow Oblast" and "Kursk Oblast")
+    all_regions = all(any(x in loc.lower() for x in context_keywords) for loc in locations)
+
     context = ""
-    for loc in reversed(locations):
-        if any(x in loc.lower() for x in context_keywords):
-            context = loc
-            break
+    # Only try to apply a single broad context if we have a mix of towns AND a region
+    if not all_regions:
+        for loc in reversed(locations):
+            if any(x in loc.lower() for x in context_keywords):
+                context = loc
+                break
 
     final_locs = []
     combined_threat = " | ".join(threats)
-
-    # Translation dictionary for locations
-    location_translations = {
-        "мордовия": "Mordovia",
-        "республика": "Republic",
-        "область": "Oblast",
-        "край": "Krai",
-        "район": "District"
-    }
 
     # Simple manual translation dictionary for common radar terms
     threat_translations = {
@@ -367,35 +364,26 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
     for ru, en in threat_translations.items():
         english_threat = re.sub(re.escape(ru), en, english_threat, flags=re.IGNORECASE)
 
-    # If there are multiple locations, don't just use context
-    if len(locations) > 1:
-        # Filter out locations that are just broad contexts if there are more specific ones
-        specific_locs = [loc for loc in locations if not any(x in loc.lower() for x in context_keywords)]
+    # If all mentioned locations are regions/districts, keep them separate!
+    if all_regions:
+        for loc in locations:
+            final_locs.append({"name": loc, "icon": get_radar_icon(loc, combined_threat), "raw_name": loc})
+    elif len(locations) > 1:
+        # Filter out the context region if there are specific towns mentioned
+        specific_locs = [loc for loc in locations if loc != context]
         if not specific_locs:
-            specific_locs = locations # Use all if all are broad
+            specific_locs = locations # fallback
 
-        # We'll use the specific locations and optionally append context
         for loc in specific_locs:
-            translated_loc = loc
-            for ru, en in location_translations.items():
-                translated_loc = re.sub(re.escape(ru), en, translated_loc, flags=re.IGNORECASE)
-
             full_name = loc
             if context and loc != context:
                 full_name = f"{loc}, {context}"
 
-            translated_full = full_name
-            for ru, en in location_translations.items():
-                translated_full = re.sub(re.escape(ru), en, translated_full, flags=re.IGNORECASE)
-
-            final_locs.append({"name": translated_full, "icon": get_radar_icon(loc, combined_threat)})
+            # We don't translate it yet; we let Nominatim do it!
+            final_locs.append({"name": full_name, "icon": get_radar_icon(loc, combined_threat), "raw_name": full_name})
     else:
         for loc in locations:
-            translated_loc = loc
-            for ru, en in location_translations.items():
-                translated_loc = re.sub(re.escape(ru), en, translated_loc, flags=re.IGNORECASE)
-
-            final_locs.append({"name": translated_loc, "icon": get_radar_icon(loc, combined_threat)})
+            final_locs.append({"name": loc, "icon": get_radar_icon(loc, combined_threat), "raw_name": loc})
 
     return {
         "id": msg_id,
@@ -505,7 +493,17 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
 
     # Use extremely aggressive simplification (0.05) to reduce polygon size
     # and restrict responses to Russia and Ukraine only (countrycodes=ru,ua) to prevent huge global multi-polygons
-    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005&countrycodes=ru,ua&accept-language=en"
+
+    # We pass accept-language=en,ru so that Nominatim tries to return the English name but understands the raw Russian query
+
+    # If it's a known region/oblast AND not a city context (no comma), append &featureType=state to force Nominatim to return the regional boundary
+    # instead of a tiny local courthouse/town with the same name.
+    feature_type = ""
+    lower_loc = location_name.lower()
+    if "," not in lower_loc and any(x in lower_loc for x in ["область", "республика", "край", "округ"]):
+        feature_type = "&featureType=state"
+
+    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005&countrycodes=ru,ua&accept-language=en,ru{feature_type}"
     headers = {'User-Agent': 'ATPGeopolitics/1.0'}
     try:
         resp = await http_client.get(url, headers=headers, timeout=10.0)
@@ -578,12 +576,24 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
         for loc_info in parsed["locations"]:
             geo_data = await get_cached_geocode(loc_info["name"], cache_dict=geocode_cache)
             if geo_data and "geojson" in geo_data:
+                # Get the localized English name, fallback to the raw russian query
+                display_name = geo_data.get("display_name", "")
+                english_name = geo_data.get("name", "")
+
+                # Sometime Nominatim's display_name has the better English translation than "name"
+                # so we take the first part of the English display name if it exists.
+                if display_name and "," in display_name:
+                    english_name = display_name.split(",")[0].strip()
+                elif not english_name:
+                    english_name = loc_info["name"]
+
                 feature = {
                     "type": "Feature",
                     "properties": {
                         "id": parsed["id"],
                         "time": parsed["time"],
-                        "name": geo_data.get("name", loc_info["name"]),
+                        "name": english_name,
+                        "raw_name": loc_info.get("raw_name", loc_info["name"]),
                         "threat": parsed["threat"],
                         "status": parsed["status"],
                         "icon": loc_info["icon"]
@@ -993,6 +1003,45 @@ async def proxy_firms(source: str, bbox: str):
     except Exception as e:
         logger.error(f"NASA FIRMS Proxy Error: {e}")
         raise HTTPException(status_code=500, detail="Error fetching thermal data")
+
+
+from pydantic import BaseModel
+class GeocodeOverride(BaseModel):
+    location_name: str
+    lat: float
+    lng: float
+
+@app.post("/api/admin/geocode_override", dependencies=[Depends(verify_admin)])
+async def admin_geocode_override(override: GeocodeOverride):
+    cache_file = DATA_DIR / "geocode_cache.json"
+    cache = {}
+    if cache_file.exists():
+        try:
+            import json
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+        except Exception:
+            pass
+
+    # Create a custom Point feature
+    cache[override.location_name] = {
+        "place_id": 999999999,
+        "name": override.location_name,
+        "display_name": override.location_name,
+        "geojson": {
+            "type": "Point",
+            "coordinates": [override.lng, override.lat]
+        }
+    }
+
+    # Atomic write
+    temp_file = cache_file.with_suffix('.tmp')
+    with open(temp_file, "w", encoding="utf-8") as f:
+        import json
+        json.dump(cache, f, ensure_ascii=False, indent=2)
+    os.replace(temp_file, cache_file)
+
+    return {"status": "success"}
 
 @app.get("/admin", dependencies=[Depends(verify_admin)])
 async def serve_admin():

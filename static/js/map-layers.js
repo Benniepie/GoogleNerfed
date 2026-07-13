@@ -689,10 +689,23 @@ const activeKMLGeoJSON = {};
 
                 // Determine if this is a small polygon or has an emoji
                 let isSmallOrPoint = feature.geometry.type === 'Point' || feature.geometry.type === 'MultiPoint';
+
+                // Never render districts, regions, oblasts, republics as markers
+                const rawName = feature.properties.raw_name ? feature.properties.raw_name.toLowerCase() : "";
+                const enName = feature.properties.name ? feature.properties.name.toLowerCase() : "";
+                const isRegionOrDistrict =
+                    rawName.includes('область') || rawName.includes('край') ||
+                    rawName.includes('республика') || rawName.includes('район') ||
+                    rawName.includes('округ') || enName.includes('oblast') ||
+                    enName.includes('region') || enName.includes('district') ||
+                    enName.includes('republic') || enName.includes('krai');
+
                 if (!isSmallOrPoint && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
                     const areaSqMeters = turf.area(feature);
                     const areaSqKm = areaSqMeters / 1000000;
-                    if (areaSqKm < 250 || feature.properties.icon) {
+
+                    // Force polygons for regions/districts, even if Nominatim gave us a weirdly simplified tiny one
+                    if (!isRegionOrDistrict && (areaSqKm < 250 || feature.properties.icon)) {
                         isSmallOrPoint = true;
                     }
                 }

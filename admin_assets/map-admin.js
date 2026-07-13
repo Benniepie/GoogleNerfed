@@ -125,7 +125,7 @@ const modalsHTML = `
         </div>
     </div>
 
-    
+
 
     <!-- Settings Modal -->
     <div id="settingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;">
@@ -339,7 +339,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             saveStylesToServer(); // Persist to backend
 
             reorderActiveLayers();
-        }        
+        }
 
 
         // --- Export KML ---
@@ -472,7 +472,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
 
         function applyStyle() {
             if (!currentStylingLayer) return;
-            
+
             const type = document.getElementById('styleTypeSelect').value;
             let styleConfig = { type: type };
 
@@ -497,7 +497,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
 
             layerStyles[currentStylingLayer] = styleConfig;
             saveStylesToServer();
-            
+
             // Reload just this layer to apply style
             fetchAndAddKML(currentStylingLayer).then(() => {
                 reorderActiveLayers();
@@ -540,7 +540,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
 
             const btn = document.getElementById('uploadBtn');
             const statusMsg = document.getElementById('statusMsg');
-            
+
             btn.disabled = true;
             btn.textContent = 'Uploading...';
             statusMsg.style.display = 'none';
@@ -609,6 +609,43 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                 console.error('Error saving styles:', err);
             }
         }
+
+
+        // 5. Override Geocodes
+        document.getElementById('overrideForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const locationName = document.getElementById('overrideLocationName').value;
+            const lat = parseFloat(document.getElementById('overrideLat').value);
+            const lng = parseFloat(document.getElementById('overrideLng').value);
+
+            const btn = document.getElementById('overrideBtn');
+            const statusMsg = document.getElementById('overrideStatusMsg');
+
+            btn.disabled = true;
+            statusMsg.style.display = 'none';
+            statusMsg.classList.remove('error-msg');
+
+            try {
+                const response = await fetch('/api/admin/geocode_override', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ location_name: locationName, lat: lat, lng: lng })
+                });
+                if (response.ok) {
+                    statusMsg.textContent = 'Override saved! (Map will update next fetch)';
+                    statusMsg.style.display = 'block';
+                } else {
+                    throw new Error('Override failed');
+                }
+            } catch (err) {
+                statusMsg.textContent = 'Error saving override.';
+                statusMsg.classList.add('error-msg');
+                statusMsg.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                setTimeout(() => { if (!statusMsg.classList.contains('error-msg')) statusMsg.style.display = 'none'; }, 3000);
+            }
+        });
 
         // Settings UI Logic
 
