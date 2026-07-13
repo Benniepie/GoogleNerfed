@@ -16,23 +16,21 @@ document.getElementById('admin-panel-container').innerHTML = `
         </form>
         <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; background: #8b5cf6;">🤖 Automate Map Update</button>
         <button class="primary-btn" onclick="window.openSettingsModal()" style="width: 100%; background: #0ea5e9;">⚙️ Map Settings</button>
-        <hr style="border-top: 1px solid var(--border-color); margin: 20px 0;">
-        <h3 style="margin-top:0;">Override Geolocation</h3>
-        <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px;">Enforce coordinates for a specific radar text string. This forces it to render as a map marker point at the new coordinates.</p>
+                        <hr style="border-top: 1px solid var(--border-color); margin: 20px 0;">
+        <h3 style="margin-top:0;">Override Geolocation & Translation</h3>
+        <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px;">Fix bad geocoding by forcing an exact OpenStreetMap ID (e.g., <b>R72180</b> for Kursk Oblast) and fixing bad translations. Leave ID blank to delete cache and retry.</p>
         <form id="overrideForm" style="display: flex; flex-direction: column; gap: 10px;">
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8;">Location Name (exact text):</label>
+                <label style="font-size: 0.85rem; color: #94a3b8;">Location Name (exact Russian text from alert):</label>
                 <input type="text" id="overrideLocationName" required placeholder="e.g. Орловский район" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
             </div>
-            <div style="display: flex; gap: 10px;">
-                <div style="flex: 1;">
-                    <label style="font-size: 0.85rem; color: #94a3b8;">Latitude:</label>
-                    <input type="number" id="overrideLat" step="any" required placeholder="e.g. 52.96" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
-                </div>
-                <div style="flex: 1;">
-                    <label style="font-size: 0.85rem; color: #94a3b8;">Longitude:</label>
-                    <input type="number" id="overrideLng" step="any" required placeholder="e.g. 36.07" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
-                </div>
+            <div>
+                <label style="font-size: 0.85rem; color: #94a3b8;">OSM ID (from OpenStreetMap, optional):</label>
+                <input type="text" id="overrideOsmId" placeholder="e.g. R140291" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+            </div>
+            <div>
+                <label style="font-size: 0.85rem; color: #94a3b8;">English Translation Override (optional):</label>
+                <input type="text" id="overrideEnglishName" placeholder="e.g. Oryol District" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
             </div>
             <button type="submit" id="overrideBtn" class="primary-btn" style="width: 100%; background: #10b981;">Save Override</button>
             <div id="overrideStatusMsg" style="display: none; font-size: 0.85rem; color: #10b981; margin-top: 5px;"></div>
@@ -634,11 +632,11 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
 
 
         // 5. Override Geocodes
-        document.getElementById('overrideForm').addEventListener('submit', async (e) => {
+                        document.getElementById('overrideForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const locationName = document.getElementById('overrideLocationName').value;
-            const lat = parseFloat(document.getElementById('overrideLat').value);
-            const lng = parseFloat(document.getElementById('overrideLng').value);
+            const osmId = document.getElementById('overrideOsmId').value;
+            const englishName = document.getElementById('overrideEnglishName').value;
 
             const btn = document.getElementById('overrideBtn');
             const statusMsg = document.getElementById('overrideStatusMsg');
@@ -651,8 +649,42 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                 const response = await fetch('/api/admin/geocode_override', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ location_name: locationName, lat: lat, lng: lng })
+                    body: JSON.stringify({ location_name: locationName, osm_id: osmId, english_name: englishName })
                 });
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
+                    statusMsg.textContent = 'Override saved! (Map will update next fetch)';
+                    statusMsg.style.display = 'block';
+                    document.getElementById('overrideOsmId').value = '';
+                    document.getElementById('overrideEnglishName').value = '';
+                } else {
+                    throw new Error(data.message || 'Override failed');
+                }
+            } catch (err) {
+                statusMsg.textContent = 'Error: ' + err.message;
+                statusMsg.classList.add('error-msg');
+                statusMsg.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                setTimeout(() => { if (!statusMsg.classList.contains('error-msg')) statusMsg.style.display = 'none'; }, 4000);
+            }
+        });
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
+                    statusMsg.textContent = 'Override saved! (Map will update next fetch)';
+                    statusMsg.style.display = 'block';
+                } else {
+                    throw new Error(data.message || 'Override failed');
+                }
+            } catch (err) {
+                statusMsg.textContent = 'Error: ' + err.message;
+                statusMsg.classList.add('error-msg');
+                statusMsg.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                setTimeout(() => { if (!statusMsg.classList.contains('error-msg')) statusMsg.style.display = 'none'; }, 4000);
+            }
+        });
                 if (response.ok) {
                     statusMsg.textContent = 'Override saved! (Map will update next fetch)';
                     statusMsg.style.display = 'block';

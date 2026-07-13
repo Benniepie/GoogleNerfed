@@ -1006,10 +1006,12 @@ async def proxy_firms(source: str, bbox: str):
 
 
 from pydantic import BaseModel
+from pydantic import BaseModel
+from pydantic import BaseModel
 class GeocodeOverride(BaseModel):
     location_name: str
-    lat: float
-    lng: float
+    osm_id: str
+    english_name: str = ""
 
 @app.post("/api/admin/geocode_override", dependencies=[Depends(verify_admin)])
 async def admin_geocode_override(override: GeocodeOverride):
@@ -1023,22 +1025,48 @@ async def admin_geocode_override(override: GeocodeOverride):
         except Exception:
             pass
 
-    # Create a custom Point feature
-    cache[override.location_name] = {
-        "place_id": 999999999,
-        "name": override.location_name,
-        "display_name": override.location_name,
-        "geojson": {
-            "type": "Point",
-            "coordinates": [override.lng, override.lat]
-        }
-    }
+    if not override.osm_id and not override.english_name:
+        # If both empty, delete from cache to force a re-fetch
+        if override.location_name in cache:
+            del cache[override.location_name]
+    elif override.osm_id:
+        # Fetch the exact polygon using osm_type and osm_id
+        osm_type = 'R'
+        osm_id_num = override.osm_id
+        if override.osm_id[0].isalpha():
+            osm_type = override.osm_id[0].upper()
+            osm_id_num = override.osm_id[1:]
+
+        url = f"https://nominatim.openstreetmap.org/lookup?osm_ids={osm_type}{osm_id_num}&format=json&polygon_geojson=1&accept-language=en,ru"
+        headers = {'User-Agent': 'ATPGeopolitics/1.0'}
+        try:
+            import urllib.request
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req) as response:
+                import json
+                data = json.loads(response.read().decode('utf-8'))
+                if data:
+                    res = data[0]
+                    if override.english_name:
+                        res["name"] = override.english_name
+                        res["display_name"] = override.english_name
+                    cache[override.location_name] = res
+                else:
+                    return {"status": "error", "message": "OSM ID not found in Nominatim"}
+        except Exception as e:
+            logger.error(f"Failed to fetch OSM override: {e}")
+            return {"status": "error", "message": str(e)}
+    elif override.english_name and override.location_name in cache:
+        # Just override the translation of existing geometry
+        cache[override.location_name]["name"] = override.english_name
+        cache[override.location_name]["display_name"] = override.english_name
 
     # Atomic write
     temp_file = cache_file.with_suffix('.tmp')
     with open(temp_file, "w", encoding="utf-8") as f:
         import json
         json.dump(cache, f, ensure_ascii=False, indent=2)
+    import os
     os.replace(temp_file, cache_file)
 
     return {"status": "success"}

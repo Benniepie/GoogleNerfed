@@ -695,18 +695,21 @@ const activeKMLGeoJSON = {};
                 const isRegionOrDistrict =
                     rawName.includes('область') || rawName.includes('край') ||
                     rawName.includes('республика') || rawName.includes('район') ||
-                    rawName.includes('округ') || enName.includes('oblast') ||
-                    enName.includes('region') || enName.includes('district') ||
+                    rawName.includes('округ') || rawName.includes('область') || rawName.includes('район') || rawName.includes('край') || rawName.includes('республика') ||
+                    enName.includes('oblast') || enName.includes('region') || enName.includes('district') ||
                     enName.includes('republic') || enName.includes('krai');
 
                 if (!isSmallOrPoint && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
                     const areaSqMeters = turf.area(feature);
                     const areaSqKm = areaSqMeters / 1000000;
 
-                    // Force polygons for regions/districts, even if Nominatim gave us a weirdly simplified tiny one
-                    if (!isRegionOrDistrict && (areaSqKm < 250 || feature.properties.icon)) {
+                    if (isRegionOrDistrict) {
+                        isSmallOrPoint = false; // Never make a region or district a map marker!
+                    } else if (areaSqKm < 250 || feature.properties.icon) {
                         isSmallOrPoint = true;
                     }
+                } else if (isRegionOrDistrict) {
+                    isSmallOrPoint = false; // Even if it was somehow flagged, forbid it.
                 }
 
                 // For small polygons or emoji locations, we render a large point instead
