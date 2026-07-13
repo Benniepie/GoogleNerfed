@@ -581,10 +581,6 @@ const activeKMLGeoJSON = {};
             radarRussiaLayerGroup.clearLayers();
             const now = new Date();
 
-            // Deduplicate logic: If multiple alerts happen for the same location, only show the visual for the most recent one.
-            // But retain ALL in the popup by storing the full list.
-            const latestLocationVisuals = new Map();
-
             // First prune old features from the master list
             radarAllFeatures = radarAllFeatures.filter(f => {
                 const alertTime = new Date(f.properties.time);
@@ -592,7 +588,7 @@ const activeKMLGeoJSON = {};
                 return ageHours <= 24;
             });
 
-            // Sort features oldest to newest, so newest overrides in Map
+            // Sort features oldest to newest
             radarAllFeatures.sort((a, b) => new Date(a.properties.time) - new Date(b.properties.time));
 
             // Build intersection data (all valid features)
@@ -601,13 +597,40 @@ const activeKMLGeoJSON = {};
                 features: radarAllFeatures
             };
 
+            // The user requested stacked opacities for Red/Orange/Yellow (active alerts),
+            // but deduplication (single opacity) for Green (clear) or Grey (stale).
+            // So we need to determine the latest state per location, and if it's clear/stale, only render it once.
+            // If it's active, we render all of them so opacity stacks.
+
+            const latestStatePerLoc = new Map();
             radarAllFeatures.forEach(feature => {
-                const locName = feature.properties.name;
-                // Just overwrite in the map so the latest visual state wins
-                latestLocationVisuals.set(locName, feature);
+                latestStatePerLoc.set(feature.properties.name, feature);
             });
 
-            latestLocationVisuals.forEach((feature, locName) => {
+            // Keep track of which grey/green we already rendered
+            const renderedClearOrStale = new Set();
+
+            radarAllFeatures.forEach(feature => {
+                const locName = feature.properties.name;
+                const latestFeature = latestStatePerLoc.get(locName);
+                const latestProps = latestFeature.properties;
+                const latestAgeHours = (now - new Date(latestProps.time)) / (1000 * 60 * 60);
+                const latestAgeMinutes = latestAgeHours * 60;
+
+                // Determine if the LATEST state for this location is grey or green
+                let isLatestClearOrStale = false;
+                if (latestProps.status === 'over') {
+                    isLatestClearOrStale = true; // Green or Grey
+                } else if (latestAgeMinutes > 60) {
+                    isLatestClearOrStale = true; // Grey
+                }
+
+                // If it is, and we've already rendered one for this location, skip it.
+                // We only render the LATEST one.
+                if (isLatestClearOrStale) {
+                    if (feature !== latestFeature) return; // Skip older features if latest is clear/stale
+                }
+
                 const props = feature.properties;
                 const timeStr = props.time;
                 const alertTime = new Date(timeStr);
@@ -616,18 +639,22 @@ const activeKMLGeoJSON = {};
                 const ageHours = ageMinutes / 60;
 
                 let fillColor = '#ef4444'; // Red default
-                let fillOpacity = 0.4;
+                let fillOpacity = 0.4; // Base opacity for red/orange/yellow
                 let animationClass = '';
                 let borderClass = '';
                 let isGrey = false;
 
+                // If latest is clear or stale, opacity should be 0.1 so it doesn't clutter.
+                // If active, it stays 0.4 so stacked ones look thicker.
+
                 if (props.status === 'over') {
                     if (ageHours > 1) {
-                        fillColor = '#94a3b8'; // Grey after 1 hr
-                        fillOpacity = 0.1; // Highly transparent
+                        fillColor = '#64748b'; // Darker grey so it's visible on light maps
+                        fillOpacity = 0.15; // Low opacity for single stale item
                         isGrey = true;
                     } else {
                         fillColor = '#22c55e'; // Green
+                        fillOpacity = 0.15; // Low opacity for single clear item
                     }
                 } else {
                     if (ageMinutes <= 20) {
@@ -638,8 +665,8 @@ const activeKMLGeoJSON = {};
                     } else if (ageMinutes <= 60) {
                         fillColor = '#eab308'; // Yellow
                     } else {
-                        fillColor = '#94a3b8'; // Grey
-                        fillOpacity = 0.1; // Highly transparent
+                        fillColor = '#64748b'; // Darker grey
+                        fillOpacity = 0.15; // Low opacity for single stale item
                         isGrey = true;
                     }
                 }
@@ -653,8 +680,8 @@ const activeKMLGeoJSON = {};
                 const layer = L.geoJSON(feature, {
                     interactive: false,
                     style: {
-                        color: isGrey ? '#475569' : fillColor, // Darker border for grey
-                        weight: isGrey ? 1 : 2,
+                        color: isGrey ? '#64748b' : fillColor, // Match fill
+                        weight: isGrey ? 2 : 2, // Keep thickness consistent
                         fillColor: fillColor,
                         fillOpacity: fillOpacity,
                         className: borderClass
@@ -665,7 +692,7 @@ const activeKMLGeoJSON = {};
                         if (iconHtml) {
                             const customIcon = L.divIcon({
                                 className: `radar-custom-icon ${animationClass}`,
-                                html: `<div style="background:${fillColor}; width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; font-size:10px; box-shadow:0 0 10px rgba(0,0,0,0.5);">${iconHtml}</div>`,
+                                html: `<div style="background:${fillColor}; width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid ${isGrey ? '#cbd5e1' : 'white'}; font-size:10px; box-shadow:0 0 10px rgba(0,0,0,0.5);">${iconHtml}</div>`,
                                 iconSize: [15, 15],
                                 iconAnchor: [7.5, 7.5]
                             });

@@ -560,11 +560,18 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
         # Delta filtering: If `since` is provided, skip older records
         if since:
             try:
+                # Use strptime to be safe if fromisoformat fails on timezone
                 alert_time = datetime.fromisoformat(parsed["time"].replace('Z', '+00:00'))
-                since_time = datetime.fromisoformat(since.replace('Z', '+00:00'))
-                if alert_time <= since_time:
+                # Replace ' ' with '+' in case urllib.parse unquoted the '+' to a space
+                since_time_str = since.replace(' ', '+').replace('Z', '+00:00')
+                since_time = datetime.fromisoformat(since_time_str)
+
+                # Make timezone naive if one is naive and other is aware, or just use timestamp
+                if alert_time.timestamp() <= since_time.timestamp():
                     continue
-            except Exception:
+            except Exception as e:
+                # Print exception here for safety
+                print(f"Date parse error in since parameter: {e}")
                 pass # Parse error, include it anyway
 
         for loc_info in parsed["locations"]:
