@@ -641,7 +641,6 @@ const activeKMLGeoJSON = {};
                     return;
                 }
 
-                const props = feature.properties;
                 const timeStr = props.time;
                 const alertTime = new Date(timeStr);
                 const ageSeconds = (now - alertTime) / 1000;
@@ -1423,7 +1422,7 @@ map.on('click', async function(e) {
                 }
             }
         });
-        async function loadSettingsAndInit() {
+        window.loadSettingsAndInit = async function loadSettingsAndInit() {
             try {
                 const response = await fetch('/api/settings');
                 appSettings = await response.json();

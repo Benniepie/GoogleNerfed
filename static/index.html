@@ -647,7 +647,11 @@
             // If they are public, kickstart the map immediately without the admin tools
         
         }
-        loadSettingsAndInit();
+
+            // Wait for map-layers.js to attach the function
+            setTimeout(() => {
+                if(window.loadSettingsAndInit) window.loadSettingsAndInit();
+            }, 100);
     </script>    
   
 </body>
