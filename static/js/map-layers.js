@@ -548,6 +548,8 @@ const activeKMLGeoJSON = {};
                     playBeep();
                 }
 
+                radarInitialLoad = false;
+
                 renderRadarRussiaData(data);
 
                 statusEl.textContent = `Tracking ${data.features.length} locations.`;

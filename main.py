@@ -328,7 +328,7 @@ async def get_cached_geocode(location_name: str) -> Optional[dict]:
         return cache[location_name]
 
     # Not in cache, query Nominatim
-    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&polygon_geojson=1&limit=1&accept-language=ru,en"
+    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&polygon_geojson=1&limit=1&accept-language=en,ru"
     headers = {'User-Agent': 'ATPGeopolitics/1.0'}
     try:
         # Use existing async http_client
@@ -388,7 +388,7 @@ async def get_radar_russia_alerts():
                     "properties": {
                         "id": parsed["id"],
                         "time": parsed["time"],
-                        "name": loc_info["name"],
+                        "name": geo_data.get("name", loc_info["name"]),
                         "threat": parsed["threat"],
                         "status": parsed["status"],
                         "icon": loc_info["icon"]
