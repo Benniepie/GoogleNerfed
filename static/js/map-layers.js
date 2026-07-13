@@ -493,6 +493,8 @@ const activeKMLGeoJSON = {};
         let seenRadarAlertIds = new Set();
         let radarInitialLoad = true;
         let radarAudioContext = null;
+        let radarLastFetchTime = null;
+        let radarAllFeatures = []; // Maintain the full list of active features locally
 
         function playBeep() {
             try {
@@ -526,33 +528,47 @@ const activeKMLGeoJSON = {};
             statusEl.textContent = 'Fetching latest alerts...';
 
             try {
-                const res = await fetch('/api/radar-russia');
+                let url = '/api/radar-russia';
+                if (radarLastFetchTime && !radarInitialLoad) {
+                    url += `?since=${encodeURIComponent(radarLastFetchTime)}`;
+                }
+
+                const res = await fetch(url);
                 if (!res.ok) throw new Error("API error");
 
                 const data = await res.json();
 
                 let newAlertsFound = false;
+                let maxTime = radarLastFetchTime;
 
                 data.features.forEach(f => {
                     const id = f.properties.id;
+                    const alertTime = f.properties.time;
+                    if (alertTime) {
+                        if (!maxTime || new Date(alertTime) > new Date(maxTime)) {
+                            maxTime = alertTime;
+                        }
+                    }
+
                     if (id && !seenRadarAlertIds.has(id)) {
                         seenRadarAlertIds.add(id);
-                        // If this isn't the very first load, trigger audio
+                        radarAllFeatures.push(f);
                         if (!radarInitialLoad) {
                             newAlertsFound = true;
                         }
                     }
                 });
 
-                if (newAlertsFound && document.getElementById('radarRussiaAudioToggle').checked) {
+                if (newAlertsFound && document.getElementById('radarRussiaAudioToggle') && document.getElementById('radarRussiaAudioToggle').checked) {
                     playBeep();
                 }
 
                 radarInitialLoad = false;
+                radarLastFetchTime = maxTime; // Update with the most recent alert time received
 
-                renderRadarRussiaData(data);
+                renderRadarRussiaData();
 
-                statusEl.textContent = `Tracking ${data.features.length} locations.`;
+                statusEl.textContent = `Tracking ${radarAllFeatures.length} locations.`;
                 statusEl.style.color = '#22c55e';
             } catch (e) {
                 console.error("Radar Russia API error:", e);
@@ -561,26 +577,58 @@ const activeKMLGeoJSON = {};
             }
         }
 
-        function renderRadarRussiaData(geojsonData) {
+        function renderRadarRussiaData() {
             radarRussiaLayerGroup.clearLayers();
             const now = new Date();
 
-            // Need to store raw data for popup intersection checking
-            activeKMLGeoJSON['RadarRussia'] = geojsonData;
+            // Deduplicate logic: If multiple alerts happen for the same location, only show the visual for the most recent one.
+            // But retain ALL in the popup by storing the full list.
+            const latestLocationVisuals = new Map();
 
-            geojsonData.features.forEach(feature => {
-                const props = feature.properties;
-                const timeStr = props.time; // ISO 8601 string
-                const alertTime = new Date(timeStr);
+            // First prune old features from the master list
+            radarAllFeatures = radarAllFeatures.filter(f => {
+                const alertTime = new Date(f.properties.time);
                 const ageHours = (now - alertTime) / (1000 * 60 * 60);
-                const ageMinutes = (now - alertTime) / (1000 * 60);
+                return ageHours <= 24;
+            });
 
-                if (ageHours > 24) return; // Drop older than 24 hours
+            // Sort features oldest to newest, so newest overrides in Map
+            radarAllFeatures.sort((a, b) => new Date(a.properties.time) - new Date(b.properties.time));
+
+            // Build intersection data (all valid features)
+            activeKMLGeoJSON['RadarRussia'] = {
+                type: "FeatureCollection",
+                features: radarAllFeatures
+            };
+
+            radarAllFeatures.forEach(feature => {
+                const locName = feature.properties.name;
+                // Just overwrite in the map so the latest visual state wins
+                latestLocationVisuals.set(locName, feature);
+            });
+
+            latestLocationVisuals.forEach((feature, locName) => {
+                const props = feature.properties;
+                const timeStr = props.time;
+                const alertTime = new Date(timeStr);
+                const ageSeconds = (now - alertTime) / 1000;
+                const ageMinutes = ageSeconds / 60;
+                const ageHours = ageMinutes / 60;
 
                 let fillColor = '#ef4444'; // Red default
+                let fillOpacity = 0.4;
                 let animationClass = '';
+                let borderClass = '';
+                let isGrey = false;
+
                 if (props.status === 'over') {
-                    fillColor = '#22c55e'; // Green
+                    if (ageHours > 1) {
+                        fillColor = '#94a3b8'; // Grey after 1 hr
+                        fillOpacity = 0.1; // Highly transparent
+                        isGrey = true;
+                    } else {
+                        fillColor = '#22c55e'; // Green
+                    }
                 } else {
                     if (ageMinutes <= 20) {
                         fillColor = '#ef4444'; // Red
@@ -591,16 +639,25 @@ const activeKMLGeoJSON = {};
                         fillColor = '#eab308'; // Yellow
                     } else {
                         fillColor = '#94a3b8'; // Grey
+                        fillOpacity = 0.1; // Highly transparent
+                        isGrey = true;
                     }
+                }
+
+                // Add 60s flash for brand new alerts
+                if (ageSeconds <= 60) {
+                    borderClass = 'radar-flash-path';
+                    animationClass += ' radar-flash-anim';
                 }
 
                 const layer = L.geoJSON(feature, {
                     interactive: false,
                     style: {
-                        color: fillColor,
-                        weight: 2,
+                        color: isGrey ? '#475569' : fillColor, // Darker border for grey
+                        weight: isGrey ? 1 : 2,
                         fillColor: fillColor,
-                        fillOpacity: 0.4
+                        fillOpacity: fillOpacity,
+                        className: borderClass
                     },
                     pointToLayer: function(f, latlng) {
                         const iconHtml = f.properties.icon || '';
@@ -608,19 +665,17 @@ const activeKMLGeoJSON = {};
                         if (iconHtml) {
                             const customIcon = L.divIcon({
                                 className: `radar-custom-icon ${animationClass}`,
-                                html: `<div style="background:${fillColor}; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; font-size:16px; box-shadow:0 0 10px rgba(0,0,0,0.5);">${iconHtml}</div>`,
-                                iconSize: [30, 30],
-                                iconAnchor: [15, 15]
+                                html: `<div style="background:${fillColor}; width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; font-size:10px; box-shadow:0 0 10px rgba(0,0,0,0.5);">${iconHtml}</div>`,
+                                iconSize: [15, 15],
+                                iconAnchor: [7.5, 7.5]
                             });
                             return L.marker(latlng, {icon: customIcon, interactive: false});
                         } else {
-                            // City/Town large marker with a label
                             const labelIcon = L.divIcon({
-                                className: `radar-label-icon ${animationClass ? 'radar-pulse-anim' : ''}`,
+                                className: `radar-label-icon ${animationClass ? animationClass : ''}`,
                                 html: `
-                                    <div style="position: absolute; transform: translate(-50%, -15px); display: flex; flex-direction: column; align-items: center; pointer-events: none;">
-                                        <div style="background:${fillColor}; width:30px; height:30px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:16px;">${f.properties.emoji || ''}</div>
-
+                                    <div style="position: absolute; transform: translate(-50%, -7.5px); display: flex; flex-direction: column; align-items: center; pointer-events: none;">
+                                        <div style="background:${fillColor}; width:15px; height:15px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:10px;">${f.properties.emoji || ''}</div>
                                     </div>
                                 `,
                                 iconSize: [0, 0],

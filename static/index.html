@@ -392,6 +392,24 @@
     .radar-pulse-anim {
         animation: radar-pulse 2s infinite;
     }
+    @keyframes radar-flash {
+        0% { border-color: black; }
+        49% { border-color: black; }
+        50% { border-color: white; }
+        100% { border-color: white; }
+    }
+    .radar-flash-anim {
+        animation: radar-flash 1s infinite;
+    }
+    .radar-flash-path {
+        animation: radar-flash-path 1s infinite;
+    }
+    @keyframes radar-flash-path {
+        0% { stroke: black; stroke-dasharray: 5, 5; }
+        49% { stroke: black; stroke-dasharray: 5, 5;}
+        50% { stroke: white; stroke-dasharray: 5, 5; }
+        100% { stroke: white; stroke-dasharray: 5, 5;}
+    }
 </style>
 </head>
 <body>
@@ -502,7 +520,8 @@
             </div>
             <div id="firmsStatus" style="font-size: 0.8rem; color: #94a3b8; display: none; margin-top: 5px;">Ready.</div>
 
-            <h3 style="margin: 20px 0 10px 0; font-size: 1rem; color: var(--text-color);">🚨 Telegram Air Alerts (Russia & Occupied UA)</h3>
+            <h3 style="margin: 20px 0 10px 0; font-size: 1rem; color: var(--text-color);">🚨 Telegram Air Alerts (Russia)</h3>
+            <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px;">Alerts are for the last 24 hours. Map will automatically update.</div>
             <div class="layer-item" style="border-left: 3px solid #3b82f6;">
                 <input type="checkbox" id="radarRussiaToggle">
                 <label for="radarRussiaToggle" style="font-weight: bold; color: #93c5fd;">Load Radar Russia Alerts</label>

@@ -319,14 +319,26 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
     if any("отбой" in t.lower() for t in threats):
         status_val = "over"
 
+    # Determine the most specific locations (filter out broad contexts if a town is mentioned)
+    context_keywords = ["область", "край", "республика", "окг", "округ", "крым", "район"]
     context = ""
     for loc in reversed(locations):
-        if any(x in loc.lower() for x in ["область", "край", "республика", "окг", "округ", "крым"]):
+        if any(x in loc.lower() for x in context_keywords):
             context = loc
             break
 
     final_locs = []
     combined_threat = " | ".join(threats)
+
+    # Translation dictionary for locations
+    location_translations = {
+        "мордовия": "Mordovia",
+        "республика": "Republic",
+        "область": "Oblast",
+        "край": "Krai",
+        "район": "District"
+    }
+
     # Simple manual translation dictionary for common radar terms
     threat_translations = {
         "опасность по бпла": "UAV Danger",
@@ -336,24 +348,53 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
         "фиксация бпла": "UAV Detected",
         "работа пво": "Air Defense Active",
         "тревога": "Alarm",
+        "сбиты": "Shot Down",
         "сбит": "Shot Down",
         "внимание": "Attention",
         "угроза": "Threat",
-        "отбой": "All Clear / Over"
+        "отбой": "All Clear / Over",
+        "реактивным": "Jet",
+        "волна": "Wave",
+        "приготовиться к волне бпла": "Prepare for UAV wave",
+        "в вашем направлении": "in your direction",
+        "со стороны": "from the direction of",
+        "крылатые ракеты большой дальности": "long-range cruise missiles",
+        "возможно от": "possibly from"
     }
 
     english_threat = combined_threat
     for ru, en in threat_translations.items():
         english_threat = re.sub(re.escape(ru), en, english_threat, flags=re.IGNORECASE)
 
-    for loc in locations:
-        if loc == context:
-            final_locs.append({"name": loc, "icon": get_radar_icon(loc, combined_threat)})
-        elif context:
-            full_name = f"{loc}, {context}"
-            final_locs.append({"name": full_name, "icon": get_radar_icon(full_name, combined_threat)})
-        else:
-            final_locs.append({"name": loc, "icon": get_radar_icon(loc, combined_threat)})
+    # If there are multiple locations, don't just use context
+    if len(locations) > 1:
+        # Filter out locations that are just broad contexts if there are more specific ones
+        specific_locs = [loc for loc in locations if not any(x in loc.lower() for x in context_keywords)]
+        if not specific_locs:
+            specific_locs = locations # Use all if all are broad
+
+        # We'll use the specific locations and optionally append context
+        for loc in specific_locs:
+            translated_loc = loc
+            for ru, en in location_translations.items():
+                translated_loc = re.sub(re.escape(ru), en, translated_loc, flags=re.IGNORECASE)
+
+            full_name = loc
+            if context and loc != context:
+                full_name = f"{loc}, {context}"
+
+            translated_full = full_name
+            for ru, en in location_translations.items():
+                translated_full = re.sub(re.escape(ru), en, translated_full, flags=re.IGNORECASE)
+
+            final_locs.append({"name": translated_full, "icon": get_radar_icon(loc, combined_threat)})
+    else:
+        for loc in locations:
+            translated_loc = loc
+            for ru, en in location_translations.items():
+                translated_loc = re.sub(re.escape(ru), en, translated_loc, flags=re.IGNORECASE)
+
+            final_locs.append({"name": translated_loc, "icon": get_radar_icon(loc, combined_threat)})
 
     return {
         "id": msg_id,
@@ -416,15 +457,28 @@ async def fetch_and_cache_radar_russia():
 
 
         time_tag = msg.find('time')
-        time_str = time_tag['datetime'] if time_tag else ''
+        time_str = time_tag.get('datetime', '') if time_tag else ''
+
+        if not time_str:
+            continue
 
         parsed = parse_telegram_message(text, msg_id, time_str)
         cached_alerts[msg_id] = parsed
 
     # Fully resolve missing geocodes in the background
+    geocode_cache = {}
+    gc_file = DATA_DIR / "geocode_cache.json"
+    if gc_file.exists():
+        try:
+            with open(gc_file, "r", encoding="utf-8") as f:
+                import json
+                geocode_cache = json.load(f)
+        except:
+            pass
+
     for msg_id, parsed in cached_alerts.items():
         for loc_info in parsed["locations"]:
-            await get_cached_geocode(loc_info["name"])
+            await get_cached_geocode(loc_info["name"], cache_dict=geocode_cache)
 
     temp_file = cache_file.with_suffix('.tmp')
     with open(temp_file, "w", encoding="utf-8") as f:
@@ -477,7 +531,7 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
     return None
 
 @app.get("/api/radar-russia")
-async def get_radar_russia_alerts():
+async def get_radar_russia_alerts(since: Optional[str] = None):
     cache_file = DATA_DIR / "radar_alerts.json"
     cached_alerts = {}
     if cache_file.exists():
@@ -503,6 +557,16 @@ async def get_radar_russia_alerts():
             pass
 
     for msg_id, parsed in cached_alerts.items():
+        # Delta filtering: If `since` is provided, skip older records
+        if since:
+            try:
+                alert_time = datetime.fromisoformat(parsed["time"].replace('Z', '+00:00'))
+                since_time = datetime.fromisoformat(since.replace('Z', '+00:00'))
+                if alert_time <= since_time:
+                    continue
+            except Exception:
+                pass # Parse error, include it anyway
+
         for loc_info in parsed["locations"]:
             geo_data = await get_cached_geocode(loc_info["name"], cache_dict=geocode_cache)
             if geo_data and "geojson" in geo_data:
