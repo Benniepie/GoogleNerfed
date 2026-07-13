@@ -280,9 +280,10 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
 # --- TELEGRAM SCRAPER LOGIC ---
 def get_radar_icon(location_str, threat_str):
     combined = (location_str + " " + threat_str).lower()
-    if any(kw in combined for kw in ["аэропорт", "аэродром", "airport", "авиабаза"]): return "✈️"
-    if any(kw in combined for kw in ["нпз", "нефте", "oil", "naval base", "порт", "терминал"]): return "⚓"
+    if any(kw in combined for kw in ["аэропорт", "аэродром", "airport", "авиабаза", "air base"]): return "✈️"
+    if any(kw in combined for kw in ["нпз", "нефте", "oil", "naval base", "порт", "терминал", "refinery"]): return "⚓"
     if any(kw in combined for kw in ["море", "залив", "sea", "вода", "океан", "акватория"]): return "🌊"
+    if any(kw in combined for kw in ["база", "base", "вч", "войсковая часть", "military"]): return "🪖"
     return ""
 
 def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
@@ -504,7 +505,7 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
 
     # Use extremely aggressive simplification (0.05) to reduce polygon size
     # and restrict responses to Russia and Ukraine only (countrycodes=ru,ua) to prevent huge global multi-polygons
-    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.05&countrycodes=ru,ua&accept-language=en"
+    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005&countrycodes=ru,ua&accept-language=en"
     headers = {'User-Agent': 'ATPGeopolitics/1.0'}
     try:
         resp = await http_client.get(url, headers=headers, timeout=10.0)

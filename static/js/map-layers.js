@@ -588,8 +588,8 @@ const activeKMLGeoJSON = {};
                 return ageHours <= 24;
             });
 
-            // Sort features oldest to newest
-            radarAllFeatures.sort((a, b) => new Date(a.properties.time) - new Date(b.properties.time));
+            // Sort features newest to oldest (for popups)
+            radarAllFeatures.sort((a, b) => new Date(b.properties.time) - new Date(a.properties.time));
 
             // Build intersection data (all valid features)
             activeKMLGeoJSON['RadarRussia'] = {
@@ -597,38 +597,48 @@ const activeKMLGeoJSON = {};
                 features: radarAllFeatures
             };
 
-            // The user requested stacked opacities for Red/Orange/Yellow (active alerts),
-            // but deduplication (single opacity) for Green (clear) or Grey (stale).
-            // So we need to determine the latest state per location, and if it's clear/stale, only render it once.
-            // If it's active, we render all of them so opacity stacks.
+            // The user requested stacked opacities for Red/Orange/Yellow (active alerts) to show intensity,
+            // but older Green (clear) or Grey (stale) alerts should not render if there's a newer alert,
+            // as it causes muddy color mixing. And if the latest is clear/stale, we only render it once (no stacking).
 
             const latestStatePerLoc = new Map();
             radarAllFeatures.forEach(feature => {
-                latestStatePerLoc.set(feature.properties.name, feature);
+                const locName = feature.properties.name;
+                // Since radarAllFeatures is sorted newest to oldest, the first one we see is the newest
+                if (!latestStatePerLoc.has(locName)) {
+                    latestStatePerLoc.set(locName, feature);
+                }
             });
-
-            // Keep track of which grey/green we already rendered
-            const renderedClearOrStale = new Set();
 
             radarAllFeatures.forEach(feature => {
                 const locName = feature.properties.name;
                 const latestFeature = latestStatePerLoc.get(locName);
                 const latestProps = latestFeature.properties;
-                const latestAgeHours = (now - new Date(latestProps.time)) / (1000 * 60 * 60);
-                const latestAgeMinutes = latestAgeHours * 60;
+                const latestAgeMinutes = (now - new Date(latestProps.time)) / (1000 * 60);
 
                 // Determine if the LATEST state for this location is grey or green
                 let isLatestClearOrStale = false;
-                if (latestProps.status === 'over') {
-                    isLatestClearOrStale = true; // Green or Grey
-                } else if (latestAgeMinutes > 60) {
-                    isLatestClearOrStale = true; // Grey
+                if (latestProps.status === 'over' || latestAgeMinutes > 60) {
+                    isLatestClearOrStale = true;
                 }
 
-                // If it is, and we've already rendered one for this location, skip it.
-                // We only render the LATEST one.
-                if (isLatestClearOrStale) {
-                    if (feature !== latestFeature) return; // Skip older features if latest is clear/stale
+                // If the latest is clear/stale, ONLY render the latest one (no stacking for stale ones)
+                if (isLatestClearOrStale && feature !== latestFeature) {
+                    return;
+                }
+
+                // Determine if THIS feature is clear or stale
+                const props = feature.properties;
+                const thisAgeMinutes = (now - new Date(props.time)) / (1000 * 60);
+                let isThisClearOrStale = false;
+                if (props.status === 'over' || thisAgeMinutes > 60) {
+                    isThisClearOrStale = true;
+                }
+
+                // If THIS feature is clear/stale, but the latest is ACTIVE, DO NOT RENDER IT.
+                // This prevents muddy mixing where an old grey polygon sits under a new red polygon.
+                if (isThisClearOrStale && !isLatestClearOrStale) {
+                    return;
                 }
 
                 const props = feature.properties;
@@ -650,11 +660,11 @@ const activeKMLGeoJSON = {};
                 if (props.status === 'over') {
                     if (ageHours > 1) {
                         fillColor = '#64748b'; // Darker grey so it's visible on light maps
-                        fillOpacity = 0.15; // Low opacity for single stale item
+                        fillOpacity = 0.3; // Increased opacity for single stale item
                         isGrey = true;
                     } else {
                         fillColor = '#22c55e'; // Green
-                        fillOpacity = 0.15; // Low opacity for single clear item
+                        fillOpacity = 0.3; // Increased opacity for single clear item
                     }
                 } else {
                     if (ageMinutes <= 20) {
@@ -666,7 +676,7 @@ const activeKMLGeoJSON = {};
                         fillColor = '#eab308'; // Yellow
                     } else {
                         fillColor = '#64748b'; // Darker grey
-                        fillOpacity = 0.15; // Low opacity for single stale item
+                        fillOpacity = 0.3; // Increased opacity for single stale item
                         isGrey = true;
                     }
                 }
@@ -677,43 +687,60 @@ const activeKMLGeoJSON = {};
                     animationClass += ' radar-flash-anim';
                 }
 
-                const layer = L.geoJSON(feature, {
-                    interactive: false,
-                    style: {
-                        color: isGrey ? '#64748b' : fillColor, // Match fill
-                        weight: isGrey ? 2 : 2, // Keep thickness consistent
-                        fillColor: fillColor,
-                        fillOpacity: fillOpacity,
-                        className: borderClass
-                    },
-                    pointToLayer: function(f, latlng) {
-                        const iconHtml = f.properties.icon || '';
-
-                        if (iconHtml) {
-                            const customIcon = L.divIcon({
-                                className: `radar-custom-icon ${animationClass}`,
-                                html: `<div style="background:${fillColor}; width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid ${isGrey ? '#cbd5e1' : 'white'}; font-size:10px; box-shadow:0 0 10px rgba(0,0,0,0.5);">${iconHtml}</div>`,
-                                iconSize: [15, 15],
-                                iconAnchor: [7.5, 7.5]
-                            });
-                            return L.marker(latlng, {icon: customIcon, interactive: false});
-                        } else {
-                            const labelIcon = L.divIcon({
-                                className: `radar-label-icon ${animationClass ? animationClass : ''}`,
-                                html: `
-                                    <div style="position: absolute; transform: translate(-50%, -7.5px); display: flex; flex-direction: column; align-items: center; pointer-events: none;">
-                                        <div style="background:${fillColor}; width:15px; height:15px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:10px;">${f.properties.emoji || ''}</div>
-                                    </div>
-                                `,
-                                iconSize: [0, 0],
-                                iconAnchor: [0, 0]
-                            });
-                            return L.marker(latlng, {icon: labelIcon, interactive: false});
-                        }
+                // Determine if this is a small polygon or has an emoji
+                let isSmallOrPoint = feature.geometry.type === 'Point' || feature.geometry.type === 'MultiPoint';
+                if (!isSmallOrPoint && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
+                    const areaSqMeters = turf.area(feature);
+                    const areaSqKm = areaSqMeters / 1000000;
+                    if (areaSqKm < 250 || feature.properties.icon) {
+                        isSmallOrPoint = true;
                     }
-                });
+                }
 
-                radarRussiaLayerGroup.addLayer(layer);
+                // For small polygons or emoji locations, we render a large point instead
+                if (isSmallOrPoint) {
+                    let center = feature.geometry.type === 'Point' ? [feature.geometry.coordinates[1], feature.geometry.coordinates[0]] : null;
+                    if (!center) {
+                        const centroid = turf.centroid(feature);
+                        center = [centroid.geometry.coordinates[1], centroid.geometry.coordinates[0]];
+                    }
+
+                    const iconHtml = feature.properties.icon || '';
+                    let markerHtml = '';
+
+                    if (iconHtml) {
+                        markerHtml = `<div style="background:${fillColor}; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid ${isGrey ? '#cbd5e1' : 'white'}; font-size:20px; box-shadow:0 0 10px rgba(0,0,0,0.5);">${iconHtml}</div>`;
+                    } else {
+                        // Map marker for city/town without label
+                        markerHtml = `
+                            <div style="position: absolute; transform: translate(-50%, -15px); display: flex; flex-direction: column; align-items: center; pointer-events: none;">
+                                <div style="background:${fillColor}; width:30px; height:30px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:20px;">📍</div>
+                            </div>
+                        `;
+                    }
+
+                    const customIcon = L.divIcon({
+                        className: `radar-custom-icon ${animationClass}`,
+                        html: markerHtml,
+                        iconSize: iconHtml ? [30, 30] : [0, 0],
+                        iconAnchor: iconHtml ? [15, 15] : [0, 0]
+                    });
+
+                    const markerLayer = L.marker(center, {icon: customIcon, interactive: false});
+                    radarRussiaLayerGroup.addLayer(markerLayer);
+                } else {
+                    const layer = L.geoJSON(feature, {
+                        interactive: false,
+                        style: {
+                            color: isGrey ? '#64748b' : fillColor,
+                            weight: isGrey ? 2 : 2,
+                            fillColor: fillColor,
+                            fillOpacity: fillOpacity,
+                            className: borderClass
+                        }
+                    });
+                    radarRussiaLayerGroup.addLayer(layer);
+                }
             });
 
             // Only add to map if active
@@ -1244,6 +1271,20 @@ map.on('click', async function(e) {
 
                     if (currentFeature.geometry.type === 'Polygon' || currentFeature.geometry.type === 'MultiPolygon') {
                         isHit = turf.booleanPointInPolygon(clickPoint, currentFeature);
+
+                        // Hit testing fallback for small polygons rendered as markers
+                        if (!isHit) {
+                            const areaSqMeters = turf.area(currentFeature);
+                            const areaSqKm = areaSqMeters / 1000000;
+                            if (areaSqKm < 250 || currentFeature.properties.icon) {
+                                const centroid = turf.centroid(currentFeature);
+                                const dist = turf.distance(clickPoint, centroid, {units: 'kilometers'});
+                                // Give a 10km click radius for these tiny areas/markers
+                                if (dist < 10) {
+                                    isHit = true;
+                                }
+                            }
+                        }
                     } else if (currentFeature.geometry.type === 'Point') {
                         const dist = turf.distance(clickPoint, currentFeature, {units: 'meters'});
                         isHit = dist < 20000; // Allow 20km hit tolerance for cities/regions point representations
