@@ -344,8 +344,6 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
 
     english_threat = combined_threat
     for ru, en in threat_translations.items():
-        # Case insensitive replacement
-        import re
         english_threat = re.sub(re.escape(ru), en, english_threat, flags=re.IGNORECASE)
 
     for loc in locations:
@@ -428,15 +426,17 @@ async def fetch_and_cache_radar_russia():
         for loc_info in parsed["locations"]:
             await get_cached_geocode(loc_info["name"])
 
-    with open(cache_file, "w", encoding="utf-8") as f:
+    temp_file = cache_file.with_suffix('.tmp')
+    with open(temp_file, "w", encoding="utf-8") as f:
         import json
         json.dump(cached_alerts, f, ensure_ascii=False, indent=2)
+    os.replace(temp_file, cache_file)
 
 
-async def get_cached_geocode(location_name: str) -> Optional[dict]:
+async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = None) -> Optional[dict]:
     cache_file = DATA_DIR / "geocode_cache.json"
-    cache = {}
-    if cache_file.exists():
+    cache = cache_dict if cache_dict is not None else {}
+    if cache_dict is None and cache_file.exists():
         try:
             import json
             with open(cache_file, "r", encoding="utf-8") as f:
@@ -445,7 +445,8 @@ async def get_cached_geocode(location_name: str) -> Optional[dict]:
             pass
 
     if location_name in cache:
-        return cache[location_name]
+        res = cache[location_name]
+        return res if "empty" not in res else None
 
     # Use extremely aggressive simplification (0.05) to reduce polygon size
     # and restrict responses to Russia and Ukraine only (countrycodes=ru,ua) to prevent huge global multi-polygons
@@ -458,11 +459,18 @@ async def get_cached_geocode(location_name: str) -> Optional[dict]:
 
         if data:
             result = data[0]
-            cache[location_name] = result
-            with open(cache_file, "w", encoding="utf-8") as f:
-                import json
-                json.dump(cache, f, ensure_ascii=False, indent=2)
-            return result
+        else:
+            result = {"empty": True} # Negative cache
+
+        cache[location_name] = result
+        # Atomic write to prevent JSONDecodeError from race conditions
+        temp_file = cache_file.with_suffix('.tmp')
+        with open(temp_file, "w", encoding="utf-8") as f:
+            import json
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+        os.replace(temp_file, cache_file)
+
+        return result if "empty" not in result else None
     except Exception as e:
         logger.error(f"Geocode error for {location_name}: {e}")
 
@@ -482,9 +490,21 @@ async def get_radar_russia_alerts():
             raise HTTPException(status_code=500, detail="Error reading radar data cache")
 
     features = []
+
+    # Load cache once per API request
+    geocode_cache = {}
+    gc_file = DATA_DIR / "geocode_cache.json"
+    if gc_file.exists():
+        try:
+            with open(gc_file, "r", encoding="utf-8") as f:
+                import json
+                geocode_cache = json.load(f)
+        except:
+            pass
+
     for msg_id, parsed in cached_alerts.items():
         for loc_info in parsed["locations"]:
-            geo_data = await get_cached_geocode(loc_info["name"])
+            geo_data = await get_cached_geocode(loc_info["name"], cache_dict=geocode_cache)
             if geo_data and "geojson" in geo_data:
                 feature = {
                     "type": "Feature",
