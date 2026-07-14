@@ -669,37 +669,6 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                 setTimeout(() => { if (!statusMsg.classList.contains('error-msg')) statusMsg.style.display = 'none'; }, 4000);
             }
         });
-                const data = await response.json();
-                if (response.ok && data.status === 'success') {
-                    statusMsg.textContent = 'Override saved! (Map will update next fetch)';
-                    statusMsg.style.display = 'block';
-                } else {
-                    throw new Error(data.message || 'Override failed');
-                }
-            } catch (err) {
-                statusMsg.textContent = 'Error: ' + err.message;
-                statusMsg.classList.add('error-msg');
-                statusMsg.style.display = 'block';
-            } finally {
-                btn.disabled = false;
-                setTimeout(() => { if (!statusMsg.classList.contains('error-msg')) statusMsg.style.display = 'none'; }, 4000);
-            }
-        });
-                if (response.ok) {
-                    statusMsg.textContent = 'Override saved! (Map will update next fetch)';
-                    statusMsg.style.display = 'block';
-                } else {
-                    throw new Error('Override failed');
-                }
-            } catch (err) {
-                statusMsg.textContent = 'Error saving override.';
-                statusMsg.classList.add('error-msg');
-                statusMsg.style.display = 'block';
-            } finally {
-                btn.disabled = false;
-                setTimeout(() => { if (!statusMsg.classList.contains('error-msg')) statusMsg.style.display = 'none'; }, 3000);
-            }
-        });
 
         // Settings UI Logic
 
