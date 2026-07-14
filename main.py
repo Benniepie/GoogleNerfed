@@ -307,7 +307,7 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
         for part in parts:
             part = part.strip()
             is_threat = any(kw in part.lower() for kw in threat_keywords)
-            if is_threat or len(part) > 60:
+            if is_threat:
                 threats.append(part)
             else:
                 for loc in part.split(','):
@@ -1025,17 +1025,27 @@ async def admin_geocode_override(override: GeocodeOverride):
         except Exception:
             pass
 
+    # Clean the input name
+    target_name = override.location_name.strip()
+
+    # Try to find a case-insensitive match in the cache if the exact case doesn't exist
+    actual_key = target_name
+    for k in cache.keys():
+        if k.lower() == target_name.lower():
+            actual_key = k
+            break
+
     if not override.osm_id and not override.english_name:
         # If both empty, delete from cache to force a re-fetch
-        if override.location_name in cache:
-            del cache[override.location_name]
+        if actual_key in cache:
+            del cache[actual_key]
     elif override.osm_id:
         # Fetch the exact polygon using osm_type and osm_id
         osm_type = 'R'
-        osm_id_num = override.osm_id
-        if override.osm_id[0].isalpha():
-            osm_type = override.osm_id[0].upper()
-            osm_id_num = override.osm_id[1:]
+        osm_id_num = override.osm_id.strip()
+        if osm_id_num[0].isalpha():
+            osm_type = osm_id_num[0].upper()
+            osm_id_num = osm_id_num[1:]
 
         url = f"https://nominatim.openstreetmap.org/lookup?osm_ids={osm_type}{osm_id_num}&format=json&polygon_geojson=1&accept-language=en,ru"
         headers = {'User-Agent': 'ATPGeopolitics/1.0'}
@@ -1048,18 +1058,18 @@ async def admin_geocode_override(override: GeocodeOverride):
                 if data:
                     res = data[0]
                     if override.english_name:
-                        res["name"] = override.english_name
-                        res["display_name"] = override.english_name
-                    cache[override.location_name] = res
+                        res["name"] = override.english_name.strip()
+                        res["display_name"] = override.english_name.strip()
+                    cache[actual_key] = res
                 else:
                     return {"status": "error", "message": "OSM ID not found in Nominatim"}
         except Exception as e:
             logger.error(f"Failed to fetch OSM override: {e}")
             return {"status": "error", "message": str(e)}
-    elif override.english_name and override.location_name in cache:
+    elif override.english_name and actual_key in cache:
         # Just override the translation of existing geometry
-        cache[override.location_name]["name"] = override.english_name
-        cache[override.location_name]["display_name"] = override.english_name
+        cache[actual_key]["name"] = override.english_name.strip()
+        cache[actual_key]["display_name"] = override.english_name.strip()
 
     # Atomic write
     temp_file = cache_file.with_suffix('.tmp')

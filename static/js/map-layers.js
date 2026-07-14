@@ -699,21 +699,18 @@ const activeKMLGeoJSON = {};
                     enName.includes('oblast') || enName.includes('region') || enName.includes('district') ||
                     enName.includes('republic') || enName.includes('krai');
 
-                if (!isSmallOrPoint && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
+                if (isRegionOrDistrict) {
+                    isSmallOrPoint = false; // Never make a region or district a map marker!
+                } else if (!isSmallOrPoint && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
                     const areaSqMeters = turf.area(feature);
                     const areaSqKm = areaSqMeters / 1000000;
-
-                    if (isRegionOrDistrict) {
-                        isSmallOrPoint = false; // Never make a region or district a map marker!
-                    } else if (areaSqKm < 250 || feature.properties.icon) {
+                    if (areaSqKm < 250 || feature.properties.icon) {
                         isSmallOrPoint = true;
                     }
-                } else if (isRegionOrDistrict) {
-                    isSmallOrPoint = false; // Even if it was somehow flagged, forbid it.
                 }
 
                 // For small polygons or emoji locations, we render a large point instead
-                if (isSmallOrPoint) {
+                if (isSmallOrPoint || feature.geometry.type === 'Point' || feature.geometry.type === 'MultiPoint') {
                     let center = feature.geometry.type === 'Point' ? [feature.geometry.coordinates[1], feature.geometry.coordinates[0]] : null;
                     if (!center) {
                         const centroid = turf.centroid(feature);
@@ -726,19 +723,15 @@ const activeKMLGeoJSON = {};
                     if (iconHtml) {
                         markerHtml = `<div style="background:${fillColor}; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid ${isGrey ? '#cbd5e1' : 'white'}; font-size:20px; box-shadow:0 0 10px rgba(0,0,0,0.5);">${iconHtml}</div>`;
                     } else {
-                        // Map marker for city/town without label
-                        markerHtml = `
-                            <div style="position: absolute; transform: translate(-50%, -15px); display: flex; flex-direction: column; align-items: center; pointer-events: none;">
-                                <div style="background:${fillColor}; width:30px; height:30px; border-radius:50%; border:2px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; font-size:20px;">📍</div>
-                            </div>
-                        `;
+                        // Clean circle for small cities (no ugly teardrop, no emoji)
+                        markerHtml = `<div style="background:${fillColor}; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid ${isGrey ? '#cbd5e1' : 'white'}; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>`;
                     }
 
                     const customIcon = L.divIcon({
                         className: `radar-custom-icon ${animationClass}`,
                         html: markerHtml,
-                        iconSize: iconHtml ? [30, 30] : [0, 0],
-                        iconAnchor: iconHtml ? [15, 15] : [0, 0]
+                        iconSize: iconHtml ? [30, 30] : [20, 20],
+                        iconAnchor: iconHtml ? [15, 15] : [10, 10]
                     });
 
                     const markerLayer = L.marker(center, {icon: customIcon, interactive: false});
