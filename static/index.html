@@ -432,35 +432,50 @@
         </div>
         <div class="section-content">
             <div class="basemap-switcher" style="flex-wrap: wrap; border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
-                <label>
-                    <input type="radio" name="basemap" value="dark" checked> Dark
-                </label>
-
-                <label>
-                    <input type="radio" name="basemap" value="light"> Light
-                </label>
-<label><input type="radio" name="basemap" value="topo"> Topo</label>
-<label><input type="radio" name="basemap" value="hot"> HOT</label><br>
-                <label>
-                    <input type="radio" name="basemap" value="satellite"> Satellite
-                </label>
-                <label>
-                    <input type="radio" name="basemap" value="satellitehybrid"> Satellite (Hybrid)
-                </label><br>
-                <label>
-                    <input type="radio" name="basemap" value="firefly"> Firefly
-                </label>
-
-                <label>
-                    <input type="radio" name="basemap" value="fireflyhybrid"> Firefly (Hybrid)
-                </label><br>
-                <label>
-                    <input type="radio" name="basemap" value="s2cloud"> Sentinel2 Cloudless 
-                </label>
-                <label>
-                    <input type="radio" name="basemap" value="s2cloudhybrid"> S2C (Hybrid)
-                </label><br>
-                <div style="border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 6px; margin-top: 10px; margin-bottom: 5px;">
+                <div style="flex-basis: 100%; display: flex; gap: 10px;">
+                    <label>
+                        <input type="radio" name="basemap" value="dark" checked> Dark
+                    </label>
+                    <label>
+                        <input type="radio" name="basemap" value="light"> Light
+                    </label>
+                    <label>
+                        <input type="radio" name="basemap" value="positron"> Positron
+                    </label>
+                </div>
+                <div style="flex-basis: 100%; display: flex; gap: 10px;">
+                    <label>
+                        <input type="radio" name="basemap" value="topo"> OpenTopoMap
+                    </label>
+                    <label>
+                        <input type="radio" name="basemap" value="hot"> HOT
+                    </label>
+                </div>
+                <div style="flex-basis: 100%; display: flex; gap: 10px;">
+                    <label>
+                        <input type="radio" name="basemap" value="satellite"> Satellite
+                    </label>
+                    <label>
+                        <input type="radio" name="basemap" value="satellitehybrid"> Satellite (Hybrid)
+                    </label>
+                </div>
+                <div style="flex-basis: 100%; display: flex; gap: 10px;">
+                    <label>
+                        <input type="radio" name="basemap" value="firefly"> Firefly
+                    </label>
+                    <label>
+                        <input type="radio" name="basemap" value="fireflyhybrid"> Firefly (Hybrid)
+                    </label>
+                </div>
+                <div style="flex-basis: 100%; display: flex; gap: 10px;">
+                    <label>
+                        <input type="radio" name="basemap" value="s2cloud"> Sentinel2 Cloudless
+                    </label>
+                    <label>
+                        <input type="radio" name="basemap" value="s2cloudhybrid"> S2C (Hybrid)
+                    </label>
+                </div>
+                <div style="border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 6px; margin-top: 10px; margin-bottom: 5px; flex-basis: 100%;">
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 5px;">
                         <label style="width: auto;">
                             <input type="radio" name="basemap" value="s2latest"> 🛰️ Sentinel2 TRUE
