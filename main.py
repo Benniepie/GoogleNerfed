@@ -4,12 +4,15 @@ import zipfile
 import json
 import httpx
 import urllib.request
+import urllib.parse
 import tempfile
 import os
 import secrets
-from datetime import datetime
+import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, UploadFile, File, Body, Form, HTTPException, Request, Response, Depends, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -47,19 +50,48 @@ stac_cache = TTLCache(maxsize=100, ttl=300)
 app = FastAPI()
 
 # Create a global connection pool
+_radar_polling_task = None
 http_client = httpx.AsyncClient(
     limits=httpx.Limits(max_keepalive_connections=50, max_connections=100),
     timeout=4.0
 )
 import anyio
+import fcntl
+import os
+
+_radar_lock_file = None
 
 @app.on_event("startup")
 async def startup_event():
+    global _radar_polling_task
+    global _radar_lock_file
+
+    lock_path = DATA_DIR / "radar_polling.lock"
+    try:
+        import fcntl
+        _radar_lock_file = open(lock_path, "w")
+        fcntl.flock(_radar_lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        logger.info("Acquired radar polling lock. Starting background task.")
+        _radar_polling_task = asyncio.create_task(poll_radar_russia_background())
+    except (BlockingIOError, IOError, ModuleNotFoundError):
+        logger.info("Another worker is already running the radar polling task (or fcntl unavailable).")
+        if _radar_lock_file:
+            _radar_lock_file.close()
+        _radar_lock_file = None
+
     # 3 threads per worker * 4 workers = 12 total background threads max
     limiter = anyio.to_thread.current_default_thread_limiter()
     limiter.total_tokens = 3
 @app.on_event("shutdown")
 async def shutdown_event():
+    global _radar_polling_task
+    global _radar_lock_file
+    if _radar_polling_task:
+        _radar_polling_task.cancel()
+    if _radar_lock_file:
+        import fcntl
+        fcntl.flock(_radar_lock_file, fcntl.LOCK_UN)
+        _radar_lock_file.close()
     await http_client.aclose()
 
 # Enable CORS just in case
@@ -244,6 +276,335 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return credentials.username
 # ----------------------
+
+# --- TELEGRAM SCRAPER LOGIC ---
+def get_radar_icon(location_str, threat_str):
+    combined = (location_str + " " + threat_str).lower()
+    if any(kw in combined for kw in ["аэропорт", "аэродром", "airport", "авиабаза", "air base"]): return "✈️"
+    if any(kw in combined for kw in ["нпз", "нефте", "oil", "naval base", "порт", "терминал", "refinery"]): return "⚓"
+    if any(kw in combined for kw in ["море", "залив", "sea", "вода", "океан", "акватория"]): return "🌊"
+    if any(kw in combined for kw in ["база", "base", "вч", "войсковая часть", "military"]): return "🪖"
+    return ""
+
+def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
+    lines = text.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        line = line.strip()
+        if not line: continue
+        # Filter out boilerplate
+        if any(kw in line for kw in ["❗️", "Обход белых списков", "@radarrussiia", "Радар по всей России", "Internet_Boost_bot", "🌐", "Ускоритель Интернета", "Остались какие-то вопросы"]):
+            continue
+        cleaned_lines.append(line)
+
+    threat_keywords = ["опасность", "фиксация", "отбой", "работа", "пво", "ракет", "бпла", "приготовиться", "тревога", "меры", "сбит", "угроза", "внимание"]
+
+    locations = []
+    threats = []
+
+    for line in cleaned_lines:
+        parts = line.split(' - ')
+        for part in parts:
+            part = part.strip()
+            is_threat = any(kw in part.lower() for kw in threat_keywords)
+            if is_threat:
+                threats.append(part)
+            else:
+                for loc in part.split(','):
+                    loc_clean = loc.strip()
+                    loc_clean = re.sub(r'(?i)и близлежащие', '', loc_clean).strip()
+                    if loc_clean:
+                        locations.append(loc_clean)
+
+    status_val = "active"
+    if any("отбой" in t.lower() for t in threats):
+        status_val = "over"
+
+    # Determine context keywords to figure out what type of locations we have
+    context_keywords = ["область", "край", "республика", "окг", "округ", "крым", "район"]
+
+    # Are ALL our locations regions/districts? (Like "Moscow Oblast" and "Kursk Oblast")
+    all_regions = all(any(x in loc.lower() for x in context_keywords) for loc in locations)
+
+    context = ""
+    # Only try to apply a single broad context if we have a mix of towns AND a region
+    if not all_regions:
+        for loc in reversed(locations):
+            if any(x in loc.lower() for x in context_keywords):
+                context = loc
+                break
+
+    final_locs = []
+    combined_threat = " | ".join(threats)
+
+    # Simple manual translation dictionary for common radar terms
+    threat_translations = {
+        "опасность по бпла": "UAV Danger",
+        "ракетная опасность": "Missile Danger",
+        "отбой опасности по бпла": "UAV Danger Over",
+        "отбой ракетной опасности": "Missile Danger Over",
+        "фиксация бпла": "UAV Detected",
+        "работа пво": "Air Defense Active",
+        "тревога": "Alarm",
+        "сбиты": "Shot Down",
+        "сбит": "Shot Down",
+        "внимание": "Attention",
+        "угроза": "Threat",
+        "отбой": "All Clear / Over",
+        "реактивным": "Jet",
+        "волна": "Wave",
+        "приготовиться к волне бпла": "Prepare for UAV wave",
+        "в вашем направлении": "in your direction",
+        "со стороны": "from the direction of",
+        "крылатые ракеты большой дальности": "long-range cruise missiles",
+        "возможно от": "possibly from"
+    }
+
+    english_threat = combined_threat
+    for ru, en in threat_translations.items():
+        english_threat = re.sub(re.escape(ru), en, english_threat, flags=re.IGNORECASE)
+
+    # If all mentioned locations are regions/districts, keep them separate!
+    if all_regions:
+        for loc in locations:
+            final_locs.append({"name": loc, "icon": get_radar_icon(loc, combined_threat), "raw_name": loc})
+    elif len(locations) > 1:
+        # Filter out the context region if there are specific towns mentioned
+        specific_locs = [loc for loc in locations if loc != context]
+        if not specific_locs:
+            specific_locs = locations # fallback
+
+        for loc in specific_locs:
+            full_name = loc
+            if context and loc != context:
+                full_name = f"{loc}, {context}"
+
+            # We don't translate it yet; we let Nominatim do it!
+            final_locs.append({"name": full_name, "icon": get_radar_icon(loc, combined_threat), "raw_name": full_name})
+    else:
+        for loc in locations:
+            final_locs.append({"name": loc, "icon": get_radar_icon(loc, combined_threat), "raw_name": loc})
+
+    return {
+        "id": msg_id,
+        "time": time_str,
+        "locations": final_locs,
+        "threat": english_threat if english_threat else combined_threat,
+        "status": status_val
+    }
+async def poll_radar_russia_background():
+    """Background task to poll radar alerts every 60 seconds."""
+    while True:
+        try:
+            await fetch_and_cache_radar_russia()
+        except Exception as e:
+            logger.error(f"Background radar polling error: {e}")
+        await asyncio.sleep(60)
+
+async def fetch_and_cache_radar_russia():
+    url = "https://t.me/s/radarrussiia"
+    try:
+        response = await http_client.get(url, timeout=10.0)
+        html = response.text
+    except Exception as e:
+        logger.error(f"Failed to fetch Telegram channel: {e}")
+        return
+
+    soup = BeautifulSoup(html, 'html.parser')
+    messages = soup.find_all('div', class_='tgme_widget_message_wrap')
+
+    cache_file = DATA_DIR / "radar_alerts.json"
+    cached_alerts = {}
+    if cache_file.exists():
+        try:
+            import json
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cached_alerts = json.load(f)
+        except Exception:
+            pass
+
+    now = datetime.now(timezone.utc)
+
+    # Prune old alerts (> 24 hours)
+    for msg_id in list(cached_alerts.keys()):
+        try:
+            alert_time = datetime.fromisoformat(cached_alerts[msg_id]['time'].replace('Z', '+00:00'))
+            if (now - alert_time).total_seconds() > 24 * 3600:
+                del cached_alerts[msg_id]
+        except Exception:
+            del cached_alerts[msg_id]
+
+    # Process new alerts
+    for msg in messages:
+        msg_el = msg.find('div', class_='tgme_widget_message')
+        if not msg_el: continue
+        msg_id = msg_el.get('data-post', '')
+
+        text_div = msg.find('div', class_='tgme_widget_message_text')
+        if not text_div: continue
+        text = text_div.get_text(separator='\n').strip()
+
+
+        time_tag = msg.find('time')
+        time_str = time_tag.get('datetime', '') if time_tag else ''
+
+        if not time_str:
+            continue
+
+        parsed = parse_telegram_message(text, msg_id, time_str)
+        cached_alerts[msg_id] = parsed
+
+    # Fully resolve missing geocodes in the background
+    geocode_cache = {}
+    gc_file = DATA_DIR / "geocode_cache.json"
+    if gc_file.exists():
+        try:
+            with open(gc_file, "r", encoding="utf-8") as f:
+                import json
+                geocode_cache = json.load(f)
+        except:
+            pass
+
+    for msg_id, parsed in cached_alerts.items():
+        for loc_info in parsed["locations"]:
+            await get_cached_geocode(loc_info["name"], cache_dict=geocode_cache)
+
+    temp_file = cache_file.with_suffix('.tmp')
+    with open(temp_file, "w", encoding="utf-8") as f:
+        import json
+        json.dump(cached_alerts, f, ensure_ascii=False, indent=2)
+    os.replace(temp_file, cache_file)
+
+
+async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = None) -> Optional[dict]:
+    cache_file = DATA_DIR / "geocode_cache.json"
+    cache = cache_dict if cache_dict is not None else {}
+    if cache_dict is None and cache_file.exists():
+        try:
+            import json
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+        except Exception:
+            pass
+
+    if location_name in cache:
+        res = cache[location_name]
+        return res if "empty" not in res else None
+
+    # Use extremely aggressive simplification (0.05) to reduce polygon size
+    # and restrict responses to Russia and Ukraine only (countrycodes=ru,ua) to prevent huge global multi-polygons
+
+    # We pass accept-language=en,ru so that Nominatim tries to return the English name but understands the raw Russian query
+
+    # If it's a known region/oblast AND not a city context (no comma), append &featureType=state to force Nominatim to return the regional boundary
+    # instead of a tiny local courthouse/town with the same name.
+    feature_type = ""
+    lower_loc = location_name.lower()
+    if "," not in lower_loc and any(x in lower_loc for x in ["область", "республика", "край", "округ"]):
+        feature_type = "&featureType=state"
+
+    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005&countrycodes=ru,ua&accept-language=en,ru{feature_type}"
+    headers = {'User-Agent': 'ATPGeopolitics/1.0'}
+    try:
+        resp = await http_client.get(url, headers=headers, timeout=10.0)
+        data = resp.json()
+        await asyncio.sleep(1.5)
+
+        if data:
+            result = data[0]
+        else:
+            result = {"empty": True} # Negative cache
+
+        cache[location_name] = result
+        # Atomic write to prevent JSONDecodeError from race conditions
+        temp_file = cache_file.with_suffix('.tmp')
+        with open(temp_file, "w", encoding="utf-8") as f:
+            import json
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+        os.replace(temp_file, cache_file)
+
+        return result if "empty" not in result else None
+    except Exception as e:
+        logger.error(f"Geocode error for {location_name}: {e}")
+
+    return None
+
+@app.get("/api/radar-russia")
+async def get_radar_russia_alerts(since: Optional[str] = None):
+    cache_file = DATA_DIR / "radar_alerts.json"
+    cached_alerts = {}
+    if cache_file.exists():
+        try:
+            import json
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cached_alerts = json.load(f)
+        except Exception as e:
+            logger.error(f"Error reading radar alerts cache: {e}")
+            raise HTTPException(status_code=500, detail="Error reading radar data cache")
+
+    features = []
+
+    # Load cache once per API request
+    geocode_cache = {}
+    gc_file = DATA_DIR / "geocode_cache.json"
+    if gc_file.exists():
+        try:
+            with open(gc_file, "r", encoding="utf-8") as f:
+                import json
+                geocode_cache = json.load(f)
+        except:
+            pass
+
+    for msg_id, parsed in cached_alerts.items():
+        # Delta filtering: If `since` is provided, skip older records
+        if since:
+            try:
+                # Use strptime to be safe if fromisoformat fails on timezone
+                alert_time = datetime.fromisoformat(parsed["time"].replace('Z', '+00:00'))
+                # Replace ' ' with '+' in case urllib.parse unquoted the '+' to a space
+                since_time_str = since.replace(' ', '+').replace('Z', '+00:00')
+                since_time = datetime.fromisoformat(since_time_str)
+
+                # Make timezone naive if one is naive and other is aware, or just use timestamp
+                if alert_time.timestamp() <= since_time.timestamp():
+                    continue
+            except Exception as e:
+                # Print exception here for safety
+                print(f"Date parse error in since parameter: {e}")
+                pass # Parse error, include it anyway
+
+        for loc_info in parsed["locations"]:
+            geo_data = await get_cached_geocode(loc_info["name"], cache_dict=geocode_cache)
+            if geo_data and "geojson" in geo_data:
+                # Get the localized English name, fallback to the raw russian query
+                display_name = geo_data.get("display_name", "")
+                english_name = geo_data.get("name", "")
+
+                # Sometime Nominatim's display_name has the better English translation than "name"
+                # so we take the first part of the English display name if it exists.
+                if display_name and "," in display_name:
+                    english_name = display_name.split(",")[0].strip()
+                elif not english_name:
+                    english_name = loc_info["name"]
+
+                feature = {
+                    "type": "Feature",
+                    "properties": {
+                        "id": parsed["id"],
+                        "time": parsed["time"],
+                        "name": english_name,
+                        "raw_name": loc_info.get("raw_name", loc_info["name"]),
+                        "threat": parsed["threat"],
+                        "status": parsed["status"],
+                        "icon": loc_info["icon"]
+                    },
+                    "geometry": geo_data["geojson"]
+                }
+                features.append(feature)
+
+    return {"type": "FeatureCollection", "features": features}
+
+# ------------------------------
 
 @app.get("/api/layers")
 async def get_layers():
@@ -642,6 +1003,83 @@ async def proxy_firms(source: str, bbox: str):
     except Exception as e:
         logger.error(f"NASA FIRMS Proxy Error: {e}")
         raise HTTPException(status_code=500, detail="Error fetching thermal data")
+
+
+from pydantic import BaseModel
+from pydantic import BaseModel
+from pydantic import BaseModel
+class GeocodeOverride(BaseModel):
+    location_name: str
+    osm_id: str
+    english_name: str = ""
+
+@app.post("/api/admin/geocode_override", dependencies=[Depends(verify_admin)])
+async def admin_geocode_override(override: GeocodeOverride):
+    cache_file = DATA_DIR / "geocode_cache.json"
+    cache = {}
+    if cache_file.exists():
+        try:
+            import json
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+        except Exception:
+            pass
+
+    # Clean the input name
+    target_name = override.location_name.strip()
+
+    # Try to find a case-insensitive match in the cache if the exact case doesn't exist
+    actual_key = target_name
+    for k in cache.keys():
+        if k.lower() == target_name.lower():
+            actual_key = k
+            break
+
+    if not override.osm_id and not override.english_name:
+        # If both empty, delete from cache to force a re-fetch
+        if actual_key in cache:
+            del cache[actual_key]
+    elif override.osm_id:
+        # Fetch the exact polygon using osm_type and osm_id
+        osm_type = 'R'
+        osm_id_num = override.osm_id.strip()
+        if osm_id_num[0].isalpha():
+            osm_type = osm_id_num[0].upper()
+            osm_id_num = osm_id_num[1:]
+
+        url = f"https://nominatim.openstreetmap.org/lookup?osm_ids={osm_type}{osm_id_num}&format=json&polygon_geojson=1&accept-language=en,ru"
+        headers = {'User-Agent': 'ATPGeopolitics/1.0'}
+        try:
+            import urllib.request
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req) as response:
+                import json
+                data = json.loads(response.read().decode('utf-8'))
+                if data:
+                    res = data[0]
+                    if override.english_name:
+                        res["name"] = override.english_name.strip()
+                        res["display_name"] = override.english_name.strip()
+                    cache[actual_key] = res
+                else:
+                    return {"status": "error", "message": "OSM ID not found in Nominatim"}
+        except Exception as e:
+            logger.error(f"Failed to fetch OSM override: {e}")
+            return {"status": "error", "message": str(e)}
+    elif override.english_name and actual_key in cache:
+        # Just override the translation of existing geometry
+        cache[actual_key]["name"] = override.english_name.strip()
+        cache[actual_key]["display_name"] = override.english_name.strip()
+
+    # Atomic write
+    temp_file = cache_file.with_suffix('.tmp')
+    with open(temp_file, "w", encoding="utf-8") as f:
+        import json
+        json.dump(cache, f, ensure_ascii=False, indent=2)
+    import os
+    os.replace(temp_file, cache_file)
+
+    return {"status": "success"}
 
 @app.get("/admin", dependencies=[Depends(verify_admin)])
 async def serve_admin():

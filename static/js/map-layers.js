@@ -486,6 +486,299 @@ const activeKMLGeoJSON = {};
 
 
 
+        // --- LIVE DATA: TELEGRAM RADAR RUSSIA ---
+        let isRadarRussiaActive = false;
+        let radarRussiaPollInterval = null;
+        let radarRussiaLayerGroup = L.layerGroup();
+        let seenRadarAlertIds = new Set();
+        let radarInitialLoad = true;
+        let radarAudioContext = null;
+        let radarLastFetchTime = null;
+        let radarAllFeatures = []; // Maintain the full list of active features locally
+
+        function playBeep() {
+            try {
+                if (!radarAudioContext) {
+                    radarAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                const oscillator = radarAudioContext.createOscillator();
+                const gainNode = radarAudioContext.createGain();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, radarAudioContext.currentTime); // A5
+
+                gainNode.gain.setValueAtTime(0, radarAudioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.5, radarAudioContext.currentTime + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, radarAudioContext.currentTime + 0.5);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(radarAudioContext.destination);
+
+                oscillator.start();
+                oscillator.stop(radarAudioContext.currentTime + 0.5);
+            } catch (e) {
+                console.error("Audio error", e);
+            }
+        }
+
+        async function fetchRadarRussiaData() {
+            if (!isRadarRussiaActive) return;
+
+            const statusEl = document.getElementById('radarRussiaStatus');
+            statusEl.textContent = 'Fetching latest alerts...';
+
+            try {
+                let url = '/api/radar-russia';
+                if (radarLastFetchTime && !radarInitialLoad) {
+                    url += `?since=${encodeURIComponent(radarLastFetchTime)}`;
+                }
+
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("API error");
+
+                const data = await res.json();
+
+                let newAlertsFound = false;
+                let maxTime = radarLastFetchTime;
+
+                data.features.forEach(f => {
+                    const id = f.properties.id;
+                    const alertTime = f.properties.time;
+                    if (alertTime) {
+                        if (!maxTime || new Date(alertTime) > new Date(maxTime)) {
+                            maxTime = alertTime;
+                        }
+                    }
+
+                    if (id && !seenRadarAlertIds.has(id)) {
+                        seenRadarAlertIds.add(id);
+                        radarAllFeatures.push(f);
+                        if (!radarInitialLoad) {
+                            newAlertsFound = true;
+                        }
+                    }
+                });
+
+                if (newAlertsFound && document.getElementById('radarRussiaAudioToggle') && document.getElementById('radarRussiaAudioToggle').checked) {
+                    playBeep();
+                }
+
+                radarInitialLoad = false;
+                radarLastFetchTime = maxTime; // Update with the most recent alert time received
+
+                renderRadarRussiaData();
+
+                statusEl.textContent = `Tracking ${radarAllFeatures.length} locations.`;
+                statusEl.style.color = '#22c55e';
+            } catch (e) {
+                console.error("Radar Russia API error:", e);
+                statusEl.textContent = 'Error fetching data.';
+                statusEl.style.color = '#ef4444';
+            }
+        }
+
+        function renderRadarRussiaData() {
+            radarRussiaLayerGroup.clearLayers();
+            const now = new Date();
+
+            // First prune old features from the master list
+            radarAllFeatures = radarAllFeatures.filter(f => {
+                const alertTime = new Date(f.properties.time);
+                const ageHours = (now - alertTime) / (1000 * 60 * 60);
+                return ageHours <= 24;
+            });
+
+            // Sort features newest to oldest (for popups)
+            radarAllFeatures.sort((a, b) => new Date(b.properties.time) - new Date(a.properties.time));
+
+            // Build intersection data (all valid features)
+            activeKMLGeoJSON['RadarRussia'] = {
+                type: "FeatureCollection",
+                features: radarAllFeatures
+            };
+
+            // The user requested stacked opacities for Red/Orange/Yellow (active alerts) to show intensity,
+            // but older Green (clear) or Grey (stale) alerts should not render if there's a newer alert,
+            // as it causes muddy color mixing. And if the latest is clear/stale, we only render it once (no stacking).
+
+            const latestStatePerLoc = new Map();
+            radarAllFeatures.forEach(feature => {
+                const locName = feature.properties.name;
+                // Since radarAllFeatures is sorted newest to oldest, the first one we see is the newest
+                if (!latestStatePerLoc.has(locName)) {
+                    latestStatePerLoc.set(locName, feature);
+                }
+            });
+
+            radarAllFeatures.forEach(feature => {
+                const locName = feature.properties.name;
+                const latestFeature = latestStatePerLoc.get(locName);
+                const latestProps = latestFeature.properties;
+                const latestAgeMinutes = (now - new Date(latestProps.time)) / (1000 * 60);
+
+                // Determine if the LATEST state for this location is grey or green
+                let isLatestClearOrStale = false;
+                if (latestProps.status === 'over' || latestAgeMinutes > 60) {
+                    isLatestClearOrStale = true;
+                }
+
+                // If the latest is clear/stale, ONLY render the latest one (no stacking for stale ones)
+                if (isLatestClearOrStale && feature !== latestFeature) {
+                    return;
+                }
+
+                // Determine if THIS feature is clear or stale
+                const props = feature.properties;
+                const thisAgeMinutes = (now - new Date(props.time)) / (1000 * 60);
+                let isThisClearOrStale = false;
+                if (props.status === 'over' || thisAgeMinutes > 60) {
+                    isThisClearOrStale = true;
+                }
+
+                // If THIS feature is clear/stale, but the latest is ACTIVE, DO NOT RENDER IT.
+                // This prevents muddy mixing where an old grey polygon sits under a new red polygon.
+                if (isThisClearOrStale && !isLatestClearOrStale) {
+                    return;
+                }
+
+                const timeStr = props.time;
+                const alertTime = new Date(timeStr);
+                const ageSeconds = (now - alertTime) / 1000;
+                const ageMinutes = ageSeconds / 60;
+                const ageHours = ageMinutes / 60;
+
+                let fillColor = '#ef4444'; // Red default
+                let fillOpacity = 0.4; // Base opacity for red/orange/yellow
+                let animationClass = '';
+                let borderClass = '';
+                let isGrey = false;
+
+                // If latest is clear or stale, opacity should be 0.1 so it doesn't clutter.
+                // If active, it stays 0.4 so stacked ones look thicker.
+
+                if (props.status === 'over') {
+                    if (ageHours > 1) {
+                        fillColor = '#64748b'; // Darker grey so it's visible on light maps
+                        fillOpacity = 0.3; // Increased opacity for single stale item
+                        isGrey = true;
+                    } else {
+                        fillColor = '#22c55e'; // Green
+                        fillOpacity = 0.3; // Increased opacity for single clear item
+                    }
+                } else {
+                    if (ageMinutes <= 20) {
+                        fillColor = '#ef4444'; // Red
+                        animationClass = 'radar-pulse';
+                    } else if (ageMinutes <= 40) {
+                        fillColor = '#f97316'; // Orange
+                    } else if (ageMinutes <= 60) {
+                        fillColor = '#eab308'; // Yellow
+                    } else {
+                        fillColor = '#64748b'; // Darker grey
+                        fillOpacity = 0.3; // Increased opacity for single stale item
+                        isGrey = true;
+                    }
+                }
+
+                // Add 60s flash for brand new alerts
+                if (ageSeconds <= 60) {
+                    borderClass = 'radar-flash-path';
+                    animationClass += ' radar-flash-anim';
+                }
+
+                // Determine if this is a small polygon or has an emoji
+                let isSmallOrPoint = feature.geometry.type === 'Point' || feature.geometry.type === 'MultiPoint';
+
+                // Never render districts, regions, oblasts, republics as markers
+                const rawName = feature.properties.raw_name ? feature.properties.raw_name.toLowerCase() : "";
+                const enName = feature.properties.name ? feature.properties.name.toLowerCase() : "";
+                const isRegionOrDistrict =
+                    rawName.includes('область') || rawName.includes('край') ||
+                    rawName.includes('республика') || rawName.includes('район') ||
+                    rawName.includes('округ') || rawName.includes('область') || rawName.includes('район') || rawName.includes('край') || rawName.includes('республика') ||
+                    enName.includes('oblast') || enName.includes('region') || enName.includes('district') ||
+                    enName.includes('republic') || enName.includes('krai');
+
+                if (isRegionOrDistrict) {
+                    isSmallOrPoint = false; // Never make a region or district a map marker!
+                } else if (!isSmallOrPoint && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
+                    const areaSqMeters = turf.area(feature);
+                    const areaSqKm = areaSqMeters / 1000000;
+                    if (areaSqKm < 250 || feature.properties.icon) {
+                        isSmallOrPoint = true;
+                    }
+                }
+
+                // For small polygons or emoji locations, we render a large point instead
+                if (isSmallOrPoint || feature.geometry.type === 'Point' || feature.geometry.type === 'MultiPoint') {
+                    let center = feature.geometry.type === 'Point' ? [feature.geometry.coordinates[1], feature.geometry.coordinates[0]] : null;
+                    if (!center) {
+                        const centroid = turf.centroid(feature);
+                        center = [centroid.geometry.coordinates[1], centroid.geometry.coordinates[0]];
+                    }
+
+                    const iconHtml = feature.properties.icon || '';
+                    let markerHtml = '';
+
+                    if (iconHtml) {
+                        markerHtml = `<div style="background:${fillColor}; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid ${isGrey ? '#cbd5e1' : 'white'}; font-size:20px; box-shadow:0 0 10px rgba(0,0,0,0.5);">${iconHtml}</div>`;
+                    } else {
+                        // Clean circle for small cities (no ugly teardrop, no emoji)
+                        markerHtml = `<div style="background:${fillColor}; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid ${isGrey ? '#cbd5e1' : 'white'}; box-shadow:0 0 10px rgba(0,0,0,0.5);"></div>`;
+                    }
+
+                    const customIcon = L.divIcon({
+                        className: `radar-custom-icon ${animationClass}`,
+                        html: markerHtml,
+                        iconSize: iconHtml ? [30, 30] : [20, 20],
+                        iconAnchor: iconHtml ? [15, 15] : [10, 10]
+                    });
+
+                    const markerLayer = L.marker(center, {icon: customIcon, interactive: false});
+                    radarRussiaLayerGroup.addLayer(markerLayer);
+                } else {
+                    const layer = L.geoJSON(feature, {
+                        interactive: false,
+                        style: {
+                            color: isGrey ? '#64748b' : fillColor,
+                            weight: isGrey ? 2 : 2,
+                            fillColor: fillColor,
+                            fillOpacity: fillOpacity,
+                            className: borderClass
+                        }
+                    });
+                    radarRussiaLayerGroup.addLayer(layer);
+                }
+            });
+
+            // Only add to map if active
+            if (isRadarRussiaActive && !map.hasLayer(radarRussiaLayerGroup)) {
+                radarRussiaLayerGroup.addTo(map);
+            }
+        }
+
+        document.getElementById('radarRussiaToggle').addEventListener('change', (e) => {
+            isRadarRussiaActive = e.target.checked;
+            const statusEl = document.getElementById('radarRussiaStatus');
+            const legendEl = document.getElementById('radarLegend');
+
+            if (isRadarRussiaActive) {
+                statusEl.style.display = 'block';
+                if (legendEl) legendEl.style.display = 'block';
+                // Fetch immediately, then every 60s
+                fetchRadarRussiaData();
+                radarRussiaPollInterval = setInterval(fetchRadarRussiaData, 60000);
+            } else {
+                statusEl.style.display = 'none';
+                if (radarRussiaPollInterval) clearInterval(radarRussiaPollInterval);
+                radarRussiaLayerGroup.clearLayers();
+                if (radarRussiaLayerGroup && map.hasLayer(radarRussiaLayerGroup)) {
+                    map.removeLayer(radarRussiaLayerGroup);
+                }
+                if (legendEl) legendEl.style.display = 'none';
+            }
+        });
+
         // --- LIVE DATA: NASA FIRMS (Hybrid Raster/Vector) ---
         const ZOOM_THRESHOLD = 8; // Zoom level at which we switch from Raster to Vector
         let isFirmsActive = false;
@@ -978,7 +1271,56 @@ map.on('click', async function(e) {
             }
             if (kmlHitsHTML) popupHTML += kmlHitsHTML;
 
-            // --- 3. FIRMS Data Drill-down ---
+            // --- 3. Radar Russia Data Drill-down ---
+            if (map.hasLayer(radarRussiaLayerGroup) && activeKMLGeoJSON['RadarRussia']) {
+                let radarHitsHTML = '';
+                turf.featureEach(activeKMLGeoJSON['RadarRussia'], function (currentFeature) {
+                    let isHit = false;
+
+                    if (currentFeature.geometry.type === 'Polygon' || currentFeature.geometry.type === 'MultiPolygon') {
+                        isHit = turf.booleanPointInPolygon(clickPoint, currentFeature);
+
+                        // Hit testing fallback for small polygons rendered as markers
+                        if (!isHit) {
+                            const areaSqMeters = turf.area(currentFeature);
+                            const areaSqKm = areaSqMeters / 1000000;
+                            if (areaSqKm < 250 || currentFeature.properties.icon) {
+                                const centroid = turf.centroid(currentFeature);
+                                const dist = turf.distance(clickPoint, centroid, {units: 'kilometers'});
+                                // Give a 10km click radius for these tiny areas/markers
+                                if (dist < 10) {
+                                    isHit = true;
+                                }
+                            }
+                        }
+                    } else if (currentFeature.geometry.type === 'Point') {
+                        const dist = turf.distance(clickPoint, currentFeature, {units: 'meters'});
+                        isHit = dist < 20000; // Allow 20km hit tolerance for cities/regions point representations
+                    } else if (currentFeature.geometry.type === 'LineString' || currentFeature.geometry.type === 'MultiLineString') {
+                        const dist = turf.pointToLineDistance(clickPoint, currentFeature, {units: 'meters'});
+                        isHit = dist < 5000;
+                    }
+
+                    if (isHit) {
+                        const props = currentFeature.properties;
+                        const timeStr = new Date(props.time).toLocaleString('en-GB');
+                        radarHitsHTML += `
+                            <div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">
+                                <h4 style="margin: 0 0 4px 0; color: #3b82f6;">🚨 Air Alert</h4>
+                                <div style="font-size: 0.85rem;">
+                                    <b>Location:</b> ${props.name}<br>
+                                    <b>Threat:</b> ${props.threat}<br>
+                                    <b>Status:</b> ${props.status === 'over' ? '<span style="color:#22c55e;">Over</span>' : '<span style="color:#ef4444;">Active</span>'}<br>
+                                    <b>Time:</b> ${timeStr}
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                if (radarHitsHTML) popupHTML += radarHitsHTML;
+            }
+
+            // --- 4. FIRMS Data Drill-down ---
             if (map.hasLayer(firmsVectorGroup)) {
                 const firmsHits = [];
                 const now = new Date();
@@ -1076,7 +1418,7 @@ map.on('click', async function(e) {
                 }
             }
         });
-        async function loadSettingsAndInit() {
+        window.loadSettingsAndInit = async function loadSettingsAndInit() {
             try {
                 const response = await fetch('/api/settings');
                 appSettings = await response.json();
