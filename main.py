@@ -9,11 +9,12 @@ import tempfile
 import os
 import secrets
 import re
-from datetime import datetime, timezone
+import sqlite3
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, UploadFile, File, Body, Form, HTTPException, Request, Response, Depends, status
+from fastapi import FastAPI, APIRouter, UploadFile, File, Body, Form, HTTPException, Request, Response, Depends, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import FileResponse, RedirectResponse
@@ -65,6 +66,33 @@ _radar_lock_file = None
 async def startup_event():
     global _radar_polling_task
     global _radar_lock_file
+
+    def init_vessels_db():
+        conn = sqlite3.connect(DATA_DIR / "vessels.db")
+        cursor = conn.cursor()
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS vessels (
+            mmsi TEXT PRIMARY KEY,
+            name TEXT,
+            ship_type TEXT,
+            heading REAL,
+            last_seen TEXT,
+            last_lon REAL,
+            last_lat REAL
+        )
+        ''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS tracks (
+            mmsi TEXT,
+            lon REAL,
+            lat REAL,
+            timestamp TEXT
+        )
+        ''')
+        conn.commit()
+        conn.close()
+
+    init_vessels_db()
 
     lock_path = DATA_DIR / "radar_polling.lock"
     try:
@@ -1097,6 +1125,75 @@ async def serve_maplibre():
 @app.get("/cesium")
 async def serve_cesium():
     return FileResponse("static/cesium.html")
+
+# Shadow Fleet endpoints
+shadow_fleet_router = APIRouter(prefix="/api/shadow-fleet", tags=["Shadow Fleet"])
+
+@shadow_fleet_router.get("/vessels")
+def get_vessels():
+    """Returns all tracked vessels as a GeoJSON FeatureCollection."""
+    conn = sqlite3.connect(DATA_DIR / "vessels.db")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM vessels")
+    rows = cursor.fetchall()
+
+    features = []
+    now = datetime.now(timezone.utc)
+
+    for row in rows:
+        # Check if vessel has gone dark (no signal for 3 hours)
+        last_seen = datetime.fromisoformat(row['last_seen']).replace(tzinfo=timezone.utc)
+        is_live = (now - last_seen) < timedelta(hours=3)
+
+        feature = {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [row['last_lon'], row['last_lat']]
+            },
+            "properties": {
+                "mmsi": row['mmsi'],
+                "name": row['name'] or "Unknown",
+                "type": row['ship_type'] or "Unknown",
+                "heading": row['heading'],
+                "last_seen": row['last_seen'],
+                "is_live": is_live
+            }
+        }
+        features.append(feature)
+
+    conn.close()
+    return {"type": "FeatureCollection", "features": features}
+
+@shadow_fleet_router.get("/tracks/{mmsi}")
+def get_vessel_track(mmsi: str):
+    """Returns the historical track of a specific vessel as a GeoJSON LineString."""
+    conn = sqlite3.connect(DATA_DIR / "vessels.db")
+    cursor = conn.cursor()
+
+    # Get last 500 points to keep payload small
+    cursor.execute("SELECT lon, lat FROM tracks WHERE mmsi = ? ORDER BY timestamp DESC LIMIT 500", (mmsi,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    if not rows:
+        return {"error": "No tracks found"}
+
+    # Reverse to chronological order
+    coordinates = [[row[0], row[1]] for row in reversed(rows)]
+
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "LineString",
+            "coordinates": coordinates
+        },
+        "properties": {"mmsi": mmsi}
+    }
+
+app.include_router(shadow_fleet_router)
 
 # Serve any other static assets if needed
 app.mount("/", StaticFiles(directory="static"), name="static")
