@@ -583,6 +583,12 @@
             <div id="staticLayerList" class="layer-list layer-scroll">
                 
             </div>
+
+            <div class="layer-category-title">Live Data</div>
+            <div class="layer-item">
+                <input type="checkbox" id="chk_shadowFleet" onchange="if(this.checked){loadShadowFleetLayer();}else{if(shadowFleetLayer)map.removeLayer(shadowFleetLayer);if(shadowFleetTrackLayer)map.removeLayer(shadowFleetTrackLayer);}">
+                <label for="chk_shadowFleet">Shadow Fleet Vessels</label>
+            </div>
         </div>
 
         <div id="admin-panel-container"></div>
