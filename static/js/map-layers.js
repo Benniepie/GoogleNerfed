@@ -1681,7 +1681,11 @@ let shadowFleetLayer = null;
 let shadowFleetTrackLayer = null;
 
 async function loadShadowFleetLayer() {
+    const statusDiv = document.getElementById('shadowFleetStatus');
+
     try {
+        if (statusDiv) statusDiv.textContent = 'Fetching vessels...';
+
         const response = await fetch('/api/shadow-fleet/vessels');
         if (!response.ok) throw new Error("HTTP error " + response.status);
         const geojsonData = await response.json();
@@ -1705,9 +1709,18 @@ async function loadShadowFleetLayer() {
         const chk = document.getElementById('chk_shadowFleet');
         if (chk && chk.checked) {
             shadowFleetLayer.addTo(map);
+            if (statusDiv) {
+                const count = geojsonData.features ? geojsonData.features.length : 0;
+                statusDiv.textContent = `Tracking ${count} vessel(s)`;
+                statusDiv.style.color = '#10b981'; // Green to show success
+            }
         }
     } catch (error) {
         console.error("Failed to load Shadow Fleet data:", error);
+        if (statusDiv) {
+            statusDiv.textContent = 'Error fetching vessels';
+            statusDiv.style.color = '#ef4444'; // Red to show error
+        }
     }
 }
 
@@ -1742,4 +1755,4 @@ setInterval(() => {
     if (chk && chk.checked) {
         loadShadowFleetLayer();
     }
-}, 300000);
+}, 60000); // Poll every 60 seconds

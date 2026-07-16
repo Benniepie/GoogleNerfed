@@ -557,6 +557,12 @@
                 <!-- A silent data URI audio element to prevent errors before actual sound is played -->
                 <audio id="radarAudioPlayer" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA" preload="auto"></audio>
             </div>
+
+            <div class="layer-item" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 10px; margin-top: 10px;">
+                <input type="checkbox" id="chk_shadowFleet" onchange="if(this.checked){loadShadowFleetLayer();}else{if(shadowFleetLayer)map.removeLayer(shadowFleetLayer);if(shadowFleetTrackLayer)map.removeLayer(shadowFleetTrackLayer);}">
+                <label for="chk_shadowFleet">Shadow Fleet Vessels</label>
+                <div id="shadowFleetStatus" style="font-size: 0.75rem; color: #94a3b8; margin-left: 24px; margin-top: 4px;">Tracking off</div>
+            </div>
         </div>
 
         <div class="section-header" onclick="toggleSection(this)">
@@ -582,12 +588,6 @@
         <div class="section-content collapsed">
             <div id="staticLayerList" class="layer-list layer-scroll">
                 
-            </div>
-
-            <div class="layer-category-title">Live Data</div>
-            <div class="layer-item">
-                <input type="checkbox" id="chk_shadowFleet" onchange="if(this.checked){loadShadowFleetLayer();}else{if(shadowFleetLayer)map.removeLayer(shadowFleetLayer);if(shadowFleetTrackLayer)map.removeLayer(shadowFleetTrackLayer);}">
-                <label for="chk_shadowFleet">Shadow Fleet Vessels</label>
             </div>
         </div>
 

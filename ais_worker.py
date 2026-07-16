@@ -57,32 +57,58 @@ async def connect_ais():
     subscription = {
         "APIKey": API_KEY,
         "BoundingBoxes": BOUNDING_BOXES,
-        "FilterMessageTypes": ["PositionReport", "ShipStaticData"]
+        "FilterMessageTypes": ["PositionReport", "StandardClassBPositionReport", "ShipStaticData"]
     }
+
+    # Local cache to prevent querying SQLite for every single websocket message
+    target_mmsis = set()
+    last_cache_update = 0
+    CACHE_TTL = 60 # Refresh target list every 60 seconds
+
+    msg_count = 0
+    target_hits = 0
+    last_log_time = time.time()
 
     try:
         async with websockets.connect("wss://stream.aisstream.io/v0/stream") as ws:
             await ws.send(json.dumps(subscription))
-            print("Connected and subscribed!")
+            print("Connected and subscribed! Waiting for data...")
 
             while True:
                 message = await ws.recv()
                 data = json.loads(message)
 
+                msg_count += 1
+                current_time = time.time()
+
+                # Refresh target cache if expired
+                if current_time - last_cache_update > CACHE_TTL:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT mmsi FROM shadow_fleet_targets")
+                    target_mmsis = {row[0] for row in cursor.fetchall()}
+                    last_cache_update = current_time
+                    print(f"Refreshed target cache. Monitoring {len(target_mmsis)} target vessels.")
+
+                # Log metrics every 10 seconds
+                if current_time - last_log_time > 10:
+                    print(f"Processed {msg_count} raw messages in the last 10s. Target vessel pings recorded: {target_hits}")
+                    msg_count = 0
+                    target_hits = 0
+                    last_log_time = current_time
+
                 cursor = conn.cursor()
                 now = datetime.now(timezone.utc).isoformat()
 
                 mmsi = str(data.get("MetaData", {}).get("MMSI", ""))
-                if not mmsi:
+                if not mmsi or mmsi not in target_mmsis:
                     continue
 
-                # Check if MMSI is in shadow fleet targets
-                cursor.execute("SELECT mmsi FROM shadow_fleet_targets WHERE mmsi = ?", (mmsi,))
-                if not cursor.fetchone():
-                    continue
+                target_hits += 1
 
-                if data["MessageType"] == "PositionReport":
-                    msg = data["Message"]["PositionReport"]
+                if data["MessageType"] in ["PositionReport", "StandardClassBPositionReport"]:
+                    msg = data["Message"].get("PositionReport") or data["Message"].get("StandardClassBPositionReport")
+                    if not msg:
+                        continue
                     lat = msg["Latitude"]
                     lon = msg["Longitude"]
                     heading = msg["TrueHeading"]
