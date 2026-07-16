@@ -415,7 +415,7 @@ async def poll_radar_russia_background():
         await asyncio.sleep(60)
 
 async def fetch_and_cache_radar_russia():
-    url = "https://t.me/s/radarrussiia"
+    url = "https://telegram.me/s/radarrussiia"
     try:
         response = await http_client.get(url, timeout=10.0)
         html = response.text
