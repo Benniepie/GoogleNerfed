@@ -1309,6 +1309,7 @@ map.on('click', async function(e) {
                                 <h4 style="margin: 0 0 4px 0; color: #3b82f6;">🚨 Air Alert</h4>
                                 <div style="font-size: 0.85rem;">
                                     <b>Location:</b> ${props.name}<br>
+                                    <b>Nominatim Query:</b> ${props.raw_name}<br>
                                     <b>Threat:</b> ${props.threat}<br>
                                     <b>Status:</b> ${props.status === 'over' ? '<span style="color:#22c55e;">Over</span>' : '<span style="color:#ef4444;">Active</span>'}<br>
                                     <b>Time:</b> ${timeStr}

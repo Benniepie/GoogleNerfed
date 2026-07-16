@@ -313,6 +313,23 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
                 for loc in part.split(','):
                     loc_clean = loc.strip()
                     loc_clean = re.sub(r'(?i)и близлежащие', '', loc_clean).strip()
+
+                    # NEW: Define expansions for common administrative abbreviations
+                    admin_expansions = {
+                        "мо ": "муниципальный округ ",
+                        "го ": "городской округ ",
+                        "мр ": "муниципальный район ",
+                        "зато ": "закрытое административно-территориальное образование "
+                    }
+
+                    # NEW: Check if the location starts with any of our abbreviations
+                    lower_loc = loc_clean.lower()
+                    for prefix, expansion in admin_expansions.items():
+                        if lower_loc.startswith(prefix):
+                            # Replace the abbreviation with the full text, keeping the rest of the name intact
+                            loc_clean = expansion + loc_clean[len(prefix):].strip()
+                            break # We only need to match the first one
+
                     if loc_clean:
                         locations.append(loc_clean)
 
@@ -320,21 +337,6 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
     if any("отбой" in t.lower() for t in threats):
         status_val = "over"
 
-    # Determine context keywords to figure out what type of locations we have
-    context_keywords = ["область", "край", "республика", "окг", "округ", "крым", "район"]
-
-    # Are ALL our locations regions/districts? (Like "Moscow Oblast" and "Kursk Oblast")
-    all_regions = all(any(x in loc.lower() for x in context_keywords) for loc in locations)
-
-    context = ""
-    # Only try to apply a single broad context if we have a mix of towns AND a region
-    if not all_regions:
-        for loc in reversed(locations):
-            if any(x in loc.lower() for x in context_keywords):
-                context = loc
-                break
-
-    final_locs = []
     combined_threat = " | ".join(threats)
 
     # Simple manual translation dictionary for common radar terms
@@ -364,26 +366,37 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
     for ru, en in threat_translations.items():
         english_threat = re.sub(re.escape(ru), en, english_threat, flags=re.IGNORECASE)
 
-    # If all mentioned locations are regions/districts, keep them separate!
-    if all_regions:
-        for loc in locations:
+    # --- NEW MASTER CONTEXT LOGIC ---
+
+    # We remove "крым" from the general substring list to prevent it triggering on towns like "Крымск"
+    top_level_keywords = ["область", "край", "республика", "окг", "автономный округ", "oblast", "krai", "republic", "okrug"]
+
+    # 1. Find any top-level regions mentioned in the parsed locations
+    contexts = []
+    for loc in locations:
+        lower_loc = loc.lower()
+        is_region = any(kw in lower_loc for kw in top_level_keywords)
+
+        # We strictly match "крым" or "crimea" as exact words so it doesn't match substrings
+        if is_region or lower_loc in ["крым", "республика крым", "crimea"]:
+            contexts.append(loc)
+
+    # 2. If there is exactly ONE top-level region, it becomes our master context.
+    master_context = contexts[0] if len(contexts) == 1 else ""
+
+    final_locs = []
+
+    for loc in locations:
+        lower_loc = loc.lower()
+        is_top_level = any(kw in lower_loc for kw in top_level_keywords) or lower_loc in ["крым", "республика крым", "crimea"]
+
+        if is_top_level:
+            # It is already a region, so it doesn't need context.
             final_locs.append({"name": loc, "icon": get_radar_icon(loc, combined_threat), "raw_name": loc})
-    elif len(locations) > 1:
-        # Filter out the context region if there are specific towns mentioned
-        specific_locs = [loc for loc in locations if loc != context]
-        if not specific_locs:
-            specific_locs = locations # fallback
-
-        for loc in specific_locs:
-            full_name = loc
-            if context and loc != context:
-                full_name = f"{loc}, {context}"
-
-            # We don't translate it yet; we let Nominatim do it!
+        else:
+            # It is a district or town. Append the master context if we have one.
+            full_name = f"{loc}, {master_context}" if master_context else loc
             final_locs.append({"name": full_name, "icon": get_radar_icon(loc, combined_threat), "raw_name": full_name})
-    else:
-        for loc in locations:
-            final_locs.append({"name": loc, "icon": get_radar_icon(loc, combined_threat), "raw_name": loc})
 
     return {
         "id": msg_id,
@@ -590,7 +603,8 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
                 feature = {
                     "type": "Feature",
                     "properties": {
-                        "id": parsed["id"],
+                        # NEW: Append the location name to make the ID completely unique
+                        "id": f"{parsed['id']}_{loc_info['name']}",
                         "time": parsed["time"],
                         "name": english_name,
                         "raw_name": loc_info.get("raw_name", loc_info["name"]),
