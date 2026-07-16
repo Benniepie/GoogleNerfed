@@ -368,25 +368,30 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
 
     # --- NEW MASTER CONTEXT LOGIC ---
 
-    # Changed "округ" to "автономный округ" so municipal/urban okrugs are treated as local districts.
-    # "район" is removed because it is a local area, not a master context.
-    top_level_keywords = ["область", "край", "республика", "окг", "автономный округ", "крым"]
+    # We remove "крым" from the general substring list to prevent it triggering on towns like "Крымск"
+    top_level_keywords = ["область", "край", "республика", "окг", "автономный округ", "oblast", "krai", "republic", "okrug"]
 
     # 1. Find any top-level regions mentioned in the parsed locations
-    contexts = [loc for loc in locations if any(kw in loc.lower() for kw in top_level_keywords)]
+    contexts = []
+    for loc in locations:
+        lower_loc = loc.lower()
+        is_region = any(kw in lower_loc for kw in top_level_keywords)
+
+        # We strictly match "крым" or "crimea" as exact words so it doesn't match substrings
+        if is_region or lower_loc in ["крым", "республика крым", "crimea"]:
+            contexts.append(loc)
 
     # 2. If there is exactly ONE top-level region, it becomes our master context.
-    # If there are multiple (or none), we leave the master context blank to avoid mixing them.
     master_context = contexts[0] if len(contexts) == 1 else ""
 
     final_locs = []
 
     for loc in locations:
-        # Check if the current location is itself a top-level region
-        is_top_level = any(kw in loc.lower() for kw in top_level_keywords)
+        lower_loc = loc.lower()
+        is_top_level = any(kw in lower_loc for kw in top_level_keywords) or lower_loc in ["крым", "республика крым", "crimea"]
 
         if is_top_level:
-            # It is already a region, so it doesn't need context. Send it as-is.
+            # It is already a region, so it doesn't need context.
             final_locs.append({"name": loc, "icon": get_radar_icon(loc, combined_threat), "raw_name": loc})
         else:
             # It is a district or town. Append the master context if we have one.
