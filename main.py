@@ -89,6 +89,14 @@ async def startup_event():
             timestamp TEXT
         )
         ''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS shadow_fleet_targets (
+            mmsi TEXT PRIMARY KEY,
+            imo TEXT,
+            name TEXT,
+            flag TEXT
+        )
+        ''')
         conn.commit()
         conn.close()
 
@@ -1040,6 +1048,38 @@ class GeocodeOverride(BaseModel):
     location_name: str
     osm_id: str
     english_name: str = ""
+
+@app.post("/api/admin/upload_shadow_fleet", dependencies=[Depends(verify_admin)])
+async def admin_upload_shadow_fleet(file: UploadFile = File(...)):
+    import json
+    try:
+        content = await file.read()
+        data = json.loads(content)
+
+        conn = sqlite3.connect(DATA_DIR / "vessels.db")
+        cursor = conn.cursor()
+
+        # We assume the user's data is a dict like {"1": {"mmsi": "...", "imo": "...", "name": "...", "flag": "..."}, ...}
+        for key, vessel_info in data.items():
+            mmsi = vessel_info.get("mmsi")
+            if mmsi:
+                cursor.execute('''
+                    INSERT INTO shadow_fleet_targets (mmsi, imo, name, flag)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(mmsi) DO UPDATE SET
+                        imo=excluded.imo,
+                        name=excluded.name,
+                        flag=excluded.flag
+                ''', (str(mmsi), vessel_info.get("imo", ""), vessel_info.get("name", ""), vessel_info.get("flag", "")))
+
+        conn.commit()
+        conn.close()
+
+        return {"status": "success", "message": "Shadow fleet targets updated"}
+    except Exception as e:
+        logger.error(f"Error processing shadow fleet targets: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/admin/geocode_override", dependencies=[Depends(verify_admin)])
 async def admin_geocode_override(override: GeocodeOverride):

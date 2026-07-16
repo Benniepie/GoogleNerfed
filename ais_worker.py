@@ -38,6 +38,14 @@ def init_db():
         timestamp TEXT
     )
     ''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS shadow_fleet_targets (
+        mmsi TEXT PRIMARY KEY,
+        imo TEXT,
+        name TEXT,
+        flag TEXT
+    )
+    ''')
     conn.commit()
     return conn
 
@@ -64,9 +72,17 @@ async def connect_ais():
                 cursor = conn.cursor()
                 now = datetime.now(timezone.utc).isoformat()
 
+                mmsi = str(data.get("MetaData", {}).get("MMSI", ""))
+                if not mmsi:
+                    continue
+
+                # Check if MMSI is in shadow fleet targets
+                cursor.execute("SELECT mmsi FROM shadow_fleet_targets WHERE mmsi = ?", (mmsi,))
+                if not cursor.fetchone():
+                    continue
+
                 if data["MessageType"] == "PositionReport":
                     msg = data["Message"]["PositionReport"]
-                    mmsi = str(data["MetaData"]["MMSI"])
                     lat = msg["Latitude"]
                     lon = msg["Longitude"]
                     heading = msg["TrueHeading"]
@@ -93,7 +109,6 @@ async def connect_ais():
 
                 elif data["MessageType"] == "ShipStaticData":
                     msg = data["Message"]["ShipStaticData"]
-                    mmsi = str(data["MetaData"]["MMSI"])
                     name = msg.get("Name", "").strip()
                     ship_type = "Unknown"
                     # Simple ship type mapping from AIS type code (mocking mapping here)

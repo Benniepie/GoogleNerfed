@@ -14,6 +14,12 @@ document.getElementById('admin-panel-container').innerHTML = `
             <button type="submit" id="uploadBtn" class="primary-btn">Upload KML / KMZ</button>
             <div id="statusMsg" class="status-msg">Upload complete!</div>
         </form>
+        <form id="shadowFleetForm" style="margin-top: 15px; margin-bottom: 15px;">
+            <label for="shadowFile" style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 5px;">Shadow Fleet JSON</label>
+            <input type="file" id="shadowFile" accept=".json" required style="width: 100%; margin-bottom: 10px;" />
+            <button type="submit" id="shadowBtn" class="primary-btn" style="width: 100%; background: #eab308; color: #0f172a;">Upload Shadow Fleet Target List</button>
+            <div id="shadowStatusMsg" class="status-msg" style="display: none; margin-top: 10px; font-size: 0.85rem; color: #10b981;">Upload complete!</div>
+        </form>
         <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; background: #8b5cf6;">🤖 Automate Map Update</button>
         <button class="primary-btn" onclick="window.openSettingsModal()" style="width: 100%; background: #0ea5e9;">⚙️ Map Settings</button>
                         <hr style="border-top: 1px solid var(--border-color); margin: 20px 0;">
@@ -685,4 +691,46 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             document.getElementById('defaultLat').value = center.lat.toFixed(5);
             document.getElementById('defaultLng').value = center.lng.toFixed(5);
             document.getElementById('defaultZoom').value = map.getZoom();
-        }      
+        }
+// Shadow Fleet Upload Handler
+setTimeout(() => {
+    document.getElementById('shadowFleetForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fileInput = document.getElementById('shadowFile');
+        if (fileInput.files.length === 0) return;
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        const btn = document.getElementById('shadowBtn');
+        const statusMsg = document.getElementById('shadowStatusMsg');
+        btn.textContent = 'Uploading...';
+        statusMsg.style.display = 'none';
+
+        try {
+            const response = await fetch('/api/admin/upload_shadow_fleet', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Upload failed: ' + response.statusText);
+
+            btn.textContent = 'Upload Shadow Fleet Target List';
+            statusMsg.textContent = 'Upload complete!';
+            statusMsg.style.color = '#10b981';
+            statusMsg.style.display = 'block';
+            fileInput.value = '';
+
+            setTimeout(() => {
+                statusMsg.style.display = 'none';
+            }, 3000);
+
+        } catch (error) {
+            console.error('Error uploading shadow fleet:', error);
+            btn.textContent = 'Upload Shadow Fleet Target List';
+            statusMsg.textContent = 'Upload failed.';
+            statusMsg.style.color = '#ef4444';
+            statusMsg.style.display = 'block';
+        }
+    });
+}, 1000);
