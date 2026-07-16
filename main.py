@@ -603,7 +603,8 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
                 feature = {
                     "type": "Feature",
                     "properties": {
-                        "id": parsed["id"],
+                        # NEW: Append the location name to make the ID completely unique
+                        "id": f"{parsed['id']}_{loc_info['name']}",
                         "time": parsed["time"],
                         "name": english_name,
                         "raw_name": loc_info.get("raw_name", loc_info["name"]),
