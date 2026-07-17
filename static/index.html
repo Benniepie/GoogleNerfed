@@ -661,31 +661,11 @@
     <script>
         // If the user has passed the Python Basic Auth and is on the admin route...
         if (window.location.pathname === '/admin') {
-            
-            // Inject the Admin UI into the Control Panel
-            document.getElementById('admin-panel-container').innerHTML = `
-                <div class="section-header collapsed" onclick="toggleSection(this)">
-                    Map Admin <span class="toggle-icon">▼</span>
-                </div>
-                <div class="section-content collapsed upload-section" style="border-top: none; padding-top: 10px;">
-                    <form id="uploadForm">
-                        <input type="file" id="kmlFile" accept=".kml,.kmz" multiple required />
-                        <button type="submit" id="uploadBtn" class="primary-btn">Upload Data</button>
-                        <div id="statusMsg" class="status-msg"></div>
-                    </form>
-
-                    <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; margin-top: 10px; background: #8b5cf6;">🤖 Automate Update</button>
-                    <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-top: 10px; background: #475569;">⬇️ Export Data</button>
-                </div>            
-                `;
-
             // Load the Engine Room (Geoprocessing, Uploads, Styling)
+            // The map-admin.js script will inject the correct UI into admin-panel-container.
             const adminScript = document.createElement('script');
             adminScript.src = '/admin_assets/map-admin.js';
             document.body.appendChild(adminScript);
-        
-            // If they are public, kickstart the map immediately without the admin tools
-        
         }
 
             // Wait for map-layers.js to attach the function
