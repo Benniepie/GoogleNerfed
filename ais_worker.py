@@ -137,11 +137,19 @@ async def connect_ais():
 
                             if time_diff_hours > 0:
                                 speed_kmh = dist_km / time_diff_hours
-                                if speed_kmh > 150 and dist_km > 20:
+                                if speed_kmh > 80 and dist_km > 20:
                                     is_valid = False
+                            elif dist_km > 5:
+                                is_valid = False
+
+                            if not is_valid:
+                                last_pos['reject_count'] = last_pos.get('reject_count', 0) + 1
+                                if last_pos['reject_count'] > 3:
+                                    # Too many rejects, assume we were stuck on a spoofed point and recover
+                                    is_valid = True
 
                         if is_valid:
-                            last_positions[mmsi] = {'lon': lon, 'lat': lat, 'time': current_time}
+                            last_positions[mmsi] = {'lon': lon, 'lat': lat, 'time': current_time, 'reject_count': 0}
 
                             # Insert/update basic position
                             cursor.execute('''

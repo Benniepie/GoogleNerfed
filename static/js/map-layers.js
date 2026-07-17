@@ -1283,16 +1283,21 @@ map.on('click', async function(e) {
                     const clickPointPx = map.latLngToContainerPoint(e.latlng);
 
                     turf.featureEach(window.currentShadowFleetFeatures, function (currentFeature) {
+                        if (!currentFeature || !currentFeature.geometry || !currentFeature.geometry.coordinates) return;
                         const coords = currentFeature.geometry.coordinates; // [lon, lat]
-                        // Leaflet takes [lat, lon]
-                        const featureLatLng = L.latLng(coords[1], coords[0]);
-                        const featurePx = map.latLngToContainerPoint(featureLatLng);
 
-                        const distPx = Math.sqrt(Math.pow(clickPointPx.x - featurePx.x, 2) + Math.pow(clickPointPx.y - featurePx.y, 2));
+                        // Validate coords exist before accessing array elements
+                        if (coords.length >= 2 && coords[0] != null && coords[1] != null) {
+                            // Leaflet takes [lat, lon]
+                            const featureLatLng = L.latLng(coords[1], coords[0]);
+                            const featurePx = map.latLngToContainerPoint(featureLatLng);
 
-                        if (distPx < minScreenDist) {
-                            closestFeature = currentFeature;
-                            minScreenDist = distPx;
+                            const distPx = Math.sqrt(Math.pow(clickPointPx.x - featurePx.x, 2) + Math.pow(clickPointPx.y - featurePx.y, 2));
+
+                            if (distPx < minScreenDist) {
+                                closestFeature = currentFeature;
+                                minScreenDist = distPx;
+                            }
                         }
                     });
 

@@ -1244,6 +1244,8 @@ def get_vessel_track(mmsi: str):
     coordinates = []
     last_lon, last_lat, last_time = None, None, None
 
+    reject_count = 0
+
     for lon, lat, timestamp in rows:
         try:
             current_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
@@ -1254,20 +1256,30 @@ def get_vessel_track(mmsi: str):
                 dist_km = haversine_distance(last_lon, last_lat, lon, lat)
                 time_diff_hours = (current_time - last_time).total_seconds() / 3600.0
 
-                # Filter out points that require > 150km/h speed and > 20km jump
+                is_valid = True
                 if time_diff_hours > 0:
                     speed_kmh = dist_km / time_diff_hours
-                    if speed_kmh > 150 and dist_km > 20:
-                        continue # Skip anomalous point
+                    if speed_kmh > 80 and dist_km > 20:
+                        is_valid = False
+                elif dist_km > 5:
+                    is_valid = False
+
+                if not is_valid:
+                    reject_count += 1
+                    if reject_count > 3:
+                        # Recover from being stuck on an outlier
+                        reject_count = 0
+                    else:
+                        continue # Skip this anomalous point
 
             coordinates.append([lon, lat])
             last_lon, last_lat, last_time = lon, lat, current_time
+            reject_count = 0
+
         except Exception:
-            # On parse error, just append the point
+            # On parse error, fallback
             coordinates.append([lon, lat])
             last_lon, last_lat = lon, lat
-            # Can't reliably update last_time if parsing failed
-            # Leaving last_time as is to use the last valid timestamp for the next point
 
     return {
         "type": "Feature",
@@ -1310,6 +1322,7 @@ def get_all_vessel_tracks():
         coordinates = []
         last_lon, last_lat, last_time = None, None, None
 
+        reject_count = 0
         for pt in points:
             try:
                 lon, lat, timestamp = pt["lon"], pt["lat"], pt["timestamp"]
@@ -1321,18 +1334,28 @@ def get_all_vessel_tracks():
                     dist_km = haversine_distance(last_lon, last_lat, lon, lat)
                     time_diff_hours = (current_time - last_time).total_seconds() / 3600.0
 
-                    # Filter out points that require > 150km/h speed and > 20km jump
+                    is_valid = True
                     if time_diff_hours > 0:
                         speed_kmh = dist_km / time_diff_hours
-                        if speed_kmh > 150 and dist_km > 20:
-                            continue # Skip anomalous point
+                        if speed_kmh > 80 and dist_km > 20:
+                            is_valid = False
+                    elif dist_km > 5:
+                        is_valid = False
+
+                    if not is_valid:
+                        reject_count += 1
+                        if reject_count > 3:
+                            reject_count = 0
+                        else:
+                            continue
 
                 coordinates.append([lon, lat])
                 last_lon, last_lat, last_time = lon, lat, current_time
+                reject_count = 0
+
             except Exception:
                 coordinates.append([pt["lon"], pt["lat"]])
                 last_lon, last_lat = pt["lon"], pt["lat"]
-                # Can't reliably update last_time if parsing failed
 
         if len(coordinates) > 1: # Need at least 2 points for a line
             features.append({
