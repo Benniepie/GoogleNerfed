@@ -574,11 +574,28 @@
             </div>
 
             <div class="layer-item" style="border-left: 3px solid #3b82f6; flex-wrap: wrap; margin-top: 20px;">
-                <input type="checkbox" id="chk_shadowFleet" onchange="if(this.checked){loadShadowFleetLayer();}else{if(shadowFleetLayer)map.removeLayer(shadowFleetLayer);if(shadowFleetTrackLayer)map.removeLayer(shadowFleetTrackLayer);}">
+                <input type="checkbox" id="chk_shadowFleet" onchange="if(this.checked){loadShadowFleetLayer();document.getElementById('shadowFleetLegend').style.display='block';}else{if(shadowFleetLayer)map.removeLayer(shadowFleetLayer);if(shadowFleetTrackLayer)map.removeLayer(shadowFleetTrackLayer);document.getElementById('shadowFleetLegend').style.display='none';}">
                 <label for="chk_shadowFleet">🚢 Shadow Fleet Vessels</label>
             </div>
             <div class="layer-details" style="font-size: 0.8rem; color: #94a3b8; margin-top: 5px; margin-bottom: 15px;">
                 <span id="shadowFleetStatus">Tracking off</span>
+            </div>
+            <div id="shadowFleetLegend" style="display: none; margin-top: 10px; background: rgba(15, 23, 42, 0.8); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.8rem; margin-bottom: 15px;">
+                <div style="margin-bottom: 4px; font-weight: bold; color: #e2e8f0; border-bottom: 1px solid #475569; padding-bottom: 4px;">Vessel Status</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:#ef4444; border:1px solid white;"></div><span style="color:#cbd5e1;">Live Tanker</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:#f97316; border:1px solid white;"></div><span style="color:#cbd5e1;">Live Cargo</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:#3b82f6; border:1px solid white;"></div><span style="color:#cbd5e1;">Other Live</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width:12px; height:12px; border-radius:50%; background:#6b7280; border:1px solid white;"></div><span style="color:#cbd5e1;">Dark / Offline</span>
+                    </div>
+                </div>
             </div>
         </div>
 
