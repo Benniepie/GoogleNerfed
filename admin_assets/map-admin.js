@@ -5,26 +5,30 @@
 
 // Add the Settings Button to the Admin Panel
 document.getElementById('admin-panel-container').innerHTML = `
-    <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; background: #8b5cf6; margin-bottom: 10px;">🤖 Automate Map Update</button>
-    <button class="primary-btn" onclick="window.openSettingsModal()" style="width: 100%; background: #0ea5e9; margin-bottom: 10px;">⚙️ Map Settings</button>
-
     <div class="section-header collapsed" onclick="toggleSection(this)">
-        Static Data Layers Admin <span class="toggle-icon">▼</span>
+        Map Admin <span class="toggle-icon">▼</span>
     </div>
-    <div class="section-content collapsed upload-section" style="border-top: none; padding-top: 10px;">
-        <form id="uploadForm">
-            <input type="file" id="kmlFile" accept=".kml,.kmz" multiple required />
-            <button type="submit" id="uploadBtn" class="primary-btn">Upload KML / KMZ</button>
-            <div id="statusMsg" class="status-msg">Upload complete!</div>
-        </form>
-        <button class="primary-btn" onclick="exportKML()" style="width: 100%; background: var(--border-color); margin-top: 10px;">⬇️ Export Displayed Data</button>
-    </div>
+    <div class="section-content collapsed" style="padding-top: 10px; padding-bottom: 10px;">
+        <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; background: #8b5cf6; margin-bottom: 10px;">🤖 Automate Map Update</button>
+        <button class="primary-btn" onclick="window.openSettingsModal()" style="width: 100%; background: #0ea5e9; margin-bottom: 10px;">⚙️ Map Settings</button>
 
-    <div class="section-header collapsed" onclick="toggleSection(this)">
-        Live Data Layers Admin <span class="toggle-icon">▼</span>
-    </div>
-    <div class="section-content collapsed upload-section" style="border-top: none; padding-top: 10px;">
-        <form id="shadowFleetForm" style="margin-bottom: 15px;">
+        <div class="section-header collapsed" onclick="toggleSection(this)" style="font-size: 0.9em; background: rgba(0,0,0,0.2);">
+            Static Data Layers Admin <span class="toggle-icon">▼</span>
+        </div>
+        <div class="section-content collapsed upload-section" style="border-top: none; padding-top: 10px; margin-bottom: 10px;">
+            <form id="uploadForm">
+                <input type="file" id="kmlFile" accept=".kml,.kmz" multiple required />
+                <button type="submit" id="uploadBtn" class="primary-btn">Upload KML / KMZ</button>
+                <div id="statusMsg" class="status-msg">Upload complete!</div>
+            </form>
+            <button class="primary-btn" onclick="exportKML()" style="width: 100%; background: var(--border-color); margin-top: 10px;">⬇️ Export Displayed Data</button>
+        </div>
+
+        <div class="section-header collapsed" onclick="toggleSection(this)" style="font-size: 0.9em; background: rgba(0,0,0,0.2);">
+            Live Data Layers Admin <span class="toggle-icon">▼</span>
+        </div>
+        <div class="section-content collapsed upload-section" style="border-top: none; padding-top: 10px;">
+            <form id="shadowFleetForm" style="margin-bottom: 15px;">
             <label for="shadowFile" style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 5px;">Shadow Fleet JSON</label>
             <input type="file" id="shadowFile" accept=".json" required style="width: 100%; margin-bottom: 10px;" />
             <button type="submit" id="shadowBtn" class="primary-btn" style="width: 100%; background: #eab308; color: #0f172a;">Upload Shadow Fleet Target List</button>
@@ -47,6 +51,7 @@ document.getElementById('admin-panel-container').innerHTML = `
             <button type="submit" id="overrideBtn" class="primary-btn" style="width: 100%; background: #10b981;">Save Override</button>
             <div id="overrideStatusMsg" style="display: none; font-size: 0.85rem; color: #10b981; margin-top: 5px;"></div>
         </form>
+        </div>
     </div>
 `;
 
