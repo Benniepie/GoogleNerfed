@@ -4,6 +4,7 @@ import json
 import sqlite3
 import os
 import time
+import math
 from datetime import datetime, timezone
 
 DB_PATH = "/app/data/vessels.db"
@@ -49,6 +50,16 @@ def init_db():
     conn.commit()
     return conn
 
+def haversine_distance(lon1, lat1, lon2, lat2):
+    """Calculate the great circle distance in kilometers between two points on the earth."""
+    lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    r = 6371 # Radius of earth in kilometers
+    return c * r
+
 async def connect_ais():
     print("Connecting to AISStream...")
     conn = init_db()
@@ -68,6 +79,9 @@ async def connect_ais():
     msg_count = 0
     target_hits = 0
     last_log_time = time.time()
+
+    # Stateful cache for last known positions to prevent spoofing jumps
+    last_positions = {}
 
     try:
         async with websockets.connect("wss://stream.aisstream.io/v0/stream") as ws:
@@ -114,24 +128,39 @@ async def connect_ais():
                     heading = msg["TrueHeading"]
 
                     if lat is not None and lon is not None and lat <= 90.0 and lon <= 180.0:
-                        # Insert/update basic position
-                        cursor.execute('''
-                        INSERT INTO vessels (mmsi, last_seen, last_lon, last_lat, heading)
-                        VALUES (?, ?, ?, ?, ?)
-                        ON CONFLICT(mmsi) DO UPDATE SET
-                            last_seen=excluded.last_seen,
-                            last_lon=excluded.last_lon,
-                            last_lat=excluded.last_lat,
-                            heading=excluded.heading
-                        ''', (mmsi, now, lon, lat, heading))
 
-                        # Save track
-                        cursor.execute('''
-                        INSERT INTO tracks (mmsi, lon, lat, timestamp)
-                        VALUES (?, ?, ?, ?)
-                        ''', (mmsi, lon, lat, now))
+                        is_valid = True
+                        if mmsi in last_positions:
+                            last_pos = last_positions[mmsi]
+                            dist_km = haversine_distance(last_pos['lon'], last_pos['lat'], lon, lat)
+                            time_diff_hours = (current_time - last_pos['time']) / 3600.0
 
-                        conn.commit()
+                            if time_diff_hours > 0:
+                                speed_kmh = dist_km / time_diff_hours
+                                if speed_kmh > 150 and dist_km > 20:
+                                    is_valid = False
+
+                        if is_valid:
+                            last_positions[mmsi] = {'lon': lon, 'lat': lat, 'time': current_time}
+
+                            # Insert/update basic position
+                            cursor.execute('''
+                            INSERT INTO vessels (mmsi, last_seen, last_lon, last_lat, heading)
+                            VALUES (?, ?, ?, ?, ?)
+                            ON CONFLICT(mmsi) DO UPDATE SET
+                                last_seen=excluded.last_seen,
+                                last_lon=excluded.last_lon,
+                                last_lat=excluded.last_lat,
+                                heading=excluded.heading
+                            ''', (mmsi, now, lon, lat, heading))
+
+                            # Save track
+                            cursor.execute('''
+                            INSERT INTO tracks (mmsi, lon, lat, timestamp)
+                            VALUES (?, ?, ?, ?)
+                            ''', (mmsi, lon, lat, now))
+
+                            conn.commit()
 
                 elif data["MessageType"] == "ShipStaticData":
                     msg = data["Message"]["ShipStaticData"]

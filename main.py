@@ -1211,6 +1211,19 @@ def get_vessels():
     conn.close()
     return {"type": "FeatureCollection", "features": features}
 
+def haversine_distance(lon1, lat1, lon2, lat2):
+    """Calculate the great circle distance in kilometers between two points on the earth."""
+    # Convert decimal degrees to radians
+    lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
+
+    # Haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    r = 6371 # Radius of earth in kilometers. Use 3956 for miles. Determines return value units.
+    return c * r
+
 @shadow_fleet_router.get("/tracks/{mmsi}")
 def get_vessel_track(mmsi: str):
     """Returns the historical track of a specific vessel as a GeoJSON LineString."""
@@ -1218,7 +1231,7 @@ def get_vessel_track(mmsi: str):
     cursor = conn.cursor()
 
     # Get last 500 points to keep payload small
-    cursor.execute("SELECT lon, lat FROM tracks WHERE mmsi = ? ORDER BY timestamp DESC LIMIT 500", (mmsi,))
+    cursor.execute("SELECT lon, lat, timestamp FROM tracks WHERE mmsi = ? ORDER BY timestamp DESC LIMIT 500", (mmsi,))
     rows = cursor.fetchall()
     conn.close()
 
@@ -1226,7 +1239,35 @@ def get_vessel_track(mmsi: str):
         return {"error": "No tracks found"}
 
     # Reverse to chronological order
-    coordinates = [[row[0], row[1]] for row in reversed(rows)]
+    rows = list(reversed(rows))
+
+    coordinates = []
+    last_lon, last_lat, last_time = None, None, None
+
+    for lon, lat, timestamp in rows:
+        try:
+            current_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            if current_time.tzinfo is None:
+                current_time = current_time.replace(tzinfo=timezone.utc)
+
+            if last_lon is not None and last_lat is not None and last_time is not None:
+                dist_km = haversine_distance(last_lon, last_lat, lon, lat)
+                time_diff_hours = (current_time - last_time).total_seconds() / 3600.0
+
+                # Filter out points that require > 150km/h speed and > 20km jump
+                if time_diff_hours > 0:
+                    speed_kmh = dist_km / time_diff_hours
+                    if speed_kmh > 150 and dist_km > 20:
+                        continue # Skip anomalous point
+
+            coordinates.append([lon, lat])
+            last_lon, last_lat, last_time = lon, lat, current_time
+        except Exception:
+            # On parse error, just append the point
+            coordinates.append([lon, lat])
+            last_lon, last_lat = lon, lat
+            # Can't reliably update last_time if parsing failed
+            # Leaving last_time as is to use the last valid timestamp for the next point
 
     return {
         "type": "Feature",
@@ -1251,7 +1292,7 @@ def get_all_vessel_tracks():
                    ROW_NUMBER() OVER (PARTITION BY mmsi ORDER BY timestamp DESC) as rn
             FROM tracks
         )
-        SELECT mmsi, lon, lat FROM RankedTracks WHERE rn <= 100 ORDER BY mmsi, timestamp ASC
+        SELECT mmsi, lon, lat, timestamp FROM RankedTracks WHERE rn <= 100 ORDER BY mmsi, timestamp ASC
     ''')
     rows = cursor.fetchall()
 
@@ -1259,13 +1300,40 @@ def get_all_vessel_tracks():
     tracks_by_mmsi = {}
     for row in rows:
         mmsi = row[0]
-        coord = [row[1], row[2]]
+        coord_data = {"lon": row[1], "lat": row[2], "timestamp": row[3]}
         if mmsi not in tracks_by_mmsi:
             tracks_by_mmsi[mmsi] = []
-        tracks_by_mmsi[mmsi].append(coord)
+        tracks_by_mmsi[mmsi].append(coord_data)
 
     features = []
-    for mmsi, coordinates in tracks_by_mmsi.items():
+    for mmsi, points in tracks_by_mmsi.items():
+        coordinates = []
+        last_lon, last_lat, last_time = None, None, None
+
+        for pt in points:
+            try:
+                lon, lat, timestamp = pt["lon"], pt["lat"], pt["timestamp"]
+                current_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                if current_time.tzinfo is None:
+                    current_time = current_time.replace(tzinfo=timezone.utc)
+
+                if last_lon is not None and last_lat is not None and last_time is not None:
+                    dist_km = haversine_distance(last_lon, last_lat, lon, lat)
+                    time_diff_hours = (current_time - last_time).total_seconds() / 3600.0
+
+                    # Filter out points that require > 150km/h speed and > 20km jump
+                    if time_diff_hours > 0:
+                        speed_kmh = dist_km / time_diff_hours
+                        if speed_kmh > 150 and dist_km > 20:
+                            continue # Skip anomalous point
+
+                coordinates.append([lon, lat])
+                last_lon, last_lat, last_time = lon, lat, current_time
+            except Exception:
+                coordinates.append([pt["lon"], pt["lat"]])
+                last_lon, last_lat = pt["lon"], pt["lat"]
+                # Can't reliably update last_time if parsing failed
+
         if len(coordinates) > 1: # Need at least 2 points for a line
             features.append({
                 "type": "Feature",

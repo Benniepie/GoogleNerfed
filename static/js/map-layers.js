@@ -1276,23 +1276,40 @@ map.on('click', async function(e) {
                 const chk = document.getElementById('chk_shadowFleet');
                 if (chk && chk.checked) {
                     let shadowHitsHTML = '';
+
+                    // Find the single closest vessel within a small screen-space tolerance (in pixels)
+                    let closestFeature = null;
+                    let minScreenDist = 15; // match if within 15 screen pixels of the click
+                    const clickPointPx = map.latLngToContainerPoint(e.latlng);
+
                     turf.featureEach(window.currentShadowFleetFeatures, function (currentFeature) {
-                        const dist = turf.distance(clickPoint, currentFeature, {units: 'meters'});
-                        if (dist < 10000) { // 10km hit tolerance for vessels (since they are markers)
-                            const props = currentFeature.properties;
-                            const status = props.is_live ? "🔴 LIVE" : "⚫ DARK (AIS OFF)";
-                            shadowHitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
-                            shadowHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #3b82f6;">🚢 Shadow Fleet: ${props.name}</h4>`;
-                            shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>MMSI:</b> ${props.mmsi}</div>`;
-                            shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Type:</b> ${props.type}</div>`;
-                            shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Status:</b> ${status}</div>`;
-                            shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Last Seen:</b> ${new Date(props.last_seen).toLocaleString()}</div>`;
+                        const coords = currentFeature.geometry.coordinates; // [lon, lat]
+                        // Leaflet takes [lat, lon]
+                        const featureLatLng = L.latLng(coords[1], coords[0]);
+                        const featurePx = map.latLngToContainerPoint(featureLatLng);
 
-                            // Tracks are now rendered globally
+                        const distPx = Math.sqrt(Math.pow(clickPointPx.x - featurePx.x, 2) + Math.pow(clickPointPx.y - featurePx.y, 2));
 
-                            shadowHitsHTML += `</div>`;
+                        if (distPx < minScreenDist) {
+                            closestFeature = currentFeature;
+                            minScreenDist = distPx;
                         }
                     });
+
+                    if (closestFeature) {
+                        const props = closestFeature.properties;
+                        const status = props.is_live ? "🔴 LIVE" : "⚫ DARK (AIS OFF)";
+                        shadowHitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
+                        shadowHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #3b82f6;">🚢 Shadow Fleet: ${props.name}</h4>`;
+                        shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>MMSI:</b> ${props.mmsi}</div>`;
+                        shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Type:</b> ${props.type}</div>`;
+                        shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Status:</b> ${status}</div>`;
+                        shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Last Seen:</b> ${new Date(props.last_seen).toLocaleString()}</div>`;
+
+                        // Tracks are now rendered globally
+
+                        shadowHitsHTML += `</div>`;
+                    }
                     if (shadowHitsHTML) popupHTML += shadowHitsHTML;
                 }
             }
