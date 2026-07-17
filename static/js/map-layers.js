@@ -1288,8 +1288,7 @@ map.on('click', async function(e) {
                             shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Status:</b> ${status}</div>`;
                             shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Last Seen:</b> ${new Date(props.last_seen).toLocaleString()}</div>`;
 
-                            // Fetch and render track for this vessel automatically when hit
-                            loadVesselTrack(props.mmsi);
+                            // Tracks are now rendered globally
 
                             shadowHitsHTML += `</div>`;
                         }
@@ -1705,10 +1704,31 @@ async function loadShadowFleetLayer() {
         // Globally expose the raw data so the unified click handler in map-core.js or map-layers.js can intersect it using Turf.js
         window.currentShadowFleetFeatures = geojsonData;
 
+        // Load all tracks simultaneously
+        const trackResponse = await fetch('/api/shadow-fleet/tracks');
+        let trackGeoJSON = { type: "FeatureCollection", features: [] };
+        if (trackResponse.ok) {
+            trackGeoJSON = await trackResponse.json();
+        }
+
+        if (shadowFleetTrackLayer) {
+            map.removeLayer(shadowFleetTrackLayer);
+        }
+
+        shadowFleetTrackLayer = L.geoJSON(trackGeoJSON, {
+            style: {
+                color: '#EF4444',
+                weight: 2,
+                opacity: 0.6,
+                dashArray: '5, 5' // Dashed line for tracks
+            }
+        });
+
         // Only add to map if the checkbox is checked, since this might be called on interval
         const chk = document.getElementById('chk_shadowFleet');
         if (chk && chk.checked) {
             shadowFleetLayer.addTo(map);
+            shadowFleetTrackLayer.addTo(map); // Add tracks as well
             if (statusDiv) {
                 const count = geojsonData.features ? geojsonData.features.length : 0;
                 statusDiv.textContent = `Tracking ${count} vessel(s)`;

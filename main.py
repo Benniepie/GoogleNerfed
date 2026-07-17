@@ -1176,7 +1176,11 @@ def get_vessels():
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM vessels")
+    cursor.execute("""
+        SELECT v.*, t.name as target_name
+        FROM vessels v
+        LEFT JOIN shadow_fleet_targets t ON v.mmsi = t.mmsi
+    """)
     rows = cursor.fetchall()
 
     features = []
@@ -1195,7 +1199,7 @@ def get_vessels():
             },
             "properties": {
                 "mmsi": row['mmsi'],
-                "name": row['name'] or "Unknown",
+                "name": row['target_name'] or row['name'] or "Unknown",
                 "type": row['ship_type'] or "Unknown",
                 "heading": row['heading'],
                 "last_seen": row['last_seen'],
@@ -1232,6 +1236,49 @@ def get_vessel_track(mmsi: str):
         },
         "properties": {"mmsi": mmsi}
     }
+
+
+@shadow_fleet_router.get("/tracks")
+def get_all_vessel_tracks():
+    """Returns the historical tracks of all vessels as a GeoJSON FeatureCollection."""
+    conn = sqlite3.connect(DATA_DIR / "vessels.db")
+    cursor = conn.cursor()
+
+    # Use window function to grab the last 100 points per MMSI efficiently in one query
+    cursor.execute('''
+        WITH RankedTracks AS (
+            SELECT mmsi, lon, lat, timestamp,
+                   ROW_NUMBER() OVER (PARTITION BY mmsi ORDER BY timestamp DESC) as rn
+            FROM tracks
+        )
+        SELECT mmsi, lon, lat FROM RankedTracks WHERE rn <= 100 ORDER BY mmsi, timestamp ASC
+    ''')
+    rows = cursor.fetchall()
+
+    # Group by MMSI
+    tracks_by_mmsi = {}
+    for row in rows:
+        mmsi = row[0]
+        coord = [row[1], row[2]]
+        if mmsi not in tracks_by_mmsi:
+            tracks_by_mmsi[mmsi] = []
+        tracks_by_mmsi[mmsi].append(coord)
+
+    features = []
+    for mmsi, coordinates in tracks_by_mmsi.items():
+        if len(coordinates) > 1: # Need at least 2 points for a line
+            features.append({
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": coordinates
+                },
+                "properties": {"mmsi": mmsi}
+            })
+
+    conn.close()
+
+    return {"type": "FeatureCollection", "features": features}
 
 app.include_router(shadow_fleet_router)
 
