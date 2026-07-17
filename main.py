@@ -457,6 +457,15 @@ async def fetch_and_cache_radar_russia():
         if not text_div: continue
         text = text_div.get_text(separator='\n').strip()
 
+        # --- NEW CODE: Skip daily summaries ---
+        # If the text contains typical morning summary phrases, skip the message entirely
+        summary_phrases = [
+            "За прошедшую ночь",
+            "Дежурными средствами ПВО перехвачено и уничтожено"
+        ]
+        if any(phrase in text for phrase in summary_phrases):
+            continue
+        # --------------------------------------
 
         time_tag = msg.find('time')
         time_str = time_tag.get('datetime', '') if time_tag else ''
