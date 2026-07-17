@@ -1273,8 +1273,12 @@ map.on('click', async function(e) {
 
             // --- 2.5 Shadow Fleet Drill-down ---
             if (window.currentShadowFleetFeatures) {
-                const chk = document.getElementById('chk_shadowFleet');
-                if (chk && chk.checked) {
+                const chkSF = document.getElementById('chk_shadowFleet');
+                const chkNSF = document.getElementById('chk_nonShadowFleet');
+                const showSF = chkSF ? chkSF.checked : false;
+                const showNSF = chkNSF ? chkNSF.checked : false;
+
+                if (showSF || showNSF) {
                     let shadowHitsHTML = '';
 
                     // Find the single closest vessel within a small screen-space tolerance (in pixels)
@@ -1284,6 +1288,11 @@ map.on('click', async function(e) {
 
                     turf.featureEach(window.currentShadowFleetFeatures, function (currentFeature) {
                         if (!currentFeature || !currentFeature.geometry || !currentFeature.geometry.coordinates) return;
+
+                        const isSF = currentFeature.properties.is_shadow_fleet;
+                        if (isSF && !showSF) return;
+                        if (!isSF && !showNSF) return;
+
                         const coords = currentFeature.geometry.coordinates; // [lon, lat]
 
                         // Validate coords exist before accessing array elements
@@ -1305,7 +1314,13 @@ map.on('click', async function(e) {
                         const props = closestFeature.properties;
                         const status = props.is_live ? "🔴 LIVE" : "⚫ DARK (AIS OFF)";
                         shadowHitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
-                        shadowHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #3b82f6;">🚢 Shadow Fleet: ${props.name}</h4>`;
+
+                        if (props.is_shadow_fleet) {
+                            shadowHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #3b82f6;">🚢 Shadow Fleet: ${props.name}</h4>`;
+                        } else {
+                            shadowHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #22c55e;">🚤 Non-Shadow Fleet Vessel: ${props.name}</h4>`;
+                        }
+
                         shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>MMSI:</b> ${props.mmsi}</div>`;
                         shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Type:</b> ${props.type}</div>`;
                         shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Status:</b> ${status}</div>`;
@@ -1710,7 +1725,21 @@ async function loadShadowFleetLayer() {
 
         const response = await fetch('/api/shadow-fleet/vessels');
         if (!response.ok) throw new Error("HTTP error " + response.status);
-        const geojsonData = await response.json();
+        let geojsonData = await response.json();
+
+        const chkShadowFleet = document.getElementById('chk_shadowFleet');
+        const chkNonShadowFleet = document.getElementById('chk_nonShadowFleet');
+
+        const showShadow = chkShadowFleet ? chkShadowFleet.checked : false;
+        const showNonShadow = chkNonShadowFleet ? chkNonShadowFleet.checked : false;
+
+        // Filter based on checkboxes
+        geojsonData.features = geojsonData.features.filter(f => {
+            const isSF = f.properties.is_shadow_fleet;
+            if (isSF && showShadow) return true;
+            if (!isSF && showNonShadow) return true;
+            return false;
+        });
 
         // Remove existing layer if refreshing
         if (shadowFleetLayer) {
@@ -1719,7 +1748,19 @@ async function loadShadowFleetLayer() {
 
         shadowFleetLayer = L.geoJSON(geojsonData, {
             pointToLayer: function (feature, latlng) {
-                return L.circleMarker(latlng, getShadowFleetStyle(feature));
+                if (!feature.properties.is_shadow_fleet) {
+                    return L.marker(latlng, {
+                        icon: L.divIcon({
+                            className: 'non-sf-icon',
+                            html: '<div style="width: 12px; height: 12px; background-color: #22c55e; border: 1px solid white; border-radius: 2px;"></div>',
+                            iconSize: [12, 12],
+                            iconAnchor: [6, 6]
+                        }),
+                        interactive: false
+                    });
+                } else {
+                    return L.circleMarker(latlng, getShadowFleetStyle(feature));
+                }
             },
             interactive: false // CRITICAL: Lets clicks pass through to the unified master map click event
         });
@@ -1732,6 +1773,14 @@ async function loadShadowFleetLayer() {
         let trackGeoJSON = { type: "FeatureCollection", features: [] };
         if (trackResponse.ok) {
             trackGeoJSON = await trackResponse.json();
+
+            // Filter tracks based on checkboxes
+            trackGeoJSON.features = trackGeoJSON.features.filter(f => {
+                const isSF = f.properties.is_shadow_fleet;
+                if (isSF && showShadow) return true;
+                if (!isSF && showNonShadow) return true;
+                return false;
+            });
         }
 
         if (shadowFleetTrackLayer) {
@@ -1739,17 +1788,19 @@ async function loadShadowFleetLayer() {
         }
 
         shadowFleetTrackLayer = L.geoJSON(trackGeoJSON, {
-            style: {
-                color: '#EF4444',
-                weight: 2,
-                opacity: 0.6,
-                dashArray: '5, 5' // Dashed line for tracks
-            }
+            style: function(feature) {
+                return {
+                    color: feature.properties.is_shadow_fleet ? '#EF4444' : '#22c55e',
+                    weight: 2,
+                    opacity: 0.6,
+                    dashArray: '5, 5' // Dashed line for tracks
+                };
+            },
+            interactive: false
         });
 
-        // Only add to map if the checkbox is checked, since this might be called on interval
-        const chk = document.getElementById('chk_shadowFleet');
-        if (chk && chk.checked) {
+        // Only add to map if either checkbox is checked
+        if (showShadow || showNonShadow) {
             shadowFleetLayer.addTo(map);
             shadowFleetTrackLayer.addTo(map); // Add tracks as well
             if (statusDiv) {

@@ -71,6 +71,13 @@ def is_in_spoofing_zone(lon, lat):
             return True
     return False
 
+def is_in_non_shadow_fleet_zone(lat, lon):
+    if lat is None or lon is None:
+        return False
+    # Top left: Lat: 54.3165, Lng: 29.7729
+    # Bottom right: Lat: 41.6565, Lng: 53.5474
+    return (41.6565 <= lat <= 54.3165) and (29.7729 <= lon <= 53.5474)
+
 async def connect_ais():
     print("Connecting to AISStream...")
     conn = init_db()
@@ -125,27 +132,43 @@ async def connect_ais():
                 now = datetime.now(timezone.utc).isoformat()
 
                 mmsi = str(data.get("MetaData", {}).get("MMSI", ""))
-                if not mmsi or mmsi not in target_mmsis:
+
+                # Check coordinates early if they are available
+                lat = data.get("MetaData", {}).get("latitude")
+                lon = data.get("MetaData", {}).get("longitude")
+
+                if not mmsi:
                     continue
 
-                target_hits += 1
+                is_target = (mmsi in target_mmsis)
+                is_in_zone = is_in_non_shadow_fleet_zone(lat, lon)
+
+                if not is_target and not is_in_zone:
+                    continue
+
+                if is_target:
+                    target_hits += 1
 
                 if data["MessageType"] in ["PositionReport", "StandardClassBPositionReport"]:
                     msg = data["Message"].get("PositionReport") or data["Message"].get("StandardClassBPositionReport")
                     if not msg:
                         continue
-                    lat = msg["Latitude"]
-                    lon = msg["Longitude"]
+                    # Metadata lat/lon are more reliable, but fallback to message content
+                    msg_lat = msg["Latitude"]
+                    msg_lon = msg["Longitude"]
+
+                    final_lat = lat if lat is not None else msg_lat
+                    final_lon = lon if lon is not None else msg_lon
                     heading = msg["TrueHeading"]
 
-                    if lat is not None and lon is not None and lat <= 90.0 and lon <= 180.0:
-                        if is_in_spoofing_zone(lon, lat):
+                    if final_lat is not None and final_lon is not None and final_lat <= 90.0 and final_lon <= 180.0:
+                        if is_in_spoofing_zone(final_lon, final_lat):
                             continue
 
                         is_valid = True
                         if mmsi in last_positions:
                             last_pos = last_positions[mmsi]
-                            dist_km = haversine_distance(last_pos['lon'], last_pos['lat'], lon, lat)
+                            dist_km = haversine_distance(last_pos['lon'], last_pos['lat'], final_lon, final_lat)
                             time_diff_hours = (current_time - last_pos['time']) / 3600.0
 
                             if time_diff_hours > 0:
@@ -162,7 +185,7 @@ async def connect_ais():
                                     is_valid = True
 
                         if is_valid:
-                            last_positions[mmsi] = {'lon': lon, 'lat': lat, 'time': current_time, 'reject_count': 0}
+                            last_positions[mmsi] = {'lon': final_lon, 'lat': final_lat, 'time': current_time, 'reject_count': 0}
 
                             # Insert/update basic position
                             cursor.execute('''
@@ -173,13 +196,13 @@ async def connect_ais():
                                 last_lon=excluded.last_lon,
                                 last_lat=excluded.last_lat,
                                 heading=excluded.heading
-                            ''', (mmsi, now, lon, lat, heading))
+                            ''', (mmsi, now, final_lon, final_lat, heading))
 
                             # Save track
                             cursor.execute('''
                             INSERT INTO tracks (mmsi, lon, lat, timestamp)
                             VALUES (?, ?, ?, ?)
-                            ''', (mmsi, lon, lat, now))
+                            ''', (mmsi, final_lon, final_lat, now))
 
                             conn.commit()
 

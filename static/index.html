@@ -574,9 +574,15 @@
             </div>
 
             <div class="layer-item" style="border-left: 3px solid #3b82f6; flex-wrap: wrap; margin-top: 20px;">
-                <input type="checkbox" id="chk_shadowFleet" onchange="if(this.checked){loadShadowFleetLayer();document.getElementById('shadowFleetLegend').style.display='block';}else{if(shadowFleetLayer)map.removeLayer(shadowFleetLayer);if(shadowFleetTrackLayer)map.removeLayer(shadowFleetTrackLayer);document.getElementById('shadowFleetLegend').style.display='none';}">
+                <input type="checkbox" id="chk_shadowFleet" onchange="if(this.checked || document.getElementById('chk_nonShadowFleet').checked){loadShadowFleetLayer();}else{if(shadowFleetLayer)map.removeLayer(shadowFleetLayer);if(shadowFleetTrackLayer)map.removeLayer(shadowFleetTrackLayer);} document.getElementById('shadowFleetLegend').style.display = (this.checked || document.getElementById('chk_nonShadowFleet').checked) ? 'block' : 'none';">
                 <label for="chk_shadowFleet">🚢 Shadow Fleet Vessels</label>
             </div>
+
+            <div class="layer-item" style="border-left: 3px solid #22c55e; flex-wrap: wrap; margin-top: 5px;">
+                <input type="checkbox" id="chk_nonShadowFleet" onchange="if(this.checked || document.getElementById('chk_shadowFleet').checked){loadShadowFleetLayer();}else{if(shadowFleetLayer)map.removeLayer(shadowFleetLayer);if(shadowFleetTrackLayer)map.removeLayer(shadowFleetTrackLayer);} document.getElementById('shadowFleetLegend').style.display = (this.checked || document.getElementById('chk_shadowFleet').checked) ? 'block' : 'none';">
+                <label for="chk_nonShadowFleet">🚤 Show Non-Shadow Fleet vessels in the Sea of Azoz, Russian Canals & Rivers, Black Sea (north) and Caspian (north)</label>
+            </div>
+
             <div class="layer-details" style="font-size: 0.8rem; color: #94a3b8; margin-top: 5px; margin-bottom: 15px;">
                 <span id="shadowFleetStatus">Tracking off</span>
             </div>

@@ -1200,7 +1200,8 @@ def get_vessels():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT v.*, t.name as target_name
+        SELECT v.*, t.name as target_name,
+        CASE WHEN t.mmsi IS NOT NULL THEN 1 ELSE 0 END as is_shadow_fleet
         FROM vessels v
         LEFT JOIN shadow_fleet_targets t ON v.mmsi = t.mmsi
     """)
@@ -1210,6 +1211,17 @@ def get_vessels():
     now = datetime.now(timezone.utc)
 
     for row in rows:
+        is_shadow_fleet = bool(row['is_shadow_fleet'])
+        last_lat = row['last_lat']
+        last_lon = row['last_lon']
+
+        # If not shadow fleet, filter out vessels that have left the zone
+        if not is_shadow_fleet:
+            if last_lat is None or last_lon is None:
+                continue
+            if not (41.6565 <= last_lat <= 54.3165 and 29.7729 <= last_lon <= 53.5474):
+                continue
+
         # Check if vessel has gone dark (no signal for 3 hours)
         last_seen = datetime.fromisoformat(row['last_seen']).replace(tzinfo=timezone.utc)
         is_live = (now - last_seen) < timedelta(hours=3)
@@ -1218,7 +1230,7 @@ def get_vessels():
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [row['last_lon'], row['last_lat']]
+                "coordinates": [last_lon, last_lat]
             },
             "properties": {
                 "mmsi": row['mmsi'],
@@ -1226,7 +1238,8 @@ def get_vessels():
                 "type": row['ship_type'] or "Unknown",
                 "heading": row['heading'],
                 "last_seen": row['last_seen'],
-                "is_live": is_live
+                "is_live": is_live,
+                "is_shadow_fleet": is_shadow_fleet
             }
         }
         features.append(feature)
@@ -1338,18 +1351,24 @@ def get_all_vessel_tracks():
     # Use window function to grab the last 100 points per MMSI efficiently in one query
     cursor.execute('''
         WITH RankedTracks AS (
-            SELECT mmsi, lon, lat, timestamp,
-                   ROW_NUMBER() OVER (PARTITION BY mmsi ORDER BY timestamp DESC) as rn
-            FROM tracks
+            SELECT t.mmsi, t.lon, t.lat, t.timestamp,
+                   CASE WHEN s.mmsi IS NOT NULL THEN 1 ELSE 0 END as is_shadow_fleet,
+                   ROW_NUMBER() OVER (PARTITION BY t.mmsi ORDER BY t.timestamp DESC) as rn
+            FROM tracks t
+            LEFT JOIN shadow_fleet_targets s ON t.mmsi = s.mmsi
         )
-        SELECT mmsi, lon, lat, timestamp FROM RankedTracks WHERE rn <= 100 ORDER BY mmsi, timestamp ASC
+        SELECT mmsi, lon, lat, timestamp, is_shadow_fleet FROM RankedTracks WHERE rn <= 100 ORDER BY mmsi, timestamp ASC
     ''')
     rows = cursor.fetchall()
 
     # Group by MMSI
     tracks_by_mmsi = {}
+    mmsi_is_shadow_fleet = {}
     for row in rows:
         mmsi = row[0]
+        is_sf = bool(row[4])
+        mmsi_is_shadow_fleet[mmsi] = is_sf
+
         coord_data = {"lon": row[1], "lat": row[2], "timestamp": row[3]}
         if mmsi not in tracks_by_mmsi:
             tracks_by_mmsi[mmsi] = []
@@ -1405,7 +1424,10 @@ def get_all_vessel_tracks():
                     "type": "LineString",
                     "coordinates": coordinates
                 },
-                "properties": {"mmsi": mmsi}
+                "properties": {
+                    "mmsi": mmsi,
+                    "is_shadow_fleet": mmsi_is_shadow_fleet.get(mmsi, False)
+                }
             })
 
     conn.close()
