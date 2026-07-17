@@ -1271,6 +1271,54 @@ map.on('click', async function(e) {
             }
             if (kmlHitsHTML) popupHTML += kmlHitsHTML;
 
+            // --- 2.5 Shadow Fleet Drill-down ---
+            if (window.currentShadowFleetFeatures) {
+                const chk = document.getElementById('chk_shadowFleet');
+                if (chk && chk.checked) {
+                    let shadowHitsHTML = '';
+
+                    // Find the single closest vessel within a small screen-space tolerance (in pixels)
+                    let closestFeature = null;
+                    let minScreenDist = 15; // match if within 15 screen pixels of the click
+                    const clickPointPx = map.latLngToContainerPoint(e.latlng);
+
+                    turf.featureEach(window.currentShadowFleetFeatures, function (currentFeature) {
+                        if (!currentFeature || !currentFeature.geometry || !currentFeature.geometry.coordinates) return;
+                        const coords = currentFeature.geometry.coordinates; // [lon, lat]
+
+                        // Validate coords exist before accessing array elements
+                        if (coords.length >= 2 && coords[0] != null && coords[1] != null) {
+                            // Leaflet takes [lat, lon]
+                            const featureLatLng = L.latLng(coords[1], coords[0]);
+                            const featurePx = map.latLngToContainerPoint(featureLatLng);
+
+                            const distPx = Math.sqrt(Math.pow(clickPointPx.x - featurePx.x, 2) + Math.pow(clickPointPx.y - featurePx.y, 2));
+
+                            if (distPx < minScreenDist) {
+                                closestFeature = currentFeature;
+                                minScreenDist = distPx;
+                            }
+                        }
+                    });
+
+                    if (closestFeature) {
+                        const props = closestFeature.properties;
+                        const status = props.is_live ? "🔴 LIVE" : "⚫ DARK (AIS OFF)";
+                        shadowHitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
+                        shadowHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #3b82f6;">🚢 Shadow Fleet: ${props.name}</h4>`;
+                        shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>MMSI:</b> ${props.mmsi}</div>`;
+                        shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Type:</b> ${props.type}</div>`;
+                        shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Status:</b> ${status}</div>`;
+                        shadowHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 3px;"><b>Last Seen:</b> ${new Date(props.last_seen).toLocaleString()}</div>`;
+
+                        // Tracks are now rendered globally
+
+                        shadowHitsHTML += `</div>`;
+                    }
+                    if (shadowHitsHTML) popupHTML += shadowHitsHTML;
+                }
+            }
+
             // --- 3. Radar Russia Data Drill-down ---
             if (map.hasLayer(radarRussiaLayerGroup) && activeKMLGeoJSON['RadarRussia']) {
                 let radarHitsHTML = '';
@@ -1626,3 +1674,128 @@ document.getElementById('toggleSentinelFootprint')?.addEventListener('change', f
         map.removeLayer(layers.footprintLayer);
     }
 });
+
+// --- SHADOW FLEET LOGIC ---
+function getShadowFleetStyle(feature) {
+    let fillColor = '#3B82F6'; // Default Blue
+    let color = '#ffffff';     // Stroke color
+
+    if (!feature.properties.is_live) {
+        fillColor = '#6B7280'; // Gray for Dark/Offline vessels
+        color = '#9CA3AF';
+    } else if (feature.properties.type === 'Tanker') {
+        fillColor = '#EF4444'; // Red for live Tanker
+    } else if (feature.properties.type === 'Cargo') {
+        fillColor = '#F97316'; // Orange for live Cargo
+    }
+
+    return {
+        radius: 6,
+        fillColor: fillColor,
+        color: color,
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.8
+    };
+}
+
+let shadowFleetLayer = null;
+let shadowFleetTrackLayer = null;
+
+async function loadShadowFleetLayer() {
+    const statusDiv = document.getElementById('shadowFleetStatus');
+
+    try {
+        if (statusDiv) statusDiv.textContent = 'Fetching vessels...';
+
+        const response = await fetch('/api/shadow-fleet/vessels');
+        if (!response.ok) throw new Error("HTTP error " + response.status);
+        const geojsonData = await response.json();
+
+        // Remove existing layer if refreshing
+        if (shadowFleetLayer) {
+            map.removeLayer(shadowFleetLayer);
+        }
+
+        shadowFleetLayer = L.geoJSON(geojsonData, {
+            pointToLayer: function (feature, latlng) {
+                return L.circleMarker(latlng, getShadowFleetStyle(feature));
+            },
+            interactive: false // CRITICAL: Lets clicks pass through to the unified master map click event
+        });
+
+        // Globally expose the raw data so the unified click handler in map-core.js or map-layers.js can intersect it using Turf.js
+        window.currentShadowFleetFeatures = geojsonData;
+
+        // Load all tracks simultaneously
+        const trackResponse = await fetch('/api/shadow-fleet/tracks');
+        let trackGeoJSON = { type: "FeatureCollection", features: [] };
+        if (trackResponse.ok) {
+            trackGeoJSON = await trackResponse.json();
+        }
+
+        if (shadowFleetTrackLayer) {
+            map.removeLayer(shadowFleetTrackLayer);
+        }
+
+        shadowFleetTrackLayer = L.geoJSON(trackGeoJSON, {
+            style: {
+                color: '#EF4444',
+                weight: 2,
+                opacity: 0.6,
+                dashArray: '5, 5' // Dashed line for tracks
+            }
+        });
+
+        // Only add to map if the checkbox is checked, since this might be called on interval
+        const chk = document.getElementById('chk_shadowFleet');
+        if (chk && chk.checked) {
+            shadowFleetLayer.addTo(map);
+            shadowFleetTrackLayer.addTo(map); // Add tracks as well
+            if (statusDiv) {
+                const count = geojsonData.features ? geojsonData.features.length : 0;
+                statusDiv.textContent = `Tracking ${count} vessel(s)`;
+                statusDiv.style.color = '#10b981'; // Green to show success
+            }
+        }
+    } catch (error) {
+        console.error("Failed to load Shadow Fleet data:", error);
+        if (statusDiv) {
+            statusDiv.textContent = 'Error fetching vessels';
+            statusDiv.style.color = '#ef4444'; // Red to show error
+        }
+    }
+}
+
+async function loadVesselTrack(mmsi) {
+    try {
+        const response = await fetch(`/api/shadow-fleet/tracks/${mmsi}`);
+        if (!response.ok) throw new Error("HTTP error " + response.status);
+        const trackGeoJSON = await response.json();
+
+        if (shadowFleetTrackLayer) {
+            map.removeLayer(shadowFleetTrackLayer);
+        }
+
+        shadowFleetTrackLayer = L.geoJSON(trackGeoJSON, {
+            style: {
+                color: '#EF4444',
+                weight: 2,
+                opacity: 0.6,
+                dashArray: '5, 5' // Dashed line for tracks
+            }
+        });
+
+        shadowFleetTrackLayer.addTo(map);
+    } catch (error) {
+        console.error("Failed to load track:", error);
+    }
+}
+
+// Auto-refresh shadow fleet data
+setInterval(() => {
+    const chk = document.getElementById('chk_shadowFleet');
+    if (chk && chk.checked) {
+        loadShadowFleetLayer();
+    }
+}, 60000); // Poll every 60 seconds

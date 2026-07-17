@@ -9,11 +9,12 @@ import tempfile
 import os
 import secrets
 import re
-from datetime import datetime, timezone
+import sqlite3
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, UploadFile, File, Body, Form, HTTPException, Request, Response, Depends, status
+from fastapi import FastAPI, APIRouter, UploadFile, File, Body, Form, HTTPException, Request, Response, Depends, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import FileResponse, RedirectResponse
@@ -65,6 +66,41 @@ _radar_lock_file = None
 async def startup_event():
     global _radar_polling_task
     global _radar_lock_file
+
+    def init_vessels_db():
+        conn = sqlite3.connect(DATA_DIR / "vessels.db")
+        cursor = conn.cursor()
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS vessels (
+            mmsi TEXT PRIMARY KEY,
+            name TEXT,
+            ship_type TEXT,
+            heading REAL,
+            last_seen TEXT,
+            last_lon REAL,
+            last_lat REAL
+        )
+        ''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS tracks (
+            mmsi TEXT,
+            lon REAL,
+            lat REAL,
+            timestamp TEXT
+        )
+        ''')
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS shadow_fleet_targets (
+            mmsi TEXT PRIMARY KEY,
+            imo TEXT,
+            name TEXT,
+            flag TEXT
+        )
+        ''')
+        conn.commit()
+        conn.close()
+
+    init_vessels_db()
 
     lock_path = DATA_DIR / "radar_polling.lock"
     try:
@@ -1036,6 +1072,38 @@ class GeocodeOverride(BaseModel):
     osm_id: str
     english_name: str = ""
 
+@app.post("/api/admin/upload_shadow_fleet", dependencies=[Depends(verify_admin)])
+async def admin_upload_shadow_fleet(file: UploadFile = File(...)):
+    import json
+    try:
+        content = await file.read()
+        data = json.loads(content)
+
+        conn = sqlite3.connect(DATA_DIR / "vessels.db")
+        cursor = conn.cursor()
+
+        # We assume the user's data is a dict like {"1": {"mmsi": "...", "imo": "...", "name": "...", "flag": "..."}, ...}
+        for key, vessel_info in data.items():
+            mmsi = vessel_info.get("mmsi")
+            if mmsi:
+                cursor.execute('''
+                    INSERT INTO shadow_fleet_targets (mmsi, imo, name, flag)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(mmsi) DO UPDATE SET
+                        imo=excluded.imo,
+                        name=excluded.name,
+                        flag=excluded.flag
+                ''', (str(mmsi), vessel_info.get("imo", ""), vessel_info.get("name", ""), vessel_info.get("flag", "")))
+
+        conn.commit()
+        conn.close()
+
+        return {"status": "success", "message": "Shadow fleet targets updated"}
+    except Exception as e:
+        logger.error(f"Error processing shadow fleet targets: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/admin/geocode_override", dependencies=[Depends(verify_admin)])
 async def admin_geocode_override(override: GeocodeOverride):
     cache_file = DATA_DIR / "geocode_cache.json"
@@ -1120,6 +1188,231 @@ async def serve_maplibre():
 @app.get("/cesium")
 async def serve_cesium():
     return FileResponse("static/cesium.html")
+
+# Shadow Fleet endpoints
+shadow_fleet_router = APIRouter(prefix="/api/shadow-fleet", tags=["Shadow Fleet"])
+
+@shadow_fleet_router.get("/vessels")
+def get_vessels():
+    """Returns all tracked vessels as a GeoJSON FeatureCollection."""
+    conn = sqlite3.connect(DATA_DIR / "vessels.db")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT v.*, t.name as target_name
+        FROM vessels v
+        LEFT JOIN shadow_fleet_targets t ON v.mmsi = t.mmsi
+    """)
+    rows = cursor.fetchall()
+
+    features = []
+    now = datetime.now(timezone.utc)
+
+    for row in rows:
+        # Check if vessel has gone dark (no signal for 3 hours)
+        last_seen = datetime.fromisoformat(row['last_seen']).replace(tzinfo=timezone.utc)
+        is_live = (now - last_seen) < timedelta(hours=3)
+
+        feature = {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [row['last_lon'], row['last_lat']]
+            },
+            "properties": {
+                "mmsi": row['mmsi'],
+                "name": row['target_name'] or row['name'] or "Unknown",
+                "type": row['ship_type'] or "Unknown",
+                "heading": row['heading'],
+                "last_seen": row['last_seen'],
+                "is_live": is_live
+            }
+        }
+        features.append(feature)
+
+    conn.close()
+    return {"type": "FeatureCollection", "features": features}
+
+def haversine_distance(lon1, lat1, lon2, lat2):
+    """Calculate the great circle distance in kilometers between two points on the earth."""
+    # Convert decimal degrees to radians
+    lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
+
+    # Haversine formula
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    r = 6371 # Radius of earth in kilometers. Use 3956 for miles. Determines return value units.
+    return c * r
+
+SPOOFING_ZONES = [
+    {"lat": 54.0956, "lon": 38.2321},
+    {"lat": 54.1749, "lon": 33.2728}
+]
+
+def is_in_spoofing_zone(lon, lat):
+    for zone in SPOOFING_ZONES:
+        if haversine_distance(zone["lon"], zone["lat"], lon, lat) <= 10.0:
+            return True
+    return False
+
+@shadow_fleet_router.get("/tracks/{mmsi}")
+def get_vessel_track(mmsi: str):
+    """Returns the historical track of a specific vessel as a GeoJSON LineString."""
+    conn = sqlite3.connect(DATA_DIR / "vessels.db")
+    cursor = conn.cursor()
+
+    # Get last 500 points to keep payload small
+    cursor.execute("SELECT lon, lat, timestamp FROM tracks WHERE mmsi = ? ORDER BY timestamp DESC LIMIT 500", (mmsi,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    if not rows:
+        return {"error": "No tracks found"}
+
+    # Reverse to chronological order
+    rows = list(reversed(rows))
+
+    coordinates = []
+    last_lon, last_lat, last_time = None, None, None
+
+    reject_count = 0
+
+    for lon, lat, timestamp in rows:
+        try:
+            if is_in_spoofing_zone(lon, lat):
+                continue
+
+            current_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            if current_time.tzinfo is None:
+                current_time = current_time.replace(tzinfo=timezone.utc)
+
+            if last_lon is not None and last_lat is not None and last_time is not None:
+                dist_km = haversine_distance(last_lon, last_lat, lon, lat)
+                time_diff_hours = (current_time - last_time).total_seconds() / 3600.0
+
+                is_valid = True
+                if time_diff_hours > 0:
+                    speed_kmh = dist_km / time_diff_hours
+                    if speed_kmh > 80 and dist_km > 20:
+                        is_valid = False
+                elif dist_km > 5:
+                    is_valid = False
+
+                if not is_valid:
+                    reject_count += 1
+                    if reject_count > 3:
+                        # Recover from being stuck on an outlier
+                        reject_count = 0
+                    else:
+                        continue # Skip this anomalous point
+
+            coordinates.append([lon, lat])
+            last_lon, last_lat, last_time = lon, lat, current_time
+            reject_count = 0
+
+        except Exception as e:
+            logger.error(f"Error parsing track point: {e}")
+            # On parse error, fallback
+            coordinates.append([lon, lat])
+            last_lon, last_lat = lon, lat
+
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "LineString",
+            "coordinates": coordinates
+        },
+        "properties": {"mmsi": mmsi}
+    }
+
+
+@shadow_fleet_router.get("/tracks")
+def get_all_vessel_tracks():
+    """Returns the historical tracks of all vessels as a GeoJSON FeatureCollection."""
+    conn = sqlite3.connect(DATA_DIR / "vessels.db")
+    cursor = conn.cursor()
+
+    # Use window function to grab the last 100 points per MMSI efficiently in one query
+    cursor.execute('''
+        WITH RankedTracks AS (
+            SELECT mmsi, lon, lat, timestamp,
+                   ROW_NUMBER() OVER (PARTITION BY mmsi ORDER BY timestamp DESC) as rn
+            FROM tracks
+        )
+        SELECT mmsi, lon, lat, timestamp FROM RankedTracks WHERE rn <= 100 ORDER BY mmsi, timestamp ASC
+    ''')
+    rows = cursor.fetchall()
+
+    # Group by MMSI
+    tracks_by_mmsi = {}
+    for row in rows:
+        mmsi = row[0]
+        coord_data = {"lon": row[1], "lat": row[2], "timestamp": row[3]}
+        if mmsi not in tracks_by_mmsi:
+            tracks_by_mmsi[mmsi] = []
+        tracks_by_mmsi[mmsi].append(coord_data)
+
+    features = []
+    for mmsi, points in tracks_by_mmsi.items():
+        coordinates = []
+        last_lon, last_lat, last_time = None, None, None
+
+        reject_count = 0
+        for pt in points:
+            try:
+                lon, lat, timestamp = pt["lon"], pt["lat"], pt["timestamp"]
+                if is_in_spoofing_zone(lon, lat):
+                    continue
+                current_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                if current_time.tzinfo is None:
+                    current_time = current_time.replace(tzinfo=timezone.utc)
+
+                if last_lon is not None and last_lat is not None and last_time is not None:
+                    dist_km = haversine_distance(last_lon, last_lat, lon, lat)
+                    time_diff_hours = (current_time - last_time).total_seconds() / 3600.0
+
+                    is_valid = True
+                    if time_diff_hours > 0:
+                        speed_kmh = dist_km / time_diff_hours
+                        if speed_kmh > 80 and dist_km > 20:
+                            is_valid = False
+                    elif dist_km > 5:
+                        is_valid = False
+
+                    if not is_valid:
+                        reject_count += 1
+                        if reject_count > 3:
+                            reject_count = 0
+                        else:
+                            continue
+
+                coordinates.append([lon, lat])
+                last_lon, last_lat, last_time = lon, lat, current_time
+                reject_count = 0
+
+            except Exception as e:
+                logger.error(f"Error parsing track point in get_tracks: {e}")
+                coordinates.append([pt["lon"], pt["lat"]])
+                last_lon, last_lat = pt["lon"], pt["lat"]
+
+        if len(coordinates) > 1: # Need at least 2 points for a line
+            features.append({
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": coordinates
+                },
+                "properties": {"mmsi": mmsi}
+            })
+
+    conn.close()
+
+    return {"type": "FeatureCollection", "features": features}
+
+app.include_router(shadow_fleet_router)
 
 # Serve any other static assets if needed
 app.mount("/", StaticFiles(directory="static"), name="static")

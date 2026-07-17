@@ -13,3 +13,4 @@ cachetools
 requests
 anyio
 httpx
+websockets==12.0

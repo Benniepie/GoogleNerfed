@@ -22,6 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the backend and frontend files
 COPY main.py .
 COPY geoprocessing.py .
+COPY ais_worker.py .
 COPY static/ ./static/
 COPY admin_assets/ ./admin_assets/
 # Ensure the data directory exists

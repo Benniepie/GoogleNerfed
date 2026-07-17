@@ -12,6 +12,15 @@ services:
       # This is the folder you can drop your initial KML/KMZ files into.
       - ./data:/app/data
     restart: unless-stopped
+
+  ais-worker:
+    build: .
+    command: python ais_worker.py
+    environment:
+      - AIS_API_KEY=${AIS_API_KEY}
+    volumes:
+      - ./data:/app/data
+    restart: always
     
 
 

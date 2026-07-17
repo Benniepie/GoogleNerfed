@@ -572,6 +572,14 @@
                 <!-- A silent data URI audio element to prevent errors before actual sound is played -->
                 <audio id="radarAudioPlayer" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA" preload="auto"></audio>
             </div>
+
+            <div class="layer-item" style="border-left: 3px solid #3b82f6; flex-wrap: wrap; margin-top: 20px;">
+                <input type="checkbox" id="chk_shadowFleet" onchange="if(this.checked){loadShadowFleetLayer();}else{if(shadowFleetLayer)map.removeLayer(shadowFleetLayer);if(shadowFleetTrackLayer)map.removeLayer(shadowFleetTrackLayer);}">
+                <label for="chk_shadowFleet">🚢 Shadow Fleet Vessels</label>
+            </div>
+            <div class="layer-details" style="font-size: 0.8rem; color: #94a3b8; margin-top: 5px; margin-bottom: 15px;">
+                <span id="shadowFleetStatus">Tracking off</span>
+            </div>
         </div>
 
         <div class="section-header" onclick="toggleSection(this)">
@@ -649,6 +657,7 @@
                         <button type="submit" id="uploadBtn" class="primary-btn">Upload Data</button>
                         <div id="statusMsg" class="status-msg"></div>
                     </form>
+
                     <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; margin-top: 10px; background: #8b5cf6;">🤖 Automate Update</button>
                     <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-top: 10px; background: #475569;">⬇️ Export Data</button>
                 </div>            
