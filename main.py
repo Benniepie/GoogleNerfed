@@ -1224,6 +1224,17 @@ def haversine_distance(lon1, lat1, lon2, lat2):
     r = 6371 # Radius of earth in kilometers. Use 3956 for miles. Determines return value units.
     return c * r
 
+SPOOFING_ZONES = [
+    {"lat": 54.0956, "lon": 38.2321},
+    {"lat": 54.1749, "lon": 33.2728}
+]
+
+def is_in_spoofing_zone(lon, lat):
+    for zone in SPOOFING_ZONES:
+        if haversine_distance(zone["lon"], zone["lat"], lon, lat) <= 10.0:
+            return True
+    return False
+
 @shadow_fleet_router.get("/tracks/{mmsi}")
 def get_vessel_track(mmsi: str):
     """Returns the historical track of a specific vessel as a GeoJSON LineString."""
@@ -1248,6 +1259,9 @@ def get_vessel_track(mmsi: str):
 
     for lon, lat, timestamp in rows:
         try:
+            if is_in_spoofing_zone(lon, lat):
+                continue
+
             current_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
             if current_time.tzinfo is None:
                 current_time = current_time.replace(tzinfo=timezone.utc)
@@ -1276,7 +1290,8 @@ def get_vessel_track(mmsi: str):
             last_lon, last_lat, last_time = lon, lat, current_time
             reject_count = 0
 
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error parsing track point: {e}")
             # On parse error, fallback
             coordinates.append([lon, lat])
             last_lon, last_lat = lon, lat
@@ -1326,6 +1341,8 @@ def get_all_vessel_tracks():
         for pt in points:
             try:
                 lon, lat, timestamp = pt["lon"], pt["lat"], pt["timestamp"]
+                if is_in_spoofing_zone(lon, lat):
+                    continue
                 current_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
                 if current_time.tzinfo is None:
                     current_time = current_time.replace(tzinfo=timezone.utc)
@@ -1353,7 +1370,8 @@ def get_all_vessel_tracks():
                 last_lon, last_lat, last_time = lon, lat, current_time
                 reject_count = 0
 
-            except Exception:
+            except Exception as e:
+                logger.error(f"Error parsing track point in get_tracks: {e}")
                 coordinates.append([pt["lon"], pt["lat"]])
                 last_lon, last_lat = pt["lon"], pt["lat"]
 

@@ -60,6 +60,17 @@ def haversine_distance(lon1, lat1, lon2, lat2):
     r = 6371 # Radius of earth in kilometers
     return c * r
 
+SPOOFING_ZONES = [
+    {"lat": 54.0956, "lon": 38.2321},
+    {"lat": 54.1749, "lon": 33.2728}
+]
+
+def is_in_spoofing_zone(lon, lat):
+    for zone in SPOOFING_ZONES:
+        if haversine_distance(zone["lon"], zone["lat"], lon, lat) <= 10.0:
+            return True
+    return False
+
 async def connect_ais():
     print("Connecting to AISStream...")
     conn = init_db()
@@ -128,6 +139,8 @@ async def connect_ais():
                     heading = msg["TrueHeading"]
 
                     if lat is not None and lon is not None and lat <= 90.0 and lon <= 180.0:
+                        if is_in_spoofing_zone(lon, lat):
+                            continue
 
                         is_valid = True
                         if mmsi in last_positions:
