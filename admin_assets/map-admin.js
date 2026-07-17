@@ -5,44 +5,48 @@
 
 // Add the Settings Button to the Admin Panel
 document.getElementById('admin-panel-container').innerHTML = `
-    <div class="section-header " onclick="toggleSection(this)">
-        Map Admin <span class="toggle-icon">▼</span>
+    <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; background: #8b5cf6; margin-bottom: 10px;">🤖 Automate Map Update</button>
+    <button class="primary-btn" onclick="window.openSettingsModal()" style="width: 100%; background: #0ea5e9; margin-bottom: 10px;">⚙️ Map Settings</button>
+
+    <div class="section-header collapsed" onclick="toggleSection(this)">
+        Static Data Layers Admin <span class="toggle-icon">▼</span>
     </div>
-    <div class="section-content  upload-section" style="border-top: none; padding-top: 10px;">
+    <div class="section-content collapsed upload-section" style="border-top: none; padding-top: 10px;">
         <form id="uploadForm">
             <input type="file" id="kmlFile" accept=".kml,.kmz" multiple required />
             <button type="submit" id="uploadBtn" class="primary-btn">Upload KML / KMZ</button>
             <div id="statusMsg" class="status-msg">Upload complete!</div>
         </form>
-        <form id="shadowFleetForm" style="margin-top: 15px; margin-bottom: 15px;">
+        <button class="primary-btn" onclick="exportKML()" style="width: 100%; background: var(--border-color); margin-top: 10px;">⬇️ Export Displayed Data</button>
+    </div>
+
+    <div class="section-header collapsed" onclick="toggleSection(this)">
+        Live Data Layers Admin <span class="toggle-icon">▼</span>
+    </div>
+    <div class="section-content collapsed upload-section" style="border-top: none; padding-top: 10px;">
+        <form id="shadowFleetForm" style="margin-bottom: 15px;">
             <label for="shadowFile" style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 5px;">Shadow Fleet JSON</label>
             <input type="file" id="shadowFile" accept=".json" required style="width: 100%; margin-bottom: 10px;" />
             <button type="submit" id="shadowBtn" class="primary-btn" style="width: 100%; background: #eab308; color: #0f172a;">Upload Shadow Fleet Target List</button>
             <div id="shadowStatusMsg" class="status-msg" style="display: none; margin-top: 10px; font-size: 0.85rem; color: #10b981;">Upload complete!</div>
         </form>
-        <button class="primary-btn" onclick="openAutomateModal()" style="width: 100%; background: #8b5cf6;">🤖 Automate Map Update</button>
-        <button class="primary-btn" onclick="window.openSettingsModal()" style="width: 100%; background: #0ea5e9;">⚙️ Map Settings</button>
-                        <hr style="border-top: 1px solid var(--border-color); margin: 20px 0;">
+
+        <hr style="border-top: 1px solid var(--border-color); margin: 20px 0;">
         <h3 style="margin-top:0;">Override Geolocation & Translation</h3>
         <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px;">Fix bad geocoding by forcing an exact OpenStreetMap ID (e.g., <b>R72180</b> for Kursk Oblast) and fixing bad translations. Leave ID blank to delete cache and retry.</p>
         <form id="overrideForm" style="display: flex; flex-direction: column; gap: 10px;">
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8;">Location Name (exact Russian text from alert):</label>
-                <input type="text" id="overrideLocationName" required placeholder="e.g. Орловский район" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+                <input type="text" id="overrideLocationName" required placeholder="Location Name (e.g. Орловский район)" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8;">OSM ID (from OpenStreetMap, optional):</label>
-                <input type="text" id="overrideOsmId" placeholder="e.g. R140291" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+                <input type="text" id="overrideOsmId" placeholder="OSM ID (e.g. R140291, optional)" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
             </div>
             <div>
-                <label style="font-size: 0.85rem; color: #94a3b8;">English Translation Override (optional):</label>
-                <input type="text" id="overrideEnglishName" placeholder="e.g. Oryol District" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
+                <input type="text" id="overrideEnglishName" placeholder="English Translation Override (optional)" style="width: 100%; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
             </div>
             <button type="submit" id="overrideBtn" class="primary-btn" style="width: 100%; background: #10b981;">Save Override</button>
             <div id="overrideStatusMsg" style="display: none; font-size: 0.85rem; color: #10b981; margin-top: 5px;"></div>
         </form>
-
-        <button class="primary-btn" onclick="exportKML()" style="width: 100%; background: var(--border-color);">⬇️ Export Displayed Data</button>
     </div>
 `;
 
