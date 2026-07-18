@@ -1804,10 +1804,27 @@ async function loadShadowFleetLayer() {
             shadowFleetLayer.addTo(map);
             shadowFleetTrackLayer.addTo(map); // Add tracks as well
             if (statusDiv) {
-                const count = geojsonData.features ? geojsonData.features.length : 0;
-                statusDiv.textContent = `Tracking ${count} vessel(s)`;
+                let sfCount = 0;
+                let nonSfCount = 0;
+                if (geojsonData.features) {
+                    geojsonData.features.forEach(f => {
+                        if (f.properties.is_shadow_fleet) {
+                            sfCount++;
+                        } else {
+                            nonSfCount++;
+                        }
+                    });
+                }
+
+                let statusText = [];
+                if (showShadow) statusText.push(`${sfCount} Shadow Fleet`);
+                if (showNonShadow) statusText.push(`${nonSfCount} Non-Shadow Fleet`);
+
+                statusDiv.textContent = `Tracking: ${statusText.join(', ')}`;
                 statusDiv.style.color = '#10b981'; // Green to show success
             }
+        } else {
+            if (statusDiv) statusDiv.textContent = 'Tracking off';
         }
     } catch (error) {
         console.error("Failed to load Shadow Fleet data:", error);
@@ -1843,10 +1860,34 @@ async function loadVesselTrack(mmsi) {
     }
 }
 
+let nonShadowAreaLayer = null;
+
+function toggleNonShadowArea() {
+    const chk = document.getElementById('chk_nonShadowArea');
+    if (chk && chk.checked) {
+        if (!nonShadowAreaLayer) {
+            // Lat: 41.6565 to 54.3165, Lng: 29.7729 to 53.5474
+            const bounds = [[41.6565, 29.7729], [54.3165, 53.5474]];
+            nonShadowAreaLayer = L.rectangle(bounds, {
+                color: "#22c55e",
+                weight: 3,
+                fillOpacity: 0,
+                interactive: false
+            });
+        }
+        nonShadowAreaLayer.addTo(map);
+    } else {
+        if (nonShadowAreaLayer) {
+            map.removeLayer(nonShadowAreaLayer);
+        }
+    }
+}
+
 // Auto-refresh shadow fleet data
 setInterval(() => {
     const chk = document.getElementById('chk_shadowFleet');
-    if (chk && chk.checked) {
+    const chkNon = document.getElementById('chk_nonShadowFleet');
+    if ((chk && chk.checked) || (chkNon && chkNon.checked)) {
         loadShadowFleetLayer();
     }
 }, 60000); // Poll every 60 seconds
