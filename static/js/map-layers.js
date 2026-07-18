@@ -610,9 +610,41 @@ const activeKMLGeoJSON = {};
                 }
             });
 
+            const locationCentroids = new Map();
+            latestStatePerLoc.forEach((feature, locName) => {
+                try {
+                    locationCentroids.set(locName, turf.centroid(feature));
+                } catch (e) {
+                    if (feature.geometry && feature.geometry.type === 'Point') {
+                        locationCentroids.set(locName, turf.point(feature.geometry.coordinates));
+                    }
+                }
+            });
+
+            const effectiveLatestStatePerLoc = new Map();
+            locationCentroids.forEach((pt, locName) => {
+                let effectiveFeature = latestStatePerLoc.get(locName);
+                let maxTime = new Date(effectiveFeature.properties.time);
+
+                latestStatePerLoc.forEach((candidateFeature, candidateName) => {
+                    if (candidateName !== locName && pt && candidateFeature.geometry && (candidateFeature.geometry.type === 'Polygon' || candidateFeature.geometry.type === 'MultiPolygon')) {
+                        try {
+                            if (turf.booleanPointInPolygon(pt, candidateFeature)) {
+                                let candidateTime = new Date(candidateFeature.properties.time);
+                                if (candidateTime > maxTime) {
+                                    maxTime = candidateTime;
+                                    effectiveFeature = candidateFeature;
+                                }
+                            }
+                        } catch(e) {}
+                    }
+                });
+                effectiveLatestStatePerLoc.set(locName, effectiveFeature);
+            });
+
             radarAllFeatures.forEach(feature => {
                 const locName = feature.properties.name;
-                const latestFeature = latestStatePerLoc.get(locName);
+                const latestFeature = effectiveLatestStatePerLoc.get(locName) || latestStatePerLoc.get(locName);
                 const latestProps = latestFeature.properties;
                 const latestAgeMinutes = (now - new Date(latestProps.time)) / (1000 * 60);
 
@@ -644,8 +676,9 @@ const activeKMLGeoJSON = {};
                 const timeStr = props.time;
                 const alertTime = new Date(timeStr);
                 const ageSeconds = (now - alertTime) / 1000;
-                const ageMinutes = ageSeconds / 60;
-                const ageHours = ageMinutes / 60;
+
+                // Color is determined purely by the effective latest feature's time
+                const latestAgeHours = latestAgeMinutes / 60;
 
                 let fillColor = '#ef4444'; // Red default
                 let fillOpacity = 0.4; // Base opacity for red/orange/yellow
@@ -656,8 +689,8 @@ const activeKMLGeoJSON = {};
                 // If latest is clear or stale, opacity should be 0.1 so it doesn't clutter.
                 // If active, it stays 0.4 so stacked ones look thicker.
 
-                if (props.status === 'over') {
-                    if (ageHours > 1) {
+                if (latestProps.status === 'over') {
+                    if (latestAgeHours > 1) {
                         fillColor = '#64748b'; // Darker grey so it's visible on light maps
                         fillOpacity = 0.3; // Increased opacity for single stale item
                         isGrey = true;
@@ -666,12 +699,12 @@ const activeKMLGeoJSON = {};
                         fillOpacity = 0.3; // Increased opacity for single clear item
                     }
                 } else {
-                    if (ageMinutes <= 20) {
+                    if (latestAgeMinutes <= 20) {
                         fillColor = '#ef4444'; // Red
                         animationClass = 'radar-pulse';
-                    } else if (ageMinutes <= 40) {
+                    } else if (latestAgeMinutes <= 40) {
                         fillColor = '#f97316'; // Orange
-                    } else if (ageMinutes <= 60) {
+                    } else if (latestAgeMinutes <= 60) {
                         fillColor = '#eab308'; // Yellow
                     } else {
                         fillColor = '#64748b'; // Darker grey
@@ -680,7 +713,7 @@ const activeKMLGeoJSON = {};
                     }
                 }
 
-                // Add 60s flash for brand new alerts
+                // Add 60s flash for brand new alerts, using the feature's *own* timestamp
                 if (ageSeconds <= 60) {
                     borderClass = 'radar-flash-path';
                     animationClass += ' radar-flash-anim';
