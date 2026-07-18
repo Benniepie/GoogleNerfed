@@ -24,3 +24,12 @@ services:
     
 
 
+
+  telegram-userbot:
+    build: .
+    command: python telegram_userbot_scraper.py
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    restart: always

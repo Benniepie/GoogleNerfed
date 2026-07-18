@@ -1,0 +1,99 @@
+import asyncio
+import json
+import os
+from datetime import datetime
+from telethon import TelegramClient, events
+from telegram_config import CHANNEL_CONFIGS
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Make sure API_ID and API_HASH are in your .env file
+API_ID = int(os.getenv("TELEGRAM_API_ID", 0))
+API_HASH = os.getenv("TELEGRAM_API_HASH", "")
+OUTPUT_JSON = 'data/telegram_incidents.json'
+
+if not API_ID or not API_HASH:
+    print("❌ ERROR: TELEGRAM_API_ID or TELEGRAM_API_HASH is missing from environment.")
+    exit(1)
+
+# The session file stores the login state. Keep this out of GitHub!
+client = TelegramClient('mapping_userbot', API_ID, API_HASH)
+
+def save_incident_to_json(data):
+    """Safely append the extracted incident to our JSON file."""
+    os.makedirs(os.path.dirname(OUTPUT_JSON), exist_ok=True)
+
+    records = {}
+    if os.path.exists(OUTPUT_JSON):
+        try:
+            with open(OUTPUT_JSON, 'r', encoding='utf-8') as f:
+                records = json.load(f)
+        except json.JSONDecodeError:
+            pass
+
+    # Use a combined key of channel + msg_id to ensure uniqueness
+    record_id = f"{data['channel']}_{data['msg_id']}"
+    records[record_id] = data
+
+    # Atomic write to prevent corruption
+    temp_file = f"{OUTPUT_JSON}.tmp"
+    with open(temp_file, 'w', encoding='utf-8') as f:
+        json.dump(records, f, ensure_ascii=False, indent=2)
+    os.replace(temp_file, OUTPUT_JSON)
+
+    print(f"✅ Saved incident {record_id} to JSON.")
+
+# Listen to all channels defined in our config
+target_channels = list(CHANNEL_CONFIGS.keys())
+
+@client.on(events.NewMessage(chats=target_channels))
+async def handle_new_message(event):
+    """Triggers instantly when a watched channel posts."""
+    message = event.message
+    text = message.message or ""
+
+    # Get the channel name (e.g., 'znua_live')
+    chat = await event.get_chat()
+    channel_username = chat.username
+
+    if channel_username not in CHANNEL_CONFIGS:
+        return
+
+    config = CHANNEL_CONFIGS[channel_username]
+
+    for pattern in config["patterns"]:
+        match = pattern.search(text)
+        if match:
+            location_text = match.group(config["location_group"]).strip()
+            description = match.group(config["description_group"]).strip()
+
+            print(f"🔥 MATCH in {channel_username}! Location: {location_text}")
+
+            # Construct the iframe embed URL for the Leaflet popup
+            embed_url = f"https://t.me/{channel_username}/{message.id}?embed=1"
+
+            incident_data = {
+                "channel": channel_username,
+                "msg_id": message.id,
+                "time": message.date.isoformat(),
+                "location_text": location_text,
+                "description": description,
+                "embed_url": embed_url,
+                "icon": config.get("icon", "📍"),
+                "country_restrict": config.get("country_restrict", "ru,ua")
+            }
+
+            save_incident_to_json(incident_data)
+            break # Stop checking patterns if we found a match
+
+async def main():
+    print("Starting Telegram Incident Userbot...")
+    # First run will prompt for phone number in the terminal
+    await client.start()
+    print(f"Listening to: {', '.join(target_channels)}")
+    await client.run_until_disconnected()
+
+if __name__ == '__main__':
+    asyncio.run(main())

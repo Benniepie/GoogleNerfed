@@ -533,10 +533,22 @@ const activeKMLGeoJSON = {};
                     url += `?since=${encodeURIComponent(radarLastFetchTime)}`;
                 }
 
-                const res = await fetch(url);
+                // Fetch both sources
+                const [res, incidentsRes] = await Promise.all([
+                    fetch(url),
+                    fetch('/api/telegram-incidents').catch(e => {
+                        console.error('Failed to fetch telegram incidents', e);
+                        return { ok: true, json: async () => ({ features: [] }) };
+                    })
+                ]);
+
                 if (!res.ok) throw new Error("API error");
 
                 const data = await res.json();
+                const incidentsData = await incidentsRes.json().catch(() => ({ features: [] }));
+
+                // Combine features
+                data.features = [...(data.features || []), ...(incidentsData.features || [])];
 
                 let newAlertsFound = false;
                 let maxTime = radarLastFetchTime;
@@ -1362,6 +1374,7 @@ map.on('click', async function(e) {
                                     <b>Status:</b> ${props.status === 'over' ? '<span style="color:#22c55e;">Over</span>' : '<span style="color:#ef4444;">Active</span>'}<br>
                                     <b>Time:</b> ${timeStr}
                                 </div>
+                                ${props.embed_url ? `<div style="margin-top: 10px;"><iframe src="${props.embed_url}" width="100%" height="400" frameborder="0" scrolling="yes" style="background: white; border-radius: 4px;"></iframe></div>` : ''}
                             </div>
                         `;
                     }

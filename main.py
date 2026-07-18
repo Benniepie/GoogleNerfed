@@ -534,7 +534,7 @@ async def fetch_and_cache_radar_russia():
     os.replace(temp_file, cache_file)
 
 
-async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = None) -> Optional[dict]:
+async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = None, restrict_country: str = "ru,ua") -> Optional[dict]:
     cache_file = DATA_DIR / "geocode_cache.json"
     cache = cache_dict if cache_dict is not None else {}
     if cache_dict is None and cache_file.exists():
@@ -550,7 +550,7 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
         return res if "empty" not in res else None
 
     # Use extremely aggressive simplification (0.05) to reduce polygon size
-    # and restrict responses to Russia and Ukraine only (countrycodes=ru,ua) to prevent huge global multi-polygons
+    # and restrict responses to Russia and Ukraine only (countrycodes={restrict_country}) to prevent huge global multi-polygons
 
     # We pass accept-language=en,ru so that Nominatim tries to return the English name but understands the raw Russian query
 
@@ -561,7 +561,7 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
     if "," not in lower_loc and any(x in lower_loc for x in ["область", "республика", "край", "округ"]):
         feature_type = "&featureType=state"
 
-    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005&countrycodes=ru,ua&accept-language=en,ru{feature_type}"
+    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005&countrycodes={restrict_country}&accept-language=en,ru{feature_type}"
     headers = {'User-Agent': 'ATPGeopolitics/1.0'}
     try:
         resp = await http_client.get(url, headers=headers, timeout=10.0)
@@ -664,6 +664,70 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
     return {"type": "FeatureCollection", "features": features}
 
 # ------------------------------
+
+
+@app.get("/api/telegram-incidents")
+async def get_telegram_incidents():
+    """Reads the userbot output, geocodes it, and serves GeoJSON with iframe embeds."""
+    incidents_file = DATA_DIR / "telegram_incidents.json"
+    incidents = {}
+    if incidents_file.exists():
+        try:
+            import json
+            with open(incidents_file, "r", encoding="utf-8") as f:
+                incidents = json.load(f)
+        except Exception as e:
+            logger.error(f"Error reading incidents cache: {e}")
+            return {"type": "FeatureCollection", "features": []}
+
+    features = []
+
+    # Load cache once per API request
+    geocode_cache = {}
+    gc_file = DATA_DIR / "geocode_cache.json"
+    if gc_file.exists():
+        try:
+            with open(gc_file, "r", encoding="utf-8") as f:
+                import json
+                geocode_cache = json.load(f)
+        except:
+            pass
+
+    for record_id, data in incidents.items():
+        # Geocode using the specific country restriction requested in the config
+        geo_data = await get_cached_geocode(
+            data["location_text"],
+            cache_dict=geocode_cache,
+            restrict_country=data.get("country_restrict", "ru,ua")
+        )
+
+        if geo_data and "geojson" in geo_data:
+            display_name = geo_data.get("display_name", "")
+            english_name = geo_data.get("name", "")
+
+            if display_name and "," in display_name:
+                english_name = display_name.split(",")[0].strip()
+            elif not english_name:
+                english_name = data["location_text"]
+
+            feature = {
+                "type": "Feature",
+                "properties": {
+                    "id": record_id,
+                    "time": data["time"],
+                    "name": english_name,
+                    "raw_name": data["location_text"],
+                    "threat": data["description"],
+                    "status": "active",
+                    "icon": data["icon"],
+                    "embed_url": data["embed_url"]  # Serve the iframe URL to Leaflet
+                },
+                "geometry": geo_data["geojson"]
+            }
+            features.append(feature)
+
+    return {"type": "FeatureCollection", "features": features}
+
 
 @app.get("/api/layers")
 async def get_layers():
