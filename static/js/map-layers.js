@@ -1322,6 +1322,7 @@ map.on('click', async function(e) {
             // --- 3. Radar Russia Data Drill-down ---
             if (map.hasLayer(radarRussiaLayerGroup) && activeKMLGeoJSON['RadarRussia']) {
                 let radarHitsHTML = '';
+                const radarHits = [];
                 turf.featureEach(activeKMLGeoJSON['RadarRussia'], function (currentFeature) {
                     let isHit = false;
 
@@ -1350,8 +1351,33 @@ map.on('click', async function(e) {
                     }
 
                     if (isHit) {
+                        radarHits.push(currentFeature);
+                    }
+                });
+
+                if (radarHits.length > 0) {
+                    const liveCount = radarHits.filter(f => f.properties.status !== 'over').length;
+
+                    radarHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 4px;"><b>${liveCount} live air alert${liveCount === 1 ? '' : 's'} received in the last 24 hours.</b></div>`;
+
+                    const now = new Date();
+                    radarHits.forEach(currentFeature => {
                         const props = currentFeature.properties;
                         const timeStr = new Date(props.time).toLocaleString('en-GB');
+
+                        const diffMs = now - new Date(props.time);
+                        const diffMins = Math.floor(diffMs / 60000);
+                        const hours = Math.floor(diffMins / 60);
+                        const mins = diffMins % 60;
+                        let relativeTime = '';
+                        if (hours > 0) {
+                            relativeTime = `(received ${hours} hour${hours > 1 ? 's' : ''}${mins > 0 ? ` and ${mins} minute${mins > 1 ? 's' : ''}` : ''} ago)`;
+                        } else if (mins > 0) {
+                            relativeTime = `(received ${mins} minute${mins > 1 ? 's' : ''} ago)`;
+                        } else {
+                            relativeTime = `(received just now)`;
+                        }
+
                         radarHitsHTML += `
                             <div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">
                                 <h4 style="margin: 0 0 4px 0; color: #3b82f6;">🚨 Air Alert</h4>
@@ -1360,12 +1386,13 @@ map.on('click', async function(e) {
                                     <b>Nominatim Query:</b> ${props.raw_name}<br>
                                     <b>Threat:</b> ${props.threat}<br>
                                     <b>Status:</b> ${props.status === 'over' ? '<span style="color:#22c55e;">Over</span>' : '<span style="color:#ef4444;">Active</span>'}<br>
-                                    <b>Time:</b> ${timeStr}
+                                    <b>Time:</b> ${timeStr} ${relativeTime}
                                 </div>
                             </div>
                         `;
-                    }
-                });
+                    });
+                }
+
                 if (radarHitsHTML) popupHTML += radarHitsHTML;
             }
 
