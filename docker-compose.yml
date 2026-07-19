@@ -27,7 +27,7 @@ services:
 
   telegram-userbot:
     build: .
-    command: python telegram_userbot_scraper.py
+    command: python -u telegram_userbot_scraper.py
     env_file:
       - .env
     volumes:
