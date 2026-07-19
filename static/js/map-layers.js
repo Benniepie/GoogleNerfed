@@ -1358,7 +1358,7 @@ map.on('click', async function(e) {
                 if (radarHits.length > 0) {
                     const liveCount = radarHits.filter(f => f.properties.status !== 'over').length;
 
-                    radarHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 4px;"><b>${liveCount} live air alert${liveCount === 1 ? '' : 's'} received in the last 24 hours.</b></div>`;
+                    radarHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 4px; color: #ef4444;"><b>${liveCount} live alert${liveCount === 1 ? '' : 's'} received (24 hours)</b></div>`;
 
                     const now = new Date();
                     radarHits.forEach(currentFeature => {
@@ -1371,11 +1371,11 @@ map.on('click', async function(e) {
                         const mins = diffMins % 60;
                         let relativeTime = '';
                         if (hours > 0) {
-                            relativeTime = `(received ${hours} hour${hours > 1 ? 's' : ''}${mins > 0 ? ` and ${mins} minute${mins > 1 ? 's' : ''}` : ''} ago)`;
+                            relativeTime = `(${hours} hour${hours > 1 ? 's' : ''}${mins > 0 ? ` and ${mins} min${mins > 1 ? 's' : ''}` : ''} ago)`;
                         } else if (mins > 0) {
-                            relativeTime = `(received ${mins} minute${mins > 1 ? 's' : ''} ago)`;
+                            relativeTime = `(${mins} min${mins > 1 ? 's' : ''} ago)`;
                         } else {
-                            relativeTime = `(received just now)`;
+                            relativeTime = `(just now)`;
                         }
 
                         radarHitsHTML += `
