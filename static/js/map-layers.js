@@ -496,6 +496,17 @@ const activeKMLGeoJSON = {};
         let radarLastFetchTime = null;
         let radarAllFeatures = []; // Maintain the full list of active features locally
 
+        window.forceRadarRefresh = async function() {
+            if (isRadarRussiaActive) {
+                radarLastFetchTime = null;
+                radarInitialLoad = true;
+                seenRadarAlertIds.clear();
+                radarAllFeatures = [];
+                radarRussiaLayerGroup.clearLayers();
+                await fetchRadarRussiaData();
+            }
+        };
+
         function playBeep() {
             try {
                 if (!radarAudioContext) {
@@ -550,11 +561,19 @@ const activeKMLGeoJSON = {};
                         }
                     }
 
-                    if (id && !seenRadarAlertIds.has(id)) {
-                        seenRadarAlertIds.add(id);
-                        radarAllFeatures.push(f);
-                        if (!radarInitialLoad) {
-                            newAlertsFound = true;
+                    if (id) {
+                        if (!seenRadarAlertIds.has(id)) {
+                            seenRadarAlertIds.add(id);
+                            radarAllFeatures.push(f);
+                            if (!radarInitialLoad) {
+                                newAlertsFound = true;
+                            }
+                        } else {
+                            // Update existing feature to ensure overrides propagate
+                            const idx = radarAllFeatures.findIndex(existing => existing.properties.id === id);
+                            if (idx !== -1) {
+                                radarAllFeatures[idx] = f;
+                            }
                         }
                     }
                 });
