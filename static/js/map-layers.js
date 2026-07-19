@@ -1388,6 +1388,7 @@ map.on('click', async function(e) {
                                     <b>Status:</b> ${props.status === 'over' ? '<span style="color:#22c55e;">Over</span>' : '<span style="color:#ef4444;">Active</span>'}<br>
                                     <b>Time:</b> ${timeStr} ${relativeTime}
                                 </div>
+                                ${props.embed_url ? `<div style="margin-top: 10px;"><iframe src="${props.embed_url}" width="100%" height="400" frameborder="0" scrolling="yes" style="background: white; border-radius: 4px;"></iframe></div>` : ''}
                             </div>
                         `;
                     });
