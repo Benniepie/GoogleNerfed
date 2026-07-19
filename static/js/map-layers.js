@@ -533,22 +533,10 @@ const activeKMLGeoJSON = {};
                     url += `?since=${encodeURIComponent(radarLastFetchTime)}`;
                 }
 
-                // Fetch both sources
-                const [res, incidentsRes] = await Promise.all([
-                    fetch(url),
-                    fetch('/api/telegram-incidents').catch(e => {
-                        console.error('Failed to fetch telegram incidents', e);
-                        return { ok: true, json: async () => ({ features: [] }) };
-                    })
-                ]);
-
+                const res = await fetch(url);
                 if (!res.ok) throw new Error("API error");
 
                 const data = await res.json();
-                const incidentsData = await incidentsRes.json().catch(() => ({ features: [] }));
-
-                // Combine features
-                data.features = [...(data.features || []), ...(incidentsData.features || [])];
 
                 let newAlertsFound = false;
                 let maxTime = radarLastFetchTime;

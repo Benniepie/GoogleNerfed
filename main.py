@@ -600,6 +600,17 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
             logger.error(f"Error reading radar alerts cache: {e}")
             raise HTTPException(status_code=500, detail="Error reading radar data cache")
 
+    # NEW: Also load our Userbot incidents
+    incidents_file = DATA_DIR / "telegram_incidents.json"
+    incidents = {}
+    if incidents_file.exists():
+        try:
+            import json
+            with open(incidents_file, "r", encoding="utf-8") as f:
+                incidents = json.load(f)
+        except Exception as e:
+            logger.error(f"Error reading incidents cache: {e}")
+
     features = []
 
     # Load cache once per API request
@@ -613,6 +624,7 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
         except:
             pass
 
+    # 1. Process standard Radar Russia Alerts
     for msg_id, parsed in cached_alerts.items():
         # Delta filtering: If `since` is provided, skip older records
         if since:
@@ -627,19 +639,14 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
                 if alert_time.timestamp() <= since_time.timestamp():
                     continue
             except Exception as e:
-                # Print exception here for safety
-                print(f"Date parse error in since parameter: {e}")
                 pass # Parse error, include it anyway
 
         for loc_info in parsed["locations"]:
             geo_data = await get_cached_geocode(loc_info["name"], cache_dict=geocode_cache)
             if geo_data and "geojson" in geo_data:
-                # Get the localized English name, fallback to the raw russian query
                 display_name = geo_data.get("display_name", "")
                 english_name = geo_data.get("name", "")
 
-                # Sometime Nominatim's display_name has the better English translation than "name"
-                # so we take the first part of the English display name if it exists.
                 if display_name and "," in display_name:
                     english_name = display_name.split(",")[0].strip()
                 elif not english_name:
@@ -648,7 +655,6 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
                 feature = {
                     "type": "Feature",
                     "properties": {
-                        # NEW: Append the location name to make the ID completely unique
                         "id": f"{parsed['id']}_{loc_info['name']}",
                         "time": parsed["time"],
                         "name": english_name,
@@ -661,40 +667,18 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
                 }
                 features.append(feature)
 
-    return {"type": "FeatureCollection", "features": features}
-
-# ------------------------------
-
-
-@app.get("/api/telegram-incidents")
-async def get_telegram_incidents():
-    """Reads the userbot output, geocodes it, and serves GeoJSON with iframe embeds."""
-    incidents_file = DATA_DIR / "telegram_incidents.json"
-    incidents = {}
-    if incidents_file.exists():
-        try:
-            import json
-            with open(incidents_file, "r", encoding="utf-8") as f:
-                incidents = json.load(f)
-        except Exception as e:
-            logger.error(f"Error reading incidents cache: {e}")
-            return {"type": "FeatureCollection", "features": []}
-
-    features = []
-
-    # Load cache once per API request
-    geocode_cache = {}
-    gc_file = DATA_DIR / "geocode_cache.json"
-    if gc_file.exists():
-        try:
-            with open(gc_file, "r", encoding="utf-8") as f:
-                import json
-                geocode_cache = json.load(f)
-        except:
-            pass
-
+    # 2. Process our new Telegram Userbot Incidents
     for record_id, data in incidents.items():
-        # Geocode using the specific country restriction requested in the config
+        if since:
+            try:
+                inc_time = datetime.fromisoformat(data["time"].replace('Z', '+00:00'))
+                since_time_str = since.replace(' ', '+').replace('Z', '+00:00')
+                since_time = datetime.fromisoformat(since_time_str)
+                if inc_time.timestamp() <= since_time.timestamp():
+                    continue
+            except Exception:
+                pass
+
         geo_data = await get_cached_geocode(
             data["location_text"],
             cache_dict=geocode_cache,
@@ -719,14 +703,19 @@ async def get_telegram_incidents():
                     "raw_name": data["location_text"],
                     "threat": data["description"],
                     "status": "active",
-                    "icon": data["icon"],
-                    "embed_url": data["embed_url"]  # Serve the iframe URL to Leaflet
+                    "icon": data.get("icon", "🚨"),
+                    "embed_url": data.get("embed_url", "")
                 },
                 "geometry": geo_data["geojson"]
             }
             features.append(feature)
 
     return {"type": "FeatureCollection", "features": features}
+
+# ------------------------------
+
+
+
 
 
 @app.get("/api/layers")

@@ -57,22 +57,42 @@ def save_incident_to_json(data):
     print(f"✅ Saved incident {record_id} to JSON.")
 
 # Listen to all channels defined in our config
-target_channels = list(CHANNEL_CONFIGS.keys())
+#target_channels = list(CHANNEL_CONFIGS.keys())
+target_channels = {k.lower(): v for k, v in CHANNEL_CONFIGS.items()}
 
-@client.on(events.NewMessage(chats=target_channels))
+@client.on(events.NewMessage(incoming=True))
 async def handle_new_message(event):
-    """Triggers instantly when a watched channel posts."""
+    """Triggers instantly when any channel posts."""
     message = event.message
     text = message.message or ""
 
-    # Get the channel name (e.g., 'znua_live')
+    # Get the channel name safely
     chat = await event.get_chat()
-    channel_username = chat.username
-
-    if channel_username not in CHANNEL_CONFIGS:
+    if not chat:
         return
 
-    config = CHANNEL_CONFIGS[channel_username]
+    channel_username = getattr(chat, 'username', None)
+    if not channel_username:
+        return
+
+    channel_username = channel_username.lower()
+
+    # Drop messages from channels we don't care about
+    if channel_username not in target_channels:
+        return
+
+    # --- RAW DEBUG DUMP ---
+    # This writes the EXACT raw string to a text file so you can see hidden characters
+    os.makedirs(os.path.dirname(OUTPUT_JSON), exist_ok=True)
+    with open('data/telegram_debug.txt', 'a', encoding='utf-8') as f:
+        f.write(f"--- MSG FROM {channel_username} (ID: {message.id}) ---\n")
+        f.write(repr(text)) # repr() reveals \n, \r, and hidden unicode characters
+        f.write("\n\n")
+
+    safe_text = text[:80].replace('\n', ' ')
+    print(f"👀 MSG RECEIVED in {channel_username}: {safe_text}...")
+
+    config = target_channels[channel_username]
 
     for pattern in config["patterns"]:
         match = pattern.search(text)
@@ -116,6 +136,10 @@ async def main():
         sys.exit(1)
 
     print(f"✅ Successfully logged in as Userbot!")
+    print("Waking up channel subscriptions...")
+    # CRITICAL FIX: Fetching dialogs wakes up Telegram's update socket for this session
+    # and populates Telethon's internal entity cache so it knows channel IDs.
+    await client.get_dialogs()
     print(f"📡 Listening to: {', '.join(target_channels)}")
     await client.run_until_disconnected()
 
