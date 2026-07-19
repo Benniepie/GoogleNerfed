@@ -659,10 +659,15 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                 });
                 const data = await response.json();
                 if (response.ok && data.status === 'success') {
-                    statusMsg.textContent = 'Override saved! (Map will update next fetch)';
+                    statusMsg.textContent = 'Override saved! (Map updated)';
                     statusMsg.style.display = 'block';
                     document.getElementById('overrideOsmId').value = '';
                     document.getElementById('overrideEnglishName').value = '';
+
+                    // Trigger map update automatically
+                    if (window.forceRadarRefresh) {
+                        window.forceRadarRefresh();
+                    }
                 } else {
                     throw new Error(data.message || 'Override failed');
                 }

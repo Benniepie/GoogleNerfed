@@ -573,12 +573,37 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
         else:
             result = {"empty": True} # Negative cache
 
-        cache[location_name] = result
+            # Log the geocode failure
+            try:
+                today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                log_file = DATA_DIR / f"geocode_failures_{today_str}.txt"
+                time_str = datetime.now(timezone.utc).isoformat()
+                with open(log_file, "a", encoding="utf-8") as lf:
+                    lf.write(f"[{time_str}] Failed to geocode: {location_name}\n")
+            except Exception as log_e:
+                logger.error(f"Error writing to geocode failures log: {log_e}")
+
+        # Re-read the cache right before writing to avoid clobbering concurrent manual overrides
+        fresh_cache = {}
+        if cache_file.exists():
+            try:
+                import json
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    fresh_cache = json.load(f)
+            except Exception:
+                pass
+
+        fresh_cache[location_name] = result
+
+        # Also update the provided in-memory dict directly to avoid breaking memory caching
+        if cache_dict is not None:
+            cache_dict[location_name] = result
+
         # Atomic write to prevent JSONDecodeError from race conditions
         temp_file = cache_file.with_suffix('.tmp')
         with open(temp_file, "w", encoding="utf-8") as f:
             import json
-            json.dump(cache, f, ensure_ascii=False, indent=2)
+            json.dump(fresh_cache, f, ensure_ascii=False, indent=2)
         os.replace(temp_file, cache_file)
 
         return result if "empty" not in result else None
@@ -1126,11 +1151,7 @@ async def admin_geocode_override(override: GeocodeOverride):
             actual_key = k
             break
 
-    if not override.osm_id and not override.english_name:
-        # If both empty, delete from cache to force a re-fetch
-        if actual_key in cache:
-            del cache[actual_key]
-    elif override.osm_id:
+    if override.osm_id:
         # Fetch the exact polygon using osm_type and osm_id
         osm_type = 'R'
         osm_id_num = override.osm_id.strip()
@@ -1147,26 +1168,47 @@ async def admin_geocode_override(override: GeocodeOverride):
                 import json
                 data = json.loads(response.read().decode('utf-8'))
                 if data:
-                    res = data[0]
+                    pending_override_res = data[0]
                     if override.english_name:
-                        res["name"] = override.english_name.strip()
-                        res["display_name"] = override.english_name.strip()
-                    cache[actual_key] = res
+                        pending_override_res["name"] = override.english_name.strip()
+                        pending_override_res["display_name"] = override.english_name.strip()
                 else:
                     return {"status": "error", "message": "OSM ID not found in Nominatim"}
         except Exception as e:
             logger.error(f"Failed to fetch OSM override: {e}")
             return {"status": "error", "message": str(e)}
-    elif override.english_name and actual_key in cache:
+
+    fresh_cache = {}
+    if cache_file.exists():
+        try:
+            import json
+            with open(cache_file, "r", encoding="utf-8") as f:
+                fresh_cache = json.load(f)
+        except Exception:
+            pass
+
+    if not override.osm_id and not override.english_name:
+        if actual_key in fresh_cache:
+            del fresh_cache[actual_key]
+        if 'geocode_cache' in globals() and actual_key in geocode_cache:
+            del geocode_cache[actual_key]
+    elif override.osm_id and 'pending_override_res' in locals():
+        fresh_cache[actual_key] = pending_override_res
+        if 'geocode_cache' in globals():
+            geocode_cache[actual_key] = pending_override_res
+    elif override.english_name and actual_key in fresh_cache:
         # Just override the translation of existing geometry
-        cache[actual_key]["name"] = override.english_name.strip()
-        cache[actual_key]["display_name"] = override.english_name.strip()
+        fresh_cache[actual_key]["name"] = override.english_name.strip()
+        fresh_cache[actual_key]["display_name"] = override.english_name.strip()
+        if 'geocode_cache' in globals() and actual_key in geocode_cache:
+            geocode_cache[actual_key]["name"] = override.english_name.strip()
+            geocode_cache[actual_key]["display_name"] = override.english_name.strip()
 
     # Atomic write
     temp_file = cache_file.with_suffix('.tmp')
     with open(temp_file, "w", encoding="utf-8") as f:
         import json
-        json.dump(cache, f, ensure_ascii=False, indent=2)
+        json.dump(fresh_cache, f, ensure_ascii=False, indent=2)
     import os
     os.replace(temp_file, cache_file)
 
