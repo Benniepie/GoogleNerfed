@@ -495,6 +495,7 @@ const activeKMLGeoJSON = {};
         let radarAudioContext = null;
         let radarLastFetchTime = null;
         let radarAllFeatures = []; // Maintain the full list of active features locally
+        window.radarReplayTime = null;
 
         window.forceRadarRefresh = async function() {
             if (isRadarRussiaActive) {
@@ -598,22 +599,27 @@ const activeKMLGeoJSON = {};
 
         function renderRadarRussiaData() {
             radarRussiaLayerGroup.clearLayers();
-            const now = new Date();
+            const now = window.radarReplayTime || new Date();
+            const realNow = new Date();
 
             // First prune old features from the master list
             radarAllFeatures = radarAllFeatures.filter(f => {
                 const alertTime = new Date(f.properties.time);
-                const ageHours = (now - alertTime) / (1000 * 60 * 60);
+                // Prune based on real time
+                const ageHours = (realNow - alertTime) / (1000 * 60 * 60);
                 return ageHours <= 24;
             });
 
             // Sort features newest to oldest (for popups)
             radarAllFeatures.sort((a, b) => new Date(b.properties.time) - new Date(a.properties.time));
 
+            // Filter out features in the future when replaying
+            const currentFeatures = radarAllFeatures.filter(f => new Date(f.properties.time) <= now);
+
             // Build intersection data (all valid features)
             activeKMLGeoJSON['RadarRussia'] = {
                 type: "FeatureCollection",
-                features: radarAllFeatures
+                features: currentFeatures
             };
 
             // The user requested stacked opacities for Red/Orange/Yellow (active alerts) to show intensity,
@@ -621,7 +627,7 @@ const activeKMLGeoJSON = {};
             // as it causes muddy color mixing. And if the latest is clear/stale, we only render it once (no stacking).
 
             const latestStatePerLoc = new Map();
-            radarAllFeatures.forEach(feature => {
+            currentFeatures.forEach(feature => {
                 const locName = feature.properties.name;
                 // Since radarAllFeatures is sorted newest to oldest, the first one we see is the newest
                 if (!latestStatePerLoc.has(locName)) {
@@ -679,11 +685,11 @@ const activeKMLGeoJSON = {};
 
             // Count recent active alerts per location for opacity
             const recentAlertCounts = new Map();
-            radarAllFeatures.forEach(feature => {
+            currentFeatures.forEach(feature => {
                 const locName = feature.properties.name;
                 const props = feature.properties;
                 const ageMinutes = (now - new Date(props.time)) / (1000 * 60);
-                if (props.status !== 'over' && ageMinutes <= 60) {
+                if (props.status !== 'over' && ageMinutes <= 60 && ageMinutes >= 0) {
                     recentAlertCounts.set(locName, (recentAlertCounts.get(locName) || 0) + 1);
                 }
             });
@@ -846,6 +852,77 @@ const activeKMLGeoJSON = {};
                 if (legendEl) legendEl.style.display = 'none';
             }
         });
+
+        // --- RADAR REPLAY LOGIC ---
+        window.startRadarReplay = async function() {
+            if (!isRadarRussiaActive) {
+                document.getElementById('radarRussiaToggle').click();
+            }
+
+            // Wait for initial load to finish
+            while (radarInitialLoad) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            if (radarAllFeatures.length === 0) {
+                console.log("No features to replay.");
+                window.radarReplayFinished = true;
+                return;
+            }
+
+            // Calculate bounding box for all current features
+            let fg = L.featureGroup();
+            radarAllFeatures.forEach(f => {
+                if (f.geometry && f.geometry.coordinates) {
+                    fg.addLayer(L.geoJSON(f));
+                }
+            });
+            if (fg.getLayers().length > 0) {
+                map.fitBounds(fg.getBounds(), {padding: [50, 50]});
+            }
+
+            const realNow = new Date();
+            const startReplayTime = new Date(realNow.getTime() - 24 * 60 * 60 * 1000);
+            window.radarReplayTime = startReplayTime;
+
+            let lastFrameTime = performance.now();
+            let durationMs = 30000; // 30 seconds for 24 hours
+            let speedMultiplier = (24 * 60 * 60 * 1000) / durationMs;
+
+            function animate(currentTime) {
+                let dt = currentTime - lastFrameTime;
+                lastFrameTime = currentTime;
+
+                let simulatedMs = dt * speedMultiplier;
+                window.radarReplayTime = new Date(window.radarReplayTime.getTime() + simulatedMs);
+
+                if (window.radarReplayTime >= realNow) {
+                    window.radarReplayTime = null;
+                    renderRadarRussiaData();
+                    window.radarReplayFinished = true; // Signal Playwright
+                    return;
+                }
+
+                renderRadarRussiaData();
+                requestAnimationFrame(animate);
+            }
+
+            requestAnimationFrame(animate);
+        };
+
+        // Autoplay logic for video generator
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('radar_replay') === '1') {
+                if (params.get('hide_ui') === '1') {
+                    document.getElementById('controlPanel').style.display = 'none';
+                }
+                setTimeout(() => {
+                    startRadarReplay();
+                }, 2000); // Give the map 2s to load basemaps
+            }
+        });
+
 
         // --- LIVE DATA: NASA FIRMS (Hybrid Raster/Vector) ---
         const ZOOM_THRESHOLD = 8; // Zoom level at which we switch from Raster to Vector

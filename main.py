@@ -689,6 +689,31 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
 
     return {"type": "FeatureCollection", "features": features}
 
+@app.post("/api/radar-russia/export-video")
+async def export_radar_video():
+    """Triggers the video generation script and returns the result."""
+    try:
+        video_filename = f"radar_replay_{datetime.now().strftime('%Y%m%d_%H%M%S')}.webm"
+        process = await asyncio.create_subprocess_exec(
+            "python", "-u", "generate_radar_video.py", "--output", video_filename,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+
+        if process.returncode != 0:
+            logger.error(f"Video generation failed: {stderr.decode()}")
+            raise HTTPException(status_code=500, detail="Video generation failed")
+
+        video_path = DATA_DIR / video_filename
+        if video_path.exists():
+            return FileResponse(path=video_path, filename=video_filename, media_type="video/webm")
+        else:
+            raise HTTPException(status_code=500, detail="Video file not found after generation")
+    except Exception as e:
+        logger.error(f"Export video error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ------------------------------
 
 @app.get("/api/layers")
@@ -1459,3 +1484,28 @@ app.include_router(shadow_fleet_router)
 
 # Serve any other static assets if needed
 app.mount("/", StaticFiles(directory="static"), name="static")
+
+async def daily_video_scheduler():
+    """Generates the radar video automatically at 10 AM UTC every day."""
+    while True:
+        now = datetime.now(timezone.utc)
+        # Calculate next 10 AM
+        target = now.replace(hour=10, minute=0, second=0, microsecond=0)
+        if target <= now:
+            target += timedelta(days=1)
+
+        sleep_seconds = (target - now).total_seconds()
+        logger.info(f"Next daily video scheduled in {sleep_seconds} seconds (at {target})")
+        await asyncio.sleep(sleep_seconds)
+
+        try:
+            logger.info("Running scheduled daily radar video generation...")
+            video_filename = f"radar_replay_daily_{target.strftime('%Y%m%d')}.webm"
+            process = await asyncio.create_subprocess_exec("python", "-u", "generate_radar_video.py", "--output", video_filename)
+            await process.communicate()
+        except Exception as e:
+            logger.error(f"Scheduled video generation failed: {e}")
+
+@app.on_event("startup")
+async def start_scheduler():
+    asyncio.create_task(daily_video_scheduler())

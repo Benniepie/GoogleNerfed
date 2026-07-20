@@ -559,6 +559,11 @@
                 <audio id="radarAudioPlayer" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA" preload="auto"></audio>
             </div>
 
+            <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+                <button class="primary-btn" onclick="startRadarReplay()" style="flex: 1; font-size: 0.85rem; padding: 6px;">▶️ Replay 24h</button>
+                <button class="primary-btn" onclick="fetch('/api/radar-russia/export-video', {method: 'POST'}).then(r => r.blob()).then(b => {const url=window.URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download='radar_replay.webm';a.click();})" style="flex: 1; font-size: 0.85rem; padding: 6px; background-color: #8b5cf6;">🎬 Export Video</button>
+            </div>
+
             <div id="radarLegend" style="display: none; margin-top: 10px; background: rgba(15, 23, 42, 0.8); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.8rem;">
                 <div style="margin-bottom: 4px; font-weight: bold; color: #e2e8f0; border-bottom: 1px solid #475569; padding-bottom: 4px;">Alert Age</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
