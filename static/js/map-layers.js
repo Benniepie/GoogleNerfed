@@ -629,42 +629,67 @@ const activeKMLGeoJSON = {};
                 }
             });
 
+            const locationCentroids = new Map();
+            latestStatePerLoc.forEach((feature, locName) => {
+                try {
+                    locationCentroids.set(locName, turf.centroid(feature));
+                } catch (e) {
+                    if (feature.geometry && feature.geometry.type === 'Point') {
+                        locationCentroids.set(locName, turf.point(feature.geometry.coordinates));
+                    }
+                }
+            });
+
+            const effectiveLatestStatePerLoc = new Map();
+            const parentRegions = new Map();
+
+            locationCentroids.forEach((pt, locName) => {
+                let effectiveFeature = latestStatePerLoc.get(locName);
+                let maxTime = new Date(effectiveFeature.properties.time);
+                let overridingParent = null;
+
+                latestStatePerLoc.forEach((candidateFeature, candidateName) => {
+                    if (candidateName !== locName && pt && candidateFeature.geometry && (candidateFeature.geometry.type === 'Polygon' || candidateFeature.geometry.type === 'MultiPolygon')) {
+                        try {
+                            if (turf.booleanPointInPolygon(pt, candidateFeature)) {
+                                let candidateTime = new Date(candidateFeature.properties.time);
+                                if (candidateTime > maxTime) {
+                                    maxTime = candidateTime;
+                                    effectiveFeature = candidateFeature;
+                                    overridingParent = candidateFeature;
+                                } else if (!overridingParent) {
+                                    overridingParent = candidateFeature; // Keep track of parent even if it doesn't override time, for overlap checks
+                                }
+                            }
+                        } catch(e) {}
+                    }
+                });
+                effectiveLatestStatePerLoc.set(locName, effectiveFeature);
+                parentRegions.set(locName, overridingParent);
+            });
+
+            // Count recent active alerts per location for opacity
+            const recentAlertCounts = new Map();
             radarAllFeatures.forEach(feature => {
                 const locName = feature.properties.name;
-                const latestFeature = latestStatePerLoc.get(locName);
+                const props = feature.properties;
+                const ageMinutes = (now - new Date(props.time)) / (1000 * 60);
+                if (props.status !== 'over' && ageMinutes <= 60) {
+                    recentAlertCounts.set(locName, (recentAlertCounts.get(locName) || 0) + 1);
+                }
+            });
+
+            // We only iterate over the *latest* feature for each location.
+            // This prevents rendering multiple polygons for the same location.
+            latestStatePerLoc.forEach((feature, locName) => {
+                const latestFeature = effectiveLatestStatePerLoc.get(locName);
                 const latestProps = latestFeature.properties;
                 const latestAgeMinutes = (now - new Date(latestProps.time)) / (1000 * 60);
 
-                // Determine if the LATEST state for this location is grey or green
-                let isLatestClearOrStale = false;
-                if (latestProps.status === 'over' || latestAgeMinutes > 60) {
-                    isLatestClearOrStale = true;
-                }
-
-                // If the latest is clear/stale, ONLY render the latest one (no stacking for stale ones)
-                if (isLatestClearOrStale && feature !== latestFeature) {
-                    return;
-                }
-
-                // Determine if THIS feature is clear or stale
                 const props = feature.properties;
-                const thisAgeMinutes = (now - new Date(props.time)) / (1000 * 60);
-                let isThisClearOrStale = false;
-                if (props.status === 'over' || thisAgeMinutes > 60) {
-                    isThisClearOrStale = true;
-                }
+                const ageSeconds = (now - new Date(props.time)) / 1000;
 
-                // If THIS feature is clear/stale, but the latest is ACTIVE, DO NOT RENDER IT.
-                // This prevents muddy mixing where an old grey polygon sits under a new red polygon.
-                if (isThisClearOrStale && !isLatestClearOrStale) {
-                    return;
-                }
-
-                const timeStr = props.time;
-                const alertTime = new Date(timeStr);
-                const ageSeconds = (now - alertTime) / 1000;
-                const ageMinutes = ageSeconds / 60;
-                const ageHours = ageMinutes / 60;
+                const latestAgeHours = latestAgeMinutes / 60;
 
                 let fillColor = '#ef4444'; // Red default
                 let fillOpacity = 0.4; // Base opacity for red/orange/yellow
@@ -672,34 +697,49 @@ const activeKMLGeoJSON = {};
                 let borderClass = '';
                 let isGrey = false;
 
-                // If latest is clear or stale, opacity should be 0.1 so it doesn't clutter.
-                // If active, it stays 0.4 so stacked ones look thicker.
-
-                if (props.status === 'over') {
-                    if (ageHours > 1) {
-                        fillColor = '#64748b'; // Darker grey so it's visible on light maps
-                        fillOpacity = 0.3; // Increased opacity for single stale item
+                if (latestProps.status === 'over') {
+                    if (latestAgeHours > 1) {
+                        fillColor = '#64748b'; // Darker grey
+                        fillOpacity = 0.3;
                         isGrey = true;
                     } else {
                         fillColor = '#22c55e'; // Green
-                        fillOpacity = 0.3; // Increased opacity for single clear item
+                        fillOpacity = 0.3;
                     }
                 } else {
-                    if (ageMinutes <= 20) {
+                    if (latestAgeMinutes <= 20) {
                         fillColor = '#ef4444'; // Red
                         animationClass = 'radar-pulse';
-                    } else if (ageMinutes <= 40) {
+                    } else if (latestAgeMinutes <= 40) {
                         fillColor = '#f97316'; // Orange
-                    } else if (ageMinutes <= 60) {
+                    } else if (latestAgeMinutes <= 60) {
                         fillColor = '#eab308'; // Yellow
                     } else {
                         fillColor = '#64748b'; // Darker grey
-                        fillOpacity = 0.3; // Increased opacity for single stale item
+                        fillOpacity = 0.3;
                         isGrey = true;
                     }
                 }
 
-                // Add 60s flash for brand new alerts
+                // Calculate opacity based on count of recent alerts (for active colors)
+                if (fillColor === '#ef4444' || fillColor === '#f97316' || fillColor === '#eab308') {
+                    // Use effective feature's count because we inherited its state
+                    const effectiveLocName = latestFeature.properties.name;
+                    const count = recentAlertCounts.get(effectiveLocName) || 1;
+                    fillOpacity = Math.min(0.8, 0.4 + ((count - 1) * 0.1)); // Max opacity 0.8
+                }
+
+                // Overlap check: If this feature is inside a larger feature that shares the same effective state,
+                // set fillOpacity to 0 to prevent compounding the fill, but keep the border.
+                const parentFeature = parentRegions.get(locName);
+                if (parentFeature) {
+                    const parentEffectiveFeature = effectiveLatestStatePerLoc.get(parentFeature.properties.name);
+                    if (parentEffectiveFeature && parentEffectiveFeature === latestFeature) {
+                        fillOpacity = 0.0;
+                    }
+                }
+
+                // Add 60s flash for brand new alerts, using the location's true latest timestamp
                 if (ageSeconds <= 60) {
                     borderClass = 'radar-flash-path';
                     animationClass += ' radar-flash-anim';
