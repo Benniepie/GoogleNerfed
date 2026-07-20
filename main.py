@@ -497,7 +497,8 @@ async def fetch_and_cache_radar_russia():
         # If the text contains typical morning summary phrases, skip the message entirely
         summary_phrases = [
             "За прошедшую ночь",
-            "Дежурными средствами ПВО перехвачено и уничтожено"
+            "Дежурными средствами ПВО перехвачено и уничтожено",
+            "Реклама"
         ]
         if any(phrase in text for phrase in summary_phrases):
             continue
