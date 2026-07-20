@@ -17,6 +17,11 @@ Track updates to the map on Youtube: https://youtube.com/@atpgeo
 * **Soft Deletion**: Delete layers from the UI with peace of mind. The backend safeguards your data by renaming deleted files with a .deleted extension rather than permanently erasing them.  
 * **Modern UI**: A responsive, dark-mode 'glassmorphism' control panel that floats over your maps.  
 * **Single-Container Deployment**: The entire application (FastAPI backend and static frontend) runs in a single, lightweight Docker container.
+* **Shadow Fleet Tracking**: Uses a standalone AIS background worker to ingest AIS websocket streams and track specific vessel targets using SQLite window queries for efficient data handling. Includes logic to mitigate spoofing zones.
+* **Russia Radar Integration**: Scrapes Telegram channels (e.g., @radarrussiia) using a custom parser to detect threats and locations, translates threats dynamically to English, bounds them geographically, and pushes alert indicators direct to the map.
+* **Nominatim Geocoding and Overrides**: Translates Telegram parsed location text to real-world GeoJSON bounding polygons with extreme simplification to reduce size. Includes a UI feature to manually correct or translate failed geocodes via custom OSM IDs.
+* **Automated Map Update Logic (AP & SM)**: Allows administrators to input URLs of base maps and instantly run spatial geoprocessing via GDAL/Geopandas to isolate differences and output distinct map pins for daily updates.
+* **Sentinel 2 COG Integration via Titiler**: Streams Cloud Optimized GeoTIFFs directly from AWS using `titiler` and `rio-tiler`, using on-the-fly map tile mosaic caching based on mercantile bounding boxes.
 
 ## **🛠 Tech Stack**
 
@@ -39,13 +44,15 @@ Track updates to the map on Youtube: https://youtube.com/@atpgeo
 * **Uvicorn**: ASGI web server implementation for Python.  
 * **Python-Multipart**: For handling raw file uploads.
 * **Rio-Tiler / GDAL / Cloud Optimised GeoTiff Mosaic Implementation** for Map Tiling / API and Sentinel-2 Imagery with caching
+* **Titiler**: Fast framework for serving COGs directly as XYZ map tiles.
+* **Websockets / SQLite**: Background `ais_worker.py` to handle AIS stream processing outside the main web workers.
 * **Doris is in there somewhere**
 
 
 ### **Mapping Providers**
 
 * **OpenFreeMap**: Providing the 'Dark' and 'Light' vector tiles.
-* **OpenTopoMap**: Topographic  tiles.
+* **OpenTopoMap**: Topographic tiles.
 * **HOT**: Humanitarian Open Street Map tiles
 * **Esri World Imagery**: Providing the high-resolution satellite raster tiles.
 * **Esri Firefly**: Lower Saturation satellite tiles
@@ -56,9 +63,10 @@ Track updates to the map on Youtube: https://youtube.com/@atpgeo
   
 ### **Data Providers**
 * **Ukraine War FrontLines:** Functionality to load Ukraine war front line data from two mappers, calculate the differences between the two, draw the changes on that map using map markers with the historical data easily browsable using a timeline slider. Credit to JR for the original QGIS logic
-* **NASA FIRMS:** Last 48 hours VIIRS satellite data (as raster tiles at lower zoom levels & CSV data plotted on the map and higher zoom levels
+* **NASA FIRMS:** Last 48 hours VIIRS satellite data (as raster tiles at lower zoom levels & CSV data plotted on the map and higher zoom levels)
 * **Sentinel 2 metadata:** To determine the created date of the Sentinel 2 imagery
 * **OpenStreetMap polygon data** from Overpass Turbo API
+* **Shadow Fleet Target Lists**: Allows admin uploads via the UI of target MMSIs monitored via the background worker.
 
 ## **🚀 Getting Started**
 
@@ -74,26 +82,35 @@ Track updates to the map on Youtube: https://youtube.com/@atpgeo
    ├── docker-compose.yml  
    ├── Dockerfile  
    ├── requirements.txt  
-   ├── main.py  
+   ├── main.py
+   ├── ais_worker.py
+   ├── geoprocessing.py
+   ├── admin_assets/
    └── static/  
        └── index.html
 
 2. Create a data directory in the root of your project:  
-   mkdir data
+   `mkdir data`
 
    *(Optional)* You can drop any initial .kml or .kmz files into this folder before starting up.  
-3. Build and run the Docker container:  
-   docker-compose up \-d \--build
 
-4. Access the application:  
+3. Prepare the `.env` file with any necessary API keys (e.g. `AIS_API_KEY` for the AIS stream, `FIRMS_API_KEY`, etc.).
+
+4. Build and run the Docker container:
+   `docker-compose up -d --build`
+
+5. Access the application:
    Open your web browser and navigate to http://localhost:8080 (or the respective port/IP if you are using Tailscale/host networking).
 
 ## **🗄 API Endpoints**
 
-* GET /api/layers: Returns a JSON array of all active .kml files in the data directory.  
-* POST /api/upload: Accepts multipart/form-data. Saves .kml files directly or extracts .kml from uploaded .kmz archives.  
-* DELETE /api/layers/{filename}: Soft-deletes a specified layer by renaming it to {filename}.deleted.  
-* GET /data/{filename}: Serves the raw KML file to the frontend.
+* `GET /api/layers`: Returns a JSON array of all active .kml files in the data directory.
+* `POST /api/upload`: Accepts multipart/form-data. Saves .kml files directly or extracts .kml from uploaded .kmz archives.
+* `DELETE /api/layers/{filename}`: Soft-deletes a specified layer by renaming it to {filename}.deleted.
+* `GET /data/{filename}`: Serves the raw KML file to the frontend.
+* `GET /api/radar-russia`: Serves latest geocoded Telegram radar alerts.
+* `GET /api/shadow-fleet/vessels`: Returns the latest tracked locations for the Shadow Fleet layer.
+* `GET /api/shadow-fleet/tracks`: Returns historic LineString paths for active tracked vessels.
 
 ## **🔮 Future Enhancements (Roadmap)**
 
