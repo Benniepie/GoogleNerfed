@@ -936,9 +936,9 @@ const activeKMLGeoJSON = {};
                 if (overlay) {
                     // Format Date nicely
                     const timeStr = window.radarReplayTime.toLocaleString('en-GB', {
-                        timeZone: 'Europe/Moscow',
+                        timeZone: 'UTC',
                         month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                    }) + ' (MSK)';
+                    }) + ' (UTC)';
 
                     overlay.innerHTML = `
                         <div style="font-size: 1.2rem; font-weight: bold; color: #93c5fd; margin-bottom: 5px;">${timeStr}</div>

@@ -24,6 +24,7 @@ RUN playwright install chromium --with-deps
 COPY main.py .
 COPY geoprocessing.py .
 COPY ais_worker.py .
+COPY generate_radar_video.py .
 COPY static/ ./static/
 COPY admin_assets/ ./admin_assets/
 # Ensure the data directory exists
