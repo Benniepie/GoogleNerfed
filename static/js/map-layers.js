@@ -855,6 +855,8 @@ const activeKMLGeoJSON = {};
 
         // --- RADAR REPLAY LOGIC ---
         window.startRadarReplay = async function() {
+            window.radarReplayFinished = false;
+
             if (!isRadarRussiaActive) {
                 document.getElementById('radarRussiaToggle').click();
             }
@@ -886,8 +888,11 @@ const activeKMLGeoJSON = {};
             window.radarReplayTime = startReplayTime;
 
             let lastFrameTime = performance.now();
-            let durationMs = 30000; // 30 seconds for 24 hours
+            let durationMs = 60000; // 60 seconds for 24 hours
             let speedMultiplier = (24 * 60 * 60 * 1000) / durationMs;
+
+            const overlay = document.getElementById('replayOverlay');
+            if (overlay) overlay.style.display = 'block';
 
             function animate(currentTime) {
                 let dt = currentTime - lastFrameTime;
@@ -900,7 +905,48 @@ const activeKMLGeoJSON = {};
                     window.radarReplayTime = null;
                     renderRadarRussiaData();
                     window.radarReplayFinished = true; // Signal Playwright
+                    if (overlay) overlay.style.display = 'none';
                     return;
+                }
+
+                // Calculate stats for overlay
+                let redAlertsCount = 0;
+                let totalAlertsCount = 0;
+
+                // We use radarAllFeatures which are all features in the last 24 real hours.
+                // Filter to what's happened up to simulated time.
+                const currentFeatures = radarAllFeatures.filter(f => new Date(f.properties.time) <= window.radarReplayTime);
+
+                // Track total locations alerted
+                const alertedLocations = new Set();
+
+                currentFeatures.forEach(feature => {
+                    const locName = feature.properties.name;
+                    alertedLocations.add(locName);
+
+                    const ageMinutes = (window.radarReplayTime - new Date(feature.properties.time)) / (1000 * 60);
+                    // A "red alert" is an active alert (not over) within the first 20 minutes
+                    if (feature.properties.status !== 'over' && ageMinutes >= 0 && ageMinutes <= 20) {
+                        redAlertsCount++;
+                    }
+                });
+
+                totalAlertsCount = alertedLocations.size;
+
+                if (overlay) {
+                    // Format Date nicely
+                    const timeStr = window.radarReplayTime.toLocaleString('en-GB', {
+                        timeZone: 'Europe/Moscow',
+                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    }) + ' (MSK)';
+
+                    overlay.innerHTML = `
+                        <div style="font-size: 1.2rem; font-weight: bold; color: #93c5fd; margin-bottom: 5px;">${timeStr}</div>
+                        <div style="display: flex; justify-content: space-around; font-size: 1.1rem; gap: 20px;">
+                            <div><span style="color: #ef4444;">🔴</span> Active Red Alerts: <b>${redAlertsCount}</b></div>
+                            <div><span style="color: #eab308;">📍</span> Total Locations Hit: <b>${totalAlertsCount}</b></div>
+                        </div>
+                    `;
                 }
 
                 renderRadarRussiaData();

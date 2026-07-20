@@ -26,7 +26,7 @@ async def generate_video(output_filename: str):
         print("Waiting for replay to finish...")
         try:
             # Wait until the radarReplayFinished variable is true in the browser context
-            await page.wait_for_function("window.radarReplayFinished === true", timeout=60000)
+            await page.wait_for_function("window.radarReplayFinished === true", timeout=90000)
             # Give it a second extra to settle
             await asyncio.sleep(2)
         except Exception as e:
