@@ -52,27 +52,11 @@ def init_db():
     conn.commit()
     return conn
 
-_AISSTREAM_HOST = "stream.aisstream.io"
-_AISSTREAM_PORT = 443
-
 def _insecure_ssl_context() -> ssl.SSLContext:
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     return ctx
-
-def _check_aisstream_cert() -> bool:
-    try:
-        ctx = ssl.create_default_context()
-        with socket.create_connection((_AISSTREAM_HOST, _AISSTREAM_PORT), timeout=5) as sock:
-            with ctx.wrap_socket(sock, server_hostname=_AISSTREAM_HOST) as ssock:
-                return True
-    except ssl.SSLCertVerificationError as e:
-        # Fall back to insecure connection if certificate has expired or is otherwise invalid
-        return False
-    except Exception:
-        return True
-
 
 def haversine_distance(lon1, lat1, lon2, lat2):
     """Calculate the great circle distance in kilometers between two points on the earth."""
@@ -119,125 +103,127 @@ async def connect_ais():
     last_positions = {}
 
     try:
-        cert_valid = _check_aisstream_cert()
-        if not cert_valid:
+        try:
+            ssl_ctx = ssl.create_default_context()
+            async with websockets.connect("wss://stream.aisstream.io/v0/stream", ssl=ssl_ctx) as ws:
+                await _handle_connection(ws, subscription, conn, target_mmsis, last_cache_update, CACHE_TTL, msg_count, target_hits, last_log_time, last_positions)
+        except ssl.SSLCertVerificationError as e:
             print("WARNING: AISStream SSL certificate has expired — connecting with SSL verification disabled")
             ssl_ctx = _insecure_ssl_context()
-        else:
-            ssl_ctx = ssl.create_default_context()
+            async with websockets.connect("wss://stream.aisstream.io/v0/stream", ssl=ssl_ctx) as ws:
+                await _handle_connection(ws, subscription, conn, target_mmsis, last_cache_update, CACHE_TTL, msg_count, target_hits, last_log_time, last_positions)
+    except Exception as e:
+        print(f"Error in AIS stream: {repr(e)}")
+        time.sleep(5)
+        # Restart logic can be handled by Docker restart policy or adding a loop here
 
-        async with websockets.connect("wss://stream.aisstream.io/v0/stream", ssl=ssl_ctx) as ws:
-            await ws.send(json.dumps(subscription))
-            print("Connected and subscribed! Waiting for data...")
+async def _handle_connection(ws, subscription, conn, target_mmsis, last_cache_update, CACHE_TTL, msg_count, target_hits, last_log_time, last_positions):
+    await ws.send(json.dumps(subscription))
+    print("Connected and subscribed! Waiting for data...")
 
-            while True:
-                message = await ws.recv()
-                data = json.loads(message)
+    while True:
+        message = await ws.recv()
+        data = json.loads(message)
 
-                msg_count += 1
-                current_time = time.time()
+        msg_count += 1
+        current_time = time.time()
 
-                # Refresh target cache if expired
-                if current_time - last_cache_update > CACHE_TTL:
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT mmsi FROM shadow_fleet_targets")
-                    target_mmsis = {row[0] for row in cursor.fetchall()}
-                    last_cache_update = current_time
-                    print(f"Refreshed target cache. Monitoring {len(target_mmsis)} target vessels.")
+        # Refresh target cache if expired
+        if current_time - last_cache_update > CACHE_TTL:
+            cursor = conn.cursor()
+            cursor.execute("SELECT mmsi FROM shadow_fleet_targets")
+            target_mmsis = {row[0] for row in cursor.fetchall()}
+            last_cache_update = current_time
+            print(f"Refreshed target cache. Monitoring {len(target_mmsis)} target vessels.")
 
-                # Log metrics every 10 seconds
-                if current_time - last_log_time > 10:
-                    print(f"Processed {msg_count} raw messages in the last 10s. Target vessel pings recorded: {target_hits}")
-                    msg_count = 0
-                    target_hits = 0
-                    last_log_time = current_time
+        # Log metrics every 10 seconds
+        if current_time - last_log_time > 10:
+            print(f"Processed {msg_count} raw messages in the last 10s. Target vessel pings recorded: {target_hits}")
+            msg_count = 0
+            target_hits = 0
+            last_log_time = current_time
 
-                cursor = conn.cursor()
-                now = datetime.now(timezone.utc).isoformat()
+        cursor = conn.cursor()
+        now = datetime.now(timezone.utc).isoformat()
 
-                mmsi = str(data.get("MetaData", {}).get("MMSI", ""))
-                if not mmsi or mmsi not in target_mmsis:
+        mmsi = str(data.get("MetaData", {}).get("MMSI", ""))
+        if not mmsi or mmsi not in target_mmsis:
+            continue
+
+        target_hits += 1
+
+        if data["MessageType"] in ["PositionReport", "StandardClassBPositionReport"]:
+            msg = data["Message"].get("PositionReport") or data["Message"].get("StandardClassBPositionReport")
+            if not msg:
+                continue
+            lat = msg["Latitude"]
+            lon = msg["Longitude"]
+            heading = msg["TrueHeading"]
+
+            if lat is not None and lon is not None and lat <= 90.0 and lon <= 180.0:
+                if is_in_spoofing_zone(lon, lat):
                     continue
 
-                target_hits += 1
+                is_valid = True
+                if mmsi in last_positions:
+                    last_pos = last_positions[mmsi]
+                    dist_km = haversine_distance(last_pos['lon'], last_pos['lat'], lon, lat)
+                    time_diff_hours = (current_time - last_pos['time']) / 3600.0
 
-                if data["MessageType"] in ["PositionReport", "StandardClassBPositionReport"]:
-                    msg = data["Message"].get("PositionReport") or data["Message"].get("StandardClassBPositionReport")
-                    if not msg:
-                        continue
-                    lat = msg["Latitude"]
-                    lon = msg["Longitude"]
-                    heading = msg["TrueHeading"]
+                    if time_diff_hours > 0:
+                        speed_kmh = dist_km / time_diff_hours
+                        if speed_kmh > 80 and dist_km > 20:
+                            is_valid = False
+                    elif dist_km > 5:
+                        is_valid = False
 
-                    if lat is not None and lon is not None and lat <= 90.0 and lon <= 180.0:
-                        if is_in_spoofing_zone(lon, lat):
-                            continue
+                    if not is_valid:
+                        last_pos['reject_count'] = last_pos.get('reject_count', 0) + 1
+                        if last_pos['reject_count'] > 3:
+                            # Too many rejects, assume we were stuck on a spoofed point and recover
+                            is_valid = True
 
-                        is_valid = True
-                        if mmsi in last_positions:
-                            last_pos = last_positions[mmsi]
-                            dist_km = haversine_distance(last_pos['lon'], last_pos['lat'], lon, lat)
-                            time_diff_hours = (current_time - last_pos['time']) / 3600.0
+                if is_valid:
+                    last_positions[mmsi] = {'lon': lon, 'lat': lat, 'time': current_time, 'reject_count': 0}
 
-                            if time_diff_hours > 0:
-                                speed_kmh = dist_km / time_diff_hours
-                                if speed_kmh > 80 and dist_km > 20:
-                                    is_valid = False
-                            elif dist_km > 5:
-                                is_valid = False
-
-                            if not is_valid:
-                                last_pos['reject_count'] = last_pos.get('reject_count', 0) + 1
-                                if last_pos['reject_count'] > 3:
-                                    # Too many rejects, assume we were stuck on a spoofed point and recover
-                                    is_valid = True
-
-                        if is_valid:
-                            last_positions[mmsi] = {'lon': lon, 'lat': lat, 'time': current_time, 'reject_count': 0}
-
-                            # Insert/update basic position
-                            cursor.execute('''
-                            INSERT INTO vessels (mmsi, last_seen, last_lon, last_lat, heading)
-                            VALUES (?, ?, ?, ?, ?)
-                            ON CONFLICT(mmsi) DO UPDATE SET
-                                last_seen=excluded.last_seen,
-                                last_lon=excluded.last_lon,
-                                last_lat=excluded.last_lat,
-                                heading=excluded.heading
-                            ''', (mmsi, now, lon, lat, heading))
-
-                            # Save track
-                            cursor.execute('''
-                            INSERT INTO tracks (mmsi, lon, lat, timestamp)
-                            VALUES (?, ?, ?, ?)
-                            ''', (mmsi, lon, lat, now))
-
-                            conn.commit()
-
-                elif data["MessageType"] == "ShipStaticData":
-                    msg = data["Message"]["ShipStaticData"]
-                    name = msg.get("Name", "").strip()
-                    ship_type = "Unknown"
-                    # Simple ship type mapping from AIS type code (mocking mapping here)
-                    if 70 <= msg.get("Type", 0) <= 79:
-                        ship_type = "Cargo"
-                    elif 80 <= msg.get("Type", 0) <= 89:
-                        ship_type = "Tanker"
-
+                    # Insert/update basic position
                     cursor.execute('''
-                    INSERT INTO vessels (mmsi, name, ship_type, last_seen)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO vessels (mmsi, last_seen, last_lon, last_lat, heading)
+                    VALUES (?, ?, ?, ?, ?)
                     ON CONFLICT(mmsi) DO UPDATE SET
-                        name=excluded.name,
-                        ship_type=excluded.ship_type
-                    ''', (mmsi, name, ship_type, now))
+                        last_seen=excluded.last_seen,
+                        last_lon=excluded.last_lon,
+                        last_lat=excluded.last_lat,
+                        heading=excluded.heading
+                    ''', (mmsi, now, lon, lat, heading))
+
+                    # Save track
+                    cursor.execute('''
+                    INSERT INTO tracks (mmsi, lon, lat, timestamp)
+                    VALUES (?, ?, ?, ?)
+                    ''', (mmsi, lon, lat, now))
 
                     conn.commit()
 
-    except Exception as e:
-        print(f"Error in AIS stream: {e}")
-        time.sleep(5)
-        # Restart logic can be handled by Docker restart policy or adding a loop here
+        elif data["MessageType"] == "ShipStaticData":
+            msg = data["Message"]["ShipStaticData"]
+            name = msg.get("Name", "").strip()
+            ship_type = "Unknown"
+            # Simple ship type mapping from AIS type code (mocking mapping here)
+            if 70 <= msg.get("Type", 0) <= 79:
+                ship_type = "Cargo"
+            elif 80 <= msg.get("Type", 0) <= 89:
+                ship_type = "Tanker"
+
+            cursor.execute('''
+            INSERT INTO vessels (mmsi, name, ship_type, last_seen)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(mmsi) DO UPDATE SET
+                name=excluded.name,
+                ship_type=excluded.ship_type
+            ''', (mmsi, name, ship_type, now))
+
+            conn.commit()
 
 if __name__ == "__main__":
     # Ensure dir exists before starting db
