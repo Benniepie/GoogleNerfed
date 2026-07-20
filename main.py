@@ -704,7 +704,10 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
                     "threat": data["description"],
                     "status": "active",
                     "icon": data.get("icon", "🚨"),
-                    "embed_url": data.get("embed_url", "")
+                    "embed_url": data.get("embed_url", ""),
+                    "source": "telegram",
+                    "plot_type": data.get("plot_type", "polygon"),
+                    "embed_post": data.get("embed_post", False)
                 },
                 "geometry": geo_data["geojson"]
             }

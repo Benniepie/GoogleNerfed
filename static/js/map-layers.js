@@ -699,12 +699,14 @@ const activeKMLGeoJSON = {};
                     enName.includes('oblast') || enName.includes('region') || enName.includes('district') ||
                     enName.includes('republic') || enName.includes('krai');
 
-                if (isRegionOrDistrict) {
+                if (feature.properties.plot_type === "marker") {
+                    isSmallOrPoint = true;
+                } else if (isRegionOrDistrict) {
                     isSmallOrPoint = false; // Never make a region or district a map marker!
                 } else if (!isSmallOrPoint && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
                     const areaSqMeters = turf.area(feature);
                     const areaSqKm = areaSqMeters / 1000000;
-                    if (areaSqKm < 250 || feature.properties.icon) {
+                    if (areaSqKm < 250 || feature.properties.icon || feature.properties.plot_type === "marker") {
                         isSmallOrPoint = true;
                     }
                 }
@@ -1319,9 +1321,11 @@ map.on('click', async function(e) {
                 }
             }
 
-            // --- 3. Radar Russia Data Drill-down ---
+            // --- 3. Radar Russia & Telegram Data Drill-down ---
             if (map.hasLayer(radarRussiaLayerGroup) && activeKMLGeoJSON['RadarRussia']) {
-                let radarHitsHTML = '';
+                let telegramHits = [];
+                let radarHits = [];
+
                 turf.featureEach(activeKMLGeoJSON['RadarRussia'], function (currentFeature) {
                     let isHit = false;
 
@@ -1332,7 +1336,7 @@ map.on('click', async function(e) {
                         if (!isHit) {
                             const areaSqMeters = turf.area(currentFeature);
                             const areaSqKm = areaSqMeters / 1000000;
-                            if (areaSqKm < 250 || currentFeature.properties.icon) {
+                            if (areaSqKm < 250 || currentFeature.properties.icon || currentFeature.properties.plot_type === 'marker') {
                                 const centroid = turf.centroid(currentFeature);
                                 const dist = turf.distance(clickPoint, centroid, {units: 'kilometers'});
                                 // Give a 10km click radius for these tiny areas/markers
@@ -1350,10 +1354,58 @@ map.on('click', async function(e) {
                     }
 
                     if (isHit) {
-                        const props = currentFeature.properties;
+                        if (currentFeature.properties.source === 'telegram') {
+                            telegramHits.push(currentFeature);
+                        } else {
+                            radarHits.push(currentFeature);
+                        }
+                    }
+                });
+
+                let hitsHTML = '';
+
+                // Render Telegram Incidents FIRST
+                telegramHits.forEach(feature => {
+                    const props = feature.properties;
+                    const timeStr = new Date(props.time).toLocaleString('en-GB');
+                    const now = new Date();
+                    const featureTime = new Date(props.time);
+                    const diffMs = now - featureTime;
+                    const diffMins = Math.floor(diffMs / 60000);
+                    let timeAgo = diffMins < 60 ? `${diffMins} minutes ago` : `${Math.floor(diffMins / 60)} hours ago`;
+                    if (diffMins < 2) timeAgo = "Just now";
+
+                    hitsHTML += `
+                        <div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">
+                            <h4 style="margin: 0 0 4px 0; color: #f97316;">${props.icon || '🔥'} ${props.name} (${timeAgo})</h4>
+                            ${(props.embed_post && props.embed_url) ? `<div style="margin-top: 10px;"><iframe src="${props.embed_url}" width="100%" height="400" frameborder="0" scrolling="yes" style="background: white; border-radius: 4px;"></iframe></div>` : ''}
+                            <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 6px;">
+                                <b>Nominatim Query:</b> ${props.raw_name}<br>
+                                <b>Time:</b> ${timeStr}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Render standard Radar Alerts
+                if (radarHits.length > 0) {
+                    hitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
+
+                    radarHits.forEach((feature, index) => {
+                        const props = feature.properties;
                         const timeStr = new Date(props.time).toLocaleString('en-GB');
-                        radarHitsHTML += `
-                            <div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">
+
+                        if (index === 1) {
+                            const expandId = 'radarExpand_' + Math.random().toString(36).substr(2, 9);
+                            hitsHTML += `
+                                <div style="margin-top: 8px;">
+                                    <a href="#" onclick="document.getElementById('${expandId}').style.display='block'; this.style.display='none'; return false;" style="color: #3b82f6; text-decoration: none; font-size: 0.85rem;">+ Show ${radarHits.length - 1} more alerts</a>
+                                    <div id="${expandId}" style="display: none;">
+                            `;
+                        }
+
+                        hitsHTML += `
+                            <div style="${index > 0 ? 'margin-top: 12px; border-top: 1px dashed #475569; padding-top: 8px;' : ''}">
                                 <h4 style="margin: 0 0 4px 0; color: #3b82f6;">🚨 Air Alert</h4>
                                 <div style="font-size: 0.85rem;">
                                     <b>Location:</b> ${props.name}<br>
@@ -1362,12 +1414,18 @@ map.on('click', async function(e) {
                                     <b>Status:</b> ${props.status === 'over' ? '<span style="color:#22c55e;">Over</span>' : '<span style="color:#ef4444;">Active</span>'}<br>
                                     <b>Time:</b> ${timeStr}
                                 </div>
-                                ${props.embed_url ? `<div style="margin-top: 10px;"><iframe src="${props.embed_url}" width="100%" height="400" frameborder="0" scrolling="yes" style="background: white; border-radius: 4px;"></iframe></div>` : ''}
                             </div>
                         `;
-                    }
-                });
-                if (radarHitsHTML) popupHTML += radarHitsHTML;
+
+                        if (index === radarHits.length - 1 && radarHits.length > 1) {
+                            hitsHTML += `</div></div>`;
+                        }
+                    });
+
+                    hitsHTML += `</div>`;
+                }
+
+                if (hitsHTML) popupHTML += hitsHTML;
             }
 
             // --- 4. FIRMS Data Drill-down ---

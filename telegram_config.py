@@ -18,7 +18,9 @@ CHANNEL_CONFIGS = {
         "icon": "🔥",
         "country_restrict": "ru", # Tell Nominatim to only look in Russia for these
         "location_group": 1,
-        "description_group": 2
+        "description_group": 2,
+        "plot_type": "marker",
+        "embed_post": True
     }
     # To add another channel later, just add another block here:
     # "another_channel": { ... }

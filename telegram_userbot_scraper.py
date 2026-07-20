@@ -113,7 +113,9 @@ async def handle_new_message(event):
                 "description": description,
                 "embed_url": embed_url,
                 "icon": config.get("icon", "📍"),
-                "country_restrict": config.get("country_restrict", "ru,ua")
+                "country_restrict": config.get("country_restrict", "ru,ua"),
+                "plot_type": config.get("plot_type", "polygon"),
+                "embed_post": config.get("embed_post", False)
             }
 
             save_incident_to_json(incident_data)
