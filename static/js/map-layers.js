@@ -611,6 +611,7 @@ const activeKMLGeoJSON = {};
             });
 
             const locationCentroids = new Map();
+            const locationAreas = new Map();
             latestStatePerLoc.forEach((feature, locName) => {
                 try {
                     locationCentroids.set(locName, turf.centroid(feature));
@@ -618,6 +619,11 @@ const activeKMLGeoJSON = {};
                     if (feature.geometry && feature.geometry.type === 'Point') {
                         locationCentroids.set(locName, turf.point(feature.geometry.coordinates));
                     }
+                }
+                try {
+                    locationAreas.set(locName, turf.area(feature));
+                } catch (e) {
+                    locationAreas.set(locName, 0);
                 }
             });
 
@@ -629,8 +635,11 @@ const activeKMLGeoJSON = {};
                 let maxTime = new Date(effectiveFeature.properties.time);
                 let overridingParent = null;
 
+                let locArea = locationAreas.get(locName) || 0;
                 latestStatePerLoc.forEach((candidateFeature, candidateName) => {
-                    if (candidateName !== locName && pt && candidateFeature.geometry && (candidateFeature.geometry.type === 'Polygon' || candidateFeature.geometry.type === 'MultiPolygon')) {
+                    let candArea = locationAreas.get(candidateName) || 0;
+                    // Candidate must be significantly larger to be considered a parent (e.g. 20% larger)
+                    if (candidateName !== locName && candArea > locArea * 1.2 && pt && candidateFeature.geometry && (candidateFeature.geometry.type === 'Polygon' || candidateFeature.geometry.type === 'MultiPolygon')) {
                         try {
                             if (turf.booleanPointInPolygon(pt, candidateFeature)) {
                                 let candidateTime = new Date(candidateFeature.properties.time);
