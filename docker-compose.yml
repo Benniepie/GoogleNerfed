@@ -15,7 +15,7 @@ services:
 
   ais-worker:
     build: .
-    command: python ais_worker.py
+    command: python -u ais_worker.py
     environment:
       - AIS_API_KEY=${AIS_API_KEY}
     volumes:
