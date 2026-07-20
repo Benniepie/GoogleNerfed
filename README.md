@@ -19,6 +19,7 @@ Track updates to the map on Youtube: https://youtube.com/@atpgeo
 * **Single-Container Deployment**: The entire application (FastAPI backend and static frontend) runs in a single, lightweight Docker container.
 * **Shadow Fleet Tracking**: Uses a standalone AIS background worker to ingest AIS websocket streams and track specific vessel targets using SQLite window queries for efficient data handling. Includes logic to mitigate spoofing zones.
 * **Russia Radar Integration**: Scrapes Telegram channels (e.g., @radarrussiia) using a custom parser to detect threats and locations, translates threats dynamically to English, bounds them geographically, and pushes alert indicators direct to the map.
+* **24 hour Russia Radar Replay**: A time-lapse feature that allows playback of radar alerts over the last 24 hours directly on the map.
 * **Nominatim Geocoding and Overrides**: Translates Telegram parsed location text to real-world GeoJSON bounding polygons with extreme simplification to reduce size. Includes a UI feature to manually correct or translate failed geocodes via custom OSM IDs.
 * **Automated Map Update Logic (AP & SM)**: Allows administrators to input URLs of base maps and instantly run spatial geoprocessing via GDAL/Geopandas to isolate differences and output distinct map pins for daily updates.
 * **Sentinel 2 COG Integration via Titiler**: Streams Cloud Optimized GeoTIFFs directly from AWS using `titiler` and `rio-tiler`, using on-the-fly map tile mosaic caching based on mercantile bounding boxes.
@@ -51,7 +52,7 @@ Track updates to the map on Youtube: https://youtube.com/@atpgeo
 
 ### **Mapping Providers**
 
-* **OpenFreeMap**: Providing the 'Dark' and 'Light' vector tiles.
+* **OpenFreeMap**: Providing the 'Dark', 'Light', and 'Positron' vector tiles.
 * **OpenTopoMap**: Topographic tiles.
 * **HOT**: Humanitarian Open Street Map tiles
 * **Esri World Imagery**: Providing the high-resolution satellite raster tiles.
@@ -67,6 +68,8 @@ Track updates to the map on Youtube: https://youtube.com/@atpgeo
 * **Sentinel 2 metadata:** To determine the created date of the Sentinel 2 imagery
 * **OpenStreetMap polygon data** from Overpass Turbo API
 * **Shadow Fleet Target Lists**: Allows admin uploads via the UI of target MMSIs monitored via the background worker.
+* **Nominatim**: OpenStreetMap search API used for geocoding parsed text into geographical coordinates and bounding boxes.
+* **AISStream**: WebSocket service providing real-time AIS vessel positioning data.
 
 ## **🚀 Getting Started**
 
