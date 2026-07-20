@@ -18,11 +18,13 @@ RUN export C_INCLUDE_PATH=/usr/include/gdal
 RUN pip install git+https://github.com/drufat/triangle.git
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN playwright install chromium --with-deps
 
 # Copy the backend and frontend files
 COPY main.py .
 COPY geoprocessing.py .
 COPY ais_worker.py .
+COPY generate_radar_video.py .
 COPY static/ ./static/
 COPY admin_assets/ ./admin_assets/
 # Ensure the data directory exists

@@ -416,6 +416,10 @@
 
     <div id="map"></div>
 
+    <div id="replayOverlay" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 3000; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); padding: 15px 30px; border-radius: 12px; border: 2px solid #3b82f6; box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: #f8fafc; font-size: 1.5rem; text-align: center; min-width: 300px;">
+        <!-- Content will be injected here -->
+    </div>
+
     <div class="control-panel" id="controlPanel">
         <h2 style="margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
             map.atpgeo.com
@@ -557,6 +561,11 @@
                     🔊 Play sound on new alert
                 </label>
                 <audio id="radarAudioPlayer" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA" preload="auto"></audio>
+            </div>
+
+            <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+                <button class="primary-btn" onclick="startRadarReplay()" style="flex: 1; font-size: 0.85rem; padding: 6px;">▶️ Replay 24h</button>
+                <button class="primary-btn" onclick="fetch('/api/radar-russia/export-video', {method: 'POST'}).then(r => r.blob()).then(b => {const url=window.URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download='radar_replay.webm';a.click();})" style="flex: 1; font-size: 0.85rem; padding: 6px; background-color: #8b5cf6;">🎬 Export Video</button>
             </div>
 
             <div id="radarLegend" style="display: none; margin-top: 10px; background: rgba(15, 23, 42, 0.8); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.8rem;">
