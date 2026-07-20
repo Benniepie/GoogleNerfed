@@ -5,6 +5,8 @@ import sqlite3
 import os
 import time
 import math
+import ssl
+import socket
 from datetime import datetime, timezone
 
 DB_PATH = "/app/data/vessels.db"
@@ -49,6 +51,28 @@ def init_db():
     ''')
     conn.commit()
     return conn
+
+_AISSTREAM_HOST = "stream.aisstream.io"
+_AISSTREAM_PORT = 443
+
+def _insecure_ssl_context() -> ssl.SSLContext:
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+def _check_aisstream_cert() -> bool:
+    try:
+        ctx = ssl.create_default_context()
+        with socket.create_connection((_AISSTREAM_HOST, _AISSTREAM_PORT), timeout=5) as sock:
+            with ctx.wrap_socket(sock, server_hostname=_AISSTREAM_HOST) as ssock:
+                return True
+    except ssl.SSLCertVerificationError as e:
+        # Fall back to insecure connection if certificate has expired or is otherwise invalid
+        return False
+    except Exception:
+        return True
+
 
 def haversine_distance(lon1, lat1, lon2, lat2):
     """Calculate the great circle distance in kilometers between two points on the earth."""
@@ -95,7 +119,14 @@ async def connect_ais():
     last_positions = {}
 
     try:
-        async with websockets.connect("wss://stream.aisstream.io/v0/stream") as ws:
+        cert_valid = _check_aisstream_cert()
+        if not cert_valid:
+            print("WARNING: AISStream SSL certificate has expired — connecting with SSL verification disabled")
+            ssl_ctx = _insecure_ssl_context()
+        else:
+            ssl_ctx = ssl.create_default_context()
+
+        async with websockets.connect("wss://stream.aisstream.io/v0/stream", ssl=ssl_ctx) as ws:
             await ws.send(json.dumps(subscription))
             print("Connected and subscribed! Waiting for data...")
 
