@@ -1,4 +1,5 @@
 import os
+import uuid
 import shutil
 import zipfile
 import json
@@ -526,9 +527,12 @@ async def fetch_and_cache_radar_russia():
 
     for msg_id, parsed in cached_alerts.items():
         for loc_info in parsed["locations"]:
-            await get_cached_geocode(loc_info["name"], cache_dict=geocode_cache)
+            if loc_info["name"] not in geocode_cache:
+                await get_cached_geocode(loc_info["name"], cache_dict=geocode_cache)
+                import asyncio
+                await asyncio.sleep(1.5) # Prevent Nominatim 429 Too Many Requests
 
-    temp_file = cache_file.with_suffix('.tmp')
+    temp_file = cache_file.with_suffix(f'.tmp.{uuid.uuid4().hex}')
     with open(temp_file, "w", encoding="utf-8") as f:
         import json
         json.dump(cached_alerts, f, ensure_ascii=False, indent=2)
@@ -566,8 +570,17 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
     headers = {'User-Agent': 'ATPGeopolitics/1.0'}
     try:
         resp = await http_client.get(url, headers=headers, timeout=10.0)
+        if resp.status_code == 429:
+            logger.warning("Nominatim 429 Too Many Requests, pausing for 5 seconds...")
+            import asyncio
+            await asyncio.sleep(5)
+            # Retry once
+            resp = await http_client.get(url, headers=headers, timeout=10.0)
+            if resp.status_code == 429:
+                logger.error(f"Geocode retry failed for {location_name} (429)")
+                return None
+
         data = resp.json()
-        await asyncio.sleep(1.5)
 
         if data:
             result = data[0]
@@ -601,7 +614,7 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
             cache_dict[location_name] = result
 
         # Atomic write to prevent JSONDecodeError from race conditions
-        temp_file = cache_file.with_suffix('.tmp')
+        temp_file = cache_file.with_suffix(f'.tmp.{uuid.uuid4().hex}')
         with open(temp_file, "w", encoding="utf-8") as f:
             import json
             json.dump(fresh_cache, f, ensure_ascii=False, indent=2)
@@ -1231,7 +1244,7 @@ async def admin_geocode_override(override: GeocodeOverride):
             geocode_cache[actual_key]["display_name"] = override.english_name.strip()
 
     # Atomic write
-    temp_file = cache_file.with_suffix('.tmp')
+    temp_file = cache_file.with_suffix(f'.tmp.{uuid.uuid4().hex}')
     with open(temp_file, "w", encoding="utf-8") as f:
         import json
         json.dump(fresh_cache, f, ensure_ascii=False, indent=2)
