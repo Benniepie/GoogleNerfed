@@ -570,6 +570,16 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
     headers = {'User-Agent': 'ATPGeopolitics/1.0'}
     try:
         resp = await http_client.get(url, headers=headers, timeout=10.0)
+        if resp.status_code == 429:
+            logger.warning("Nominatim 429 Too Many Requests, pausing for 5 seconds...")
+            import asyncio
+            await asyncio.sleep(5)
+            # Retry once
+            resp = await http_client.get(url, headers=headers, timeout=10.0)
+            if resp.status_code == 429:
+                logger.error(f"Geocode retry failed for {location_name} (429)")
+                return None
+
         data = resp.json()
 
         if data:
