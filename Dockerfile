@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     libsuitesparse-dev \
     libgdal-dev \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 RUN export CPLUS_INCLUDE_PATH=/usr/include/gdal
