@@ -739,7 +739,7 @@ async def get_layers():
     return {"layers": sorted(files)}
 
 @app.post("/api/upload", dependencies=[Depends(verify_admin)])
-async def upload_file(files: List[UploadFile] = File(...)):
+def upload_file(files: List[UploadFile] = File(...)):
     """Handles multiple KML and KMZ uploads, automatically extracting KMZ to KML."""
     results = []
     for file in files:
