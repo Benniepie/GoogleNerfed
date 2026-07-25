@@ -884,7 +884,7 @@ const activeKMLGeoJSON = {};
                     }
                 });
                 if (fg.getLayers().length > 0) {
-                    map.fitBounds(fg.getBounds(), {padding: [50, 50]});
+                    map.fitBounds(fg.getBounds(), {padding: [100, 100]});
                 }
             }
 
@@ -981,7 +981,7 @@ const activeKMLGeoJSON = {};
                 if (isSetup) {
                     delayMs = 100;
                 } else if (hasInitialView) {
-                    delayMs = 500; // Map is correctly centered from URL, minimal loading delay needed
+                    delayMs = 3000; // Give basemap tiles time to load completely before starting replay
                 }
 
                 setTimeout(() => {
@@ -1723,7 +1723,7 @@ map.on('click', async function(e) {
                 const defaultLat = urlLat ? parseFloat(urlLat) : (appSettings.defaultLat ?? 49.0);
                 const defaultLng = urlLng ? parseFloat(urlLng) : (appSettings.defaultLng ?? 31.0);
                 const defaultZoom = urlZoom ? parseFloat(urlZoom) : (appSettings.defaultZoom ?? 6);
-                map.setView([defaultLat, defaultLng], defaultZoom);
+                map.setView([defaultLat, defaultLng], defaultZoom, {animate: false});
 
                 const defaultBasemap = urlBasemap ? urlBasemap : (appSettings.defaultBasemap ?? 'dark');
                 const radioInput = document.querySelector(`input[name="basemap"][value="${defaultBasemap}"]`);

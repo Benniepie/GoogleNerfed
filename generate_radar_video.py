@@ -26,6 +26,7 @@ async def generate_video(output_filename: str, basemap: str):
         lat, lng, zoom = 54.0, 38.0, 5 # default fallback
         try:
             await page1.wait_for_function("window.radarSetupDone === true", timeout=60000)
+            await asyncio.sleep(2) # Give Leaflet time to finish animations
             center = await page1.evaluate("map.getCenter()")
             zoom = await page1.evaluate("map.getZoom()")
             lat = center['lat']
@@ -48,7 +49,9 @@ async def generate_video(output_filename: str, basemap: str):
         page2 = await context.new_page()
         print(f"Recording radar replay video with basemap '{basemap}'...")
         url = f"http://127.0.0.1:8000/?radar_replay=1&hide_ui=1&lat={lat}&lng={lng}&zoom={zoom}&basemap={basemap}"
-        await page2.goto(url, wait_until="networkidle")
+        await page2.goto(url)
+        # Allow 2 seconds after page load for initial tile renders and any small adjustments before recording starts
+        await asyncio.sleep(2)
 
         print("Waiting for replay to finish...")
         try:
