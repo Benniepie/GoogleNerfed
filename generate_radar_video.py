@@ -67,14 +67,23 @@ async def generate_video(output_filename: str, basemap: str):
         await context.close()
         await browser.close()
 
+
         print(f"Video saved temporarily at: {video2_path}")
 
         # Rename to the requested filename
         if video2_path and os.path.exists(video2_path):
-            os.rename(video2_path, final_output)
-            print(f"Renamed to: {final_output}")
+            print(f"Trimming and saving to: {final_output}")
+            # The map loading takes about 2-3 seconds before we even trigger the replay.
+            # We also waited 2 seconds in asyncio.sleep. So let's trim the first 3 seconds.
+            # We'll use ffmpeg to do this losslessly (if possible) or re-encode if needed.
+            # Actually, the user wants to avoid the loading animation.
+            # By using FFmpeg we can just drop the first 3 seconds where it loads.
+            os.system(f"ffmpeg -y -ss 3 -i {video2_path} -c copy {final_output}")
+            os.remove(video2_path)
+            print("Video generation complete.")
         else:
             print("Failed to find the recorded video file.")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
