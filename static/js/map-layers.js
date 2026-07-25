@@ -697,7 +697,8 @@ const activeKMLGeoJSON = {};
             // We only iterate over the *latest* feature for each location.
             // This prevents rendering multiple polygons for the same location.
             latestStatePerLoc.forEach((feature, locName) => {
-                const latestFeature = effectiveLatestStatePerLoc.get(locName);
+                const latestFeature = effectiveLatestStatePerLoc.get(locName) || feature;
+                if (!latestFeature || !latestFeature.properties) return;
                 const latestProps = latestFeature.properties;
                 const latestAgeMinutes = (now - new Date(latestProps.time)) / (1000 * 60);
 
@@ -749,7 +750,7 @@ const activeKMLGeoJSON = {};
                 const parentFeature = parentRegions.get(locName);
                 if (parentFeature) {
                     const parentEffectiveFeature = effectiveLatestStatePerLoc.get(parentFeature.properties.name);
-                    if (parentEffectiveFeature && parentEffectiveFeature === latestFeature) {
+                    if (parentEffectiveFeature && parentEffectiveFeature === latestFeature && locName !== parentFeature.properties.name) {
                         fillOpacity = 0.0;
                     }
                 }
