@@ -981,7 +981,7 @@ const activeKMLGeoJSON = {};
                 if (isSetup) {
                     delayMs = 100;
                 } else if (hasInitialView) {
-                    delayMs = 3000; // Give basemap tiles time to load completely before starting replay
+                    delayMs = 15000; // Give basemap tiles time to load completely before starting replay
                 }
 
                 setTimeout(() => {

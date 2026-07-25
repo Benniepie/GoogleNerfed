@@ -78,7 +78,7 @@ async def generate_video(output_filename: str, basemap: str):
             # We'll use ffmpeg to do this losslessly (if possible) or re-encode if needed.
             # Actually, the user wants to avoid the loading animation.
             # By using FFmpeg we can just drop the first 3 seconds where it loads.
-            os.system(f"ffmpeg -y -ss 3 -i {video2_path} -c copy {final_output}")
+            os.system(f"ffmpeg -y -ss 17 -i {video2_path} -c copy {final_output}")
             os.remove(video2_path)
             print("Video generation complete.")
         else:
