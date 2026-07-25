@@ -239,6 +239,7 @@ function toggleSection(header) {
             topo: layers.topo,
             hot: layers.hot,
         };
+        window.baseMaps = baseMaps;
 
         // Define dynamic layer groups that only add sentinelLayer when zoom >= 11
         // This prevents Leaflet from forcing the map's minZoom to 11.

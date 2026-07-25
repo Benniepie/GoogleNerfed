@@ -703,12 +703,12 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
     return {"type": "FeatureCollection", "features": features}
 
 @app.post("/api/radar-russia/export-video")
-async def export_radar_video():
+async def export_radar_video(basemap: str = "dark"):
     """Triggers the video generation script and returns the result."""
     try:
         video_filename = f"radar_replay_{datetime.now().strftime('%Y%m%d_%H%M%S')}.webm"
         process = await asyncio.create_subprocess_exec(
-            "python", "-u", "generate_radar_video.py", "--output", video_filename,
+            "python", "-u", "generate_radar_video.py", "--output", video_filename, "--basemap", basemap,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
