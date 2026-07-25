@@ -565,7 +565,7 @@
 
             <div style="margin-bottom: 10px; display: flex; gap: 10px;">
                 <button class="primary-btn" onclick="startRadarReplay()" style="flex: 1; font-size: 0.85rem; padding: 6px;">▶️ Replay 24h</button>
-                <button class="primary-btn" onclick="fetch('/api/radar-russia/export-video', {method: 'POST'}).then(r => r.blob()).then(b => {const url=window.URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download='radar_replay.webm';a.click();})" style="flex: 1; font-size: 0.85rem; padding: 6px; background-color: #8b5cf6;">🎬 Export Video</button>
+                <button id="exportVideoBtn" class="primary-btn" onclick="exportRadarVideo()" style="flex: 1; font-size: 0.85rem; padding: 6px; background-color: #8b5cf6;">🎬 Export Video</button>
             </div>
 
             <div id="radarLegend" style="display: none; margin-top: 10px; background: rgba(15, 23, 42, 0.8); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.8rem;">
@@ -717,6 +717,55 @@
             }, 100);
     </script>    
   
+
+    <script>
+        window.exportRadarVideo = function() {
+            const btn = document.getElementById('exportVideoBtn');
+            if (!btn || btn.disabled) return;
+
+            const activeBasemapEl = document.querySelector('input[name="basemap"]:checked');
+            const basemapStr = activeBasemapEl ? activeBasemapEl.value : 'dark';
+
+            btn.disabled = true;
+            let secondsLeft = 90;
+            btn.innerHTML = `⏳ Generating... (${secondsLeft}s)`;
+            btn.style.backgroundColor = '#6b7280'; // gray
+
+            const countdown = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft > 0) {
+                    btn.innerHTML = `⏳ Generating... (${secondsLeft}s)`;
+                } else {
+                    btn.innerHTML = `⏳ Almost done...`;
+                    clearInterval(countdown);
+                }
+            }, 1000);
+
+            fetch('/api/radar-russia/export-video?basemap=' + encodeURIComponent(basemapStr), {method: 'POST'})
+            .then(r => {
+                if (!r.ok) throw new Error("Video generation failed on server");
+                return r.blob();
+            })
+            .then(b => {
+                clearInterval(countdown);
+                const url = window.URL.createObjectURL(b);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'radar_replay.webm';
+                a.click();
+
+                btn.innerHTML = '✅ Export Complete';
+                // Button remains disabled
+            })
+            .catch(err => {
+                clearInterval(countdown);
+                btn.disabled = false;
+                btn.innerHTML = '🎬 Export Video';
+                btn.style.backgroundColor = '#8b5cf6';
+                alert("Video generation failed!");
+            });
+        };
+    </script>
 </body>
 </html>
 

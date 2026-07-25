@@ -47,7 +47,17 @@ function toggleSection(header) {
 
 
         // 1. Initialise the Map
-        const map = L.map('map', { zoomControl: false, zoomSnap: 1, zoomDelta: 1 }).setView([49.0, 31.0], 6); // Default view centered on Ukraine
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlLat = urlParams.get('lat');
+        const urlLng = urlParams.get('lng');
+        const urlZoom = urlParams.get('zoom');
+        const initialLat = urlLat ? parseFloat(urlLat) : 49.0;
+        const initialLng = urlLng ? parseFloat(urlLng) : 31.0;
+        const initialZoom = urlZoom ? parseFloat(urlZoom) : 6;
+
+        const map = L.map('map', { zoomControl: false, zoomSnap: 1, zoomDelta: 1 }).setView([initialLat, initialLng], initialZoom);
+
         L.control.zoom({ position: 'bottomright' }).addTo(map);
         L.control.scale({ position: 'bottomleft', imperial: true, metric: true }).addTo(map);
         window.map = map; // Expose map globally for other scripts
@@ -239,6 +249,7 @@ function toggleSection(header) {
             topo: layers.topo,
             hot: layers.hot,
         };
+        window.baseMaps = baseMaps;
 
         // Define dynamic layer groups that only add sentinelLayer when zoom >= 11
         // This prevents Leaflet from forcing the map's minZoom to 11.

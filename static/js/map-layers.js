@@ -909,15 +909,25 @@ window.populateOverrideName = function(encodedName) {
                 return;
             }
 
-            // Calculate bounding box for all current features
-            let fg = L.featureGroup();
-            radarAllFeatures.forEach(f => {
-                if (f.geometry && f.geometry.coordinates) {
-                    fg.addLayer(L.geoJSON(f));
+            const params = new URLSearchParams(window.location.search);
+            const hasInitialView = params.has('lat') && params.has('lng') && params.has('zoom');
+
+            if (!hasInitialView) {
+                // Calculate bounding box for all current features
+                let fg = L.featureGroup();
+                radarAllFeatures.forEach(f => {
+                    if (f.geometry && f.geometry.coordinates) {
+                        fg.addLayer(L.geoJSON(f));
+                    }
+                });
+                if (fg.getLayers().length > 0) {
+                    map.fitBounds(fg.getBounds(), {padding: [100, 100]});
                 }
-            });
-            if (fg.getLayers().length > 0) {
-                map.fitBounds(fg.getBounds(), {padding: [50, 50]});
+            }
+
+            if (params.get('setup_only') === '1') {
+                window.radarSetupDone = true;
+                return; // End early if only setting up bounds for video capture
             }
 
             const realNow = new Date();
@@ -981,7 +991,7 @@ window.populateOverrideName = function(encodedName) {
                         <div style="font-size: 1.2rem; font-weight: bold; color: #93c5fd; margin-bottom: 5px;">${timeStr}</div>
                         <div style="display: flex; justify-content: space-around; font-size: 1.1rem; gap: 20px;">
                             <div><span style="color: #ef4444;">🔴</span> Active Red Alerts: <b>${redAlertsCount}</b></div>
-                            <div><span style="color: #eab308;">📍</span> Total Locations Hit: <b>${totalAlertsCount}</b></div>
+                            <div><span style="color: #eab308;">📍</span> Total Locations: <b>${totalAlertsCount}</b></div>
                         </div>
                     `;
                 }
@@ -1000,9 +1010,20 @@ window.populateOverrideName = function(encodedName) {
                 if (params.get('hide_ui') === '1') {
                     document.getElementById('controlPanel').style.display = 'none';
                 }
+
+                const hasInitialView = params.has('lat') && params.has('lng') && params.has('zoom');
+                const isSetup = params.get('setup_only') === '1';
+
+                let delayMs = 2000;
+                if (isSetup) {
+                    delayMs = 100;
+                } else if (hasInitialView) {
+                    delayMs = 15000; // Give basemap tiles time to load completely before starting replay
+                }
+
                 setTimeout(() => {
                     startRadarReplay();
-                }, 2000); // Give the map 2s to load basemaps
+                }, delayMs);
             }
         });
 
@@ -1729,20 +1750,33 @@ map.on('click', async function(e) {
 
                 layerStyles = appSettings.layerStyles || {};
 
-                // Apply default map settings if available
-                const defaultLat = appSettings.defaultLat ?? 49.0;
-                const defaultLng = appSettings.defaultLng ?? 31.0;
-                const defaultZoom = appSettings.defaultZoom ?? 6;
-                map.setView([defaultLat, defaultLng], defaultZoom);
+                // Apply default map settings if available, overridden by URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlLat = urlParams.get('lat');
+                const urlLng = urlParams.get('lng');
+                const urlZoom = urlParams.get('zoom');
+                const urlBasemap = urlParams.get('basemap');
 
-                const defaultBasemap = appSettings.defaultBasemap ?? 'dark';
+                const defaultLat = urlLat ? parseFloat(urlLat) : (appSettings.defaultLat ?? 49.0);
+                const defaultLng = urlLng ? parseFloat(urlLng) : (appSettings.defaultLng ?? 31.0);
+                const defaultZoom = urlZoom ? parseFloat(urlZoom) : (appSettings.defaultZoom ?? 6);
+                map.setView([defaultLat, defaultLng], defaultZoom, {animate: false});
+
+                const defaultBasemap = urlBasemap ? urlBasemap : (appSettings.defaultBasemap ?? 'dark');
                 const radioInput = document.querySelector(`input[name="basemap"][value="${defaultBasemap}"]`);
                 if (radioInput) radioInput.checked = true;
 
-                if (baseMaps[defaultBasemap]) {
+                // Support baseMaps from global scope if available (defined in map-core.js)
+                if (window.baseMaps && window.baseMaps[defaultBasemap]) {
+                    window.baseMaps[defaultBasemap].addTo(map);
+                } else if (typeof baseMaps !== 'undefined' && baseMaps[defaultBasemap]) {
                     baseMaps[defaultBasemap].addTo(map);
                 } else {
-                    baseMaps.dark.addTo(map);
+                    if (window.baseMaps) {
+                        window.baseMaps.dark.addTo(map);
+                    } else if (typeof baseMaps !== 'undefined') {
+                        baseMaps.dark.addTo(map);
+                    }
                 }
 
                 if (window.updateSentinelStatus) window.updateSentinelStatus();
