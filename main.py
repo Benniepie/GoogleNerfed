@@ -730,7 +730,7 @@ async def export_radar_video():
 # ------------------------------
 
 @app.get("/api/layers")
-async def get_layers():
+def get_layers():
     """Returns a list of all KML files in the data directory."""
     files = []
     for f in DATA_DIR.iterdir():
