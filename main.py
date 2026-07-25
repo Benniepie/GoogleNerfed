@@ -1135,6 +1135,7 @@ class GeocodeOverride(BaseModel):
     location_name: str
     osm_id: str
     english_name: str = ""
+    suppress: bool = False
 
 @app.post("/api/admin/upload_shadow_fleet", dependencies=[Depends(verify_admin)])
 async def admin_upload_shadow_fleet(file: UploadFile = File(...)):
@@ -1190,7 +1191,7 @@ async def admin_geocode_override(override: GeocodeOverride):
             actual_key = k
             break
 
-    if override.osm_id:
+    if override.osm_id and not override.suppress:
         # Fetch the exact polygon using osm_type and osm_id
         osm_type = 'R'
         osm_id_num = override.osm_id.strip()
@@ -1226,7 +1227,11 @@ async def admin_geocode_override(override: GeocodeOverride):
         except Exception:
             pass
 
-    if not override.osm_id and not override.english_name:
+    if override.suppress:
+        fresh_cache[actual_key] = {"empty": True}
+        if 'geocode_cache' in globals():
+            geocode_cache[actual_key] = {"empty": True}
+    elif not override.osm_id and not override.english_name:
         if actual_key in fresh_cache:
             del fresh_cache[actual_key]
         if 'geocode_cache' in globals() and actual_key in geocode_cache:
