@@ -813,9 +813,7 @@ window.populateOverrideName = function(encodedName) {
                 if (isRegionOrDistrict) {
                     isSmallOrPoint = false; // Never make a region or district a map marker!
                 } else if (!isSmallOrPoint && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
-                    const areaSqMeters = turf.area(feature);
-                    const areaSqKm = areaSqMeters / 1000000;
-                    if (areaSqKm < 250 || feature.properties.icon) {
+                    if (feature.properties.icon) {
                         isSmallOrPoint = true;
                     }
                 }
@@ -1559,9 +1557,7 @@ map.on('click', async function(e) {
 
                         // Hit testing fallback for small polygons rendered as markers
                         if (!isHit) {
-                            const areaSqMeters = turf.area(currentFeature);
-                            const areaSqKm = areaSqMeters / 1000000;
-                            if (areaSqKm < 250 || currentFeature.properties.icon) {
+                            if (currentFeature.properties.icon) {
                                 const centroid = turf.centroid(currentFeature);
                                 const dist = turf.distance(clickPoint, centroid, {units: 'kilometers'});
                                 // Give a 10km click radius for these tiny areas/markers
