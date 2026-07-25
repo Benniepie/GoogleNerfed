@@ -1,5 +1,42 @@
 const activeKMLGeoJSON = {};
 
+window.populateOverrideName = function(encodedName) {
+    const el = document.getElementById('overrideLocationName');
+    if (!el) return;
+
+    // Decode the safely encoded name
+    const name = decodeURIComponent(encodedName);
+    el.value = name;
+
+    // Attempt to open Map Admin and Live Data Layers Admin sections if they are closed
+    const allHeaders = document.querySelectorAll('.section-header');
+    allHeaders.forEach(h => {
+        const text = h.innerText.trim();
+        if (text.includes('Map Admin') || text.includes('Live Data Layers Admin')) {
+            const content = h.nextElementSibling;
+            if (content && content.classList.contains('collapsed')) {
+                // simulate toggle by calling toggleSection directly
+                if (typeof window.toggleSection === 'function') {
+                    window.toggleSection(h);
+                } else if (typeof toggleSection === 'function') {
+                    toggleSection(h);
+                } else {
+                    h.click(); // fallback
+                }
+            }
+        }
+    });
+
+    // scroll into view
+    setTimeout(() => {
+        el.scrollIntoView({behavior: 'smooth', block: 'center'});
+        // visually highlight it
+        el.style.backgroundColor = 'rgba(16, 185, 129, 0.3)';
+        setTimeout(() => el.style.backgroundColor = 'rgba(0,0,0,0.5)', 1000);
+    }, 300); // small delay to let toggles finish
+};
+
+
         // 3. Fetch and Render Layers
         async function loadLayers() {
             try {
@@ -1574,7 +1611,7 @@ map.on('click', async function(e) {
                                 <h4 style="margin: 0 0 4px 0; color: #3b82f6;">🚨 Air Alert</h4>
                                 <div style="font-size: 0.85rem;">
                                     <b>Location:</b> ${props.name}<br>
-                                    <b>Nominatim Query:</b> ${props.raw_name}<br>
+                                    ${window.location.pathname.startsWith('/admin') ? `<b>Nominatim Query:</b> <span style="cursor: pointer; text-decoration: underline;" onclick="if(window.populateOverrideName) window.populateOverrideName('${encodeURIComponent(props.raw_name).replace(/'/g, "%27")}');">${props.raw_name}</span><br>` : ''}
                                     <b>Threat:</b> ${props.threat}<br>
                                     <b>Status:</b> ${props.status === 'over' ? '<span style="color:#22c55e;">Over</span>' : '<span style="color:#ef4444;">Active</span>'}<br>
                                     <b>Time:</b> ${timeStr} ${relativeTime}
