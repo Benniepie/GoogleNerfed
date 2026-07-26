@@ -733,7 +733,12 @@ window.populateOverrideName = function(encodedName) {
 
             // We only iterate over the *latest* feature for each location.
             // This prevents rendering multiple polygons for the same location.
-            latestStatePerLoc.forEach((feature, locName) => {
+            // Sort by time (oldest to newest) so newest are drawn last (on top)
+            const sortedLatestStates = Array.from(latestStatePerLoc.entries()).sort((a, b) => {
+                return new Date(a[1].properties.time) - new Date(b[1].properties.time);
+            });
+
+            sortedLatestStates.forEach(([locName, feature]) => {
                 const latestFeature = effectiveLatestStatePerLoc.get(locName);
                 const latestProps = latestFeature.properties;
                 const latestAgeMinutes = (now - new Date(latestProps.time)) / (1000 * 60);
@@ -747,6 +752,7 @@ window.populateOverrideName = function(encodedName) {
                 let fillOpacity = 0.4; // Base opacity for red/orange/yellow
                 let animationClass = '';
                 let borderClass = '';
+                let borderWeight = 2;
                 let isGrey = false;
 
                 if (latestProps.status === 'over') {
@@ -795,6 +801,7 @@ window.populateOverrideName = function(encodedName) {
                 if (ageSeconds <= 60) {
                     borderClass = 'radar-flash-path';
                     animationClass += ' radar-flash-anim';
+                    borderWeight = 4;
                 }
 
                 // Determine if this is a small polygon or has an emoji
@@ -850,7 +857,7 @@ window.populateOverrideName = function(encodedName) {
                         interactive: false,
                         style: {
                             color: isGrey ? '#64748b' : fillColor,
-                            weight: isGrey ? 2 : 2,
+                            weight: isGrey ? 2 : borderWeight,
                             fillColor: fillColor,
                             fillOpacity: fillOpacity,
                             className: borderClass
