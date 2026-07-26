@@ -791,7 +791,7 @@ async def get_settings():
     return {}
 
 @app.post("/api/settings", dependencies=[Depends(verify_admin)])
-async def save_settings(settings: Dict[str, Any] = Body(...)):
+def save_settings(settings: Dict[str, Any] = Body(...)):
     """Saves application settings and styles to settings.json."""
     settings_path = DATA_DIR / "settings.json"
     with open(settings_path, "w") as f:
