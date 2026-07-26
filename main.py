@@ -349,7 +349,7 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
             else:
                 for loc in part.split(','):
                     loc_clean = loc.strip()
-                    loc_clean = re.sub(r'(?i)и близлежащие', '', loc_clean).strip()
+                    loc_clean = re.sub(r'(?i)и близлежащие', 'округ', loc_clean).strip()
 
                     # NEW: Define expansions for common administrative abbreviations
                     admin_expansions = {
