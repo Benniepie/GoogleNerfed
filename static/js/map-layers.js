@@ -1422,6 +1422,11 @@ async function reverseGeocodeLocation(lat, lng) {
 }
 
 map.on('click', async function(e) {
+            window.highlightedVesselMmsi = null;
+            if (shadowFleetTrackLayer) {
+                shadowFleetTrackLayer.setStyle(shadowFleetTrackLayer.options.style);
+            }
+
             if (window.currentTool && (window.currentTool === 'ruler' || window.currentTool === 'circle')) {
                 return;
             }
@@ -1552,6 +1557,10 @@ map.on('click', async function(e) {
 
                     if (closestFeature) {
                         const props = closestFeature.properties;
+                        window.highlightedVesselMmsi = props.mmsi;
+                        if (shadowFleetTrackLayer) {
+                            shadowFleetTrackLayer.setStyle(shadowFleetTrackLayer.options.style);
+                        }
                         const status = props.is_live ? "🔴 LIVE" : "⚫ DARK (AIS OFF)";
                         shadowHitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
                         shadowHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #3b82f6;">🚢 Shadow Fleet: ${props.name}</h4>`;
@@ -1990,6 +1999,7 @@ function getShadowFleetStyle(feature) {
 
 let shadowFleetLayer = null;
 let shadowFleetTrackLayer = null;
+window.highlightedVesselMmsi = null;
 
 async function loadShadowFleetLayer() {
     const statusDiv = document.getElementById('shadowFleetStatus');
@@ -2027,12 +2037,34 @@ async function loadShadowFleetLayer() {
             map.removeLayer(shadowFleetTrackLayer);
         }
 
-        shadowFleetTrackLayer = L.geoJSON(trackGeoJSON, {
-            style: {
-                color: '#EF4444',
-                weight: 2,
-                opacity: 0.6,
-                dashArray: '5, 5' // Dashed line for tracks
+                shadowFleetTrackLayer = L.geoJSON(trackGeoJSON, {
+            style: function(feature) {
+                let color = '#EF4444'; // Red
+                let weight = 2;
+                let opacity = 0.6;
+                let dashArray = '5, 5';
+
+                if (feature.properties.is_dark) {
+                    color = '#9CA3AF'; // Gray
+                }
+
+                if (window.highlightedVesselMmsi) {
+                    if (feature.properties.mmsi === window.highlightedVesselMmsi) {
+                        weight = 4;
+                        opacity = 1.0;
+                        dashArray = '8, 8'; // Make the dashes larger to highlight the track more
+                    } else {
+                        weight = 0;
+                        opacity = 0;
+                    }
+                }
+
+                return {
+                    color: color,
+                    weight: weight,
+                    opacity: opacity,
+                    dashArray: dashArray
+                };
             }
         });
 
@@ -2066,12 +2098,34 @@ async function loadVesselTrack(mmsi) {
             map.removeLayer(shadowFleetTrackLayer);
         }
 
-        shadowFleetTrackLayer = L.geoJSON(trackGeoJSON, {
-            style: {
-                color: '#EF4444',
-                weight: 2,
-                opacity: 0.6,
-                dashArray: '5, 5' // Dashed line for tracks
+                shadowFleetTrackLayer = L.geoJSON(trackGeoJSON, {
+            style: function(feature) {
+                let color = '#EF4444'; // Red
+                let weight = 2;
+                let opacity = 0.6;
+                let dashArray = '5, 5';
+
+                if (feature.properties.is_dark) {
+                    color = '#9CA3AF'; // Gray
+                }
+
+                if (window.highlightedVesselMmsi) {
+                    if (feature.properties.mmsi === window.highlightedVesselMmsi) {
+                        weight = 4;
+                        opacity = 1.0;
+                        dashArray = '8, 8'; // Make the dashes larger to highlight the track more
+                    } else {
+                        weight = 0;
+                        opacity = 0;
+                    }
+                }
+
+                return {
+                    color: color,
+                    weight: weight,
+                    opacity: opacity,
+                    dashArray: dashArray
+                };
             }
         });
 
