@@ -2048,10 +2048,15 @@ async function loadShadowFleetLayer() {
                     color = '#9CA3AF'; // Gray
                 }
 
-                if (window.highlightedVesselMmsi && feature.properties.mmsi === window.highlightedVesselMmsi) {
-                    weight = 4;
-                    opacity = 1.0;
-                    dashArray = '8, 8'; // Make the dashes larger to highlight the track more
+                if (window.highlightedVesselMmsi) {
+                    if (feature.properties.mmsi === window.highlightedVesselMmsi) {
+                        weight = 4;
+                        opacity = 1.0;
+                        dashArray = '8, 8'; // Make the dashes larger to highlight the track more
+                    } else {
+                        weight = 0;
+                        opacity = 0;
+                    }
                 }
 
                 return {
@@ -2104,10 +2109,15 @@ async function loadVesselTrack(mmsi) {
                     color = '#9CA3AF'; // Gray
                 }
 
-                if (window.highlightedVesselMmsi && feature.properties.mmsi === window.highlightedVesselMmsi) {
-                    weight = 4;
-                    opacity = 1.0;
-                    dashArray = '8, 8'; // Make the dashes larger to highlight the track more
+                if (window.highlightedVesselMmsi) {
+                    if (feature.properties.mmsi === window.highlightedVesselMmsi) {
+                        weight = 4;
+                        opacity = 1.0;
+                        dashArray = '8, 8'; // Make the dashes larger to highlight the track more
+                    } else {
+                        weight = 0;
+                        opacity = 0;
+                    }
                 }
 
                 return {
