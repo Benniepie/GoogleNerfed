@@ -890,7 +890,32 @@ window.populateOverrideName = function(encodedName) {
 
         // --- RADAR REPLAY LOGIC ---
         window.startRadarReplay = async function() {
-            window.radarReplayFinished = false;
+                        window.radarReplayFinished = false;
+            window.radarReplayPaused = false;
+
+            // Sync UI state
+            const playPauseBtn = document.getElementById('replayPlayPauseBtn');
+            if (playPauseBtn) playPauseBtn.innerHTML = '⏸️';
+
+            const speedSelect = document.getElementById('replaySpeedSelect');
+            if (speedSelect) {
+                window.radarReplayDurationMs = parseInt(speedSelect.value) * 1000;
+            }
+
+            const cp = document.getElementById('controlPanel');
+            if (cp) {
+                cp.classList.remove('open');
+                // Alse set style to none so it completely disappears if the class removal isn't enough
+
+            }
+
+            const replayParams = new URLSearchParams(window.location.search);
+            const isVideoExport = replayParams.get('hide_ui') === '1';
+
+            const controls = document.getElementById('replayControlsOverlay');
+            if (controls && !isVideoExport) {
+                controls.style.display = 'flex';
+            }
 
             if (!isRadarRussiaActive) {
                 document.getElementById('radarRussiaToggle').click();
@@ -907,8 +932,7 @@ window.populateOverrideName = function(encodedName) {
                 return;
             }
 
-            const params = new URLSearchParams(window.location.search);
-            const hasInitialView = params.has('lat') && params.has('lng') && params.has('zoom');
+            const hasInitialView = replayParams.has('lat') && replayParams.has('lng') && replayParams.has('zoom');
 
             if (!hasInitialView) {
                 // Calculate bounding box for all current features
@@ -923,7 +947,7 @@ window.populateOverrideName = function(encodedName) {
                 }
             }
 
-            if (params.get('setup_only') === '1') {
+            if (replayParams.get('setup_only') === '1') {
                 window.radarSetupDone = true;
                 return; // End early if only setting up bounds for video capture
             }
@@ -933,26 +957,52 @@ window.populateOverrideName = function(encodedName) {
             window.radarReplayTime = startReplayTime;
 
             let lastFrameTime = performance.now();
-            let durationMs = 60000; // 60 seconds for 24 hours
-            let speedMultiplier = (24 * 60 * 60 * 1000) / durationMs;
+            window.radarReplayStartTime = performance.now();
+            window.radarReplayDurationMs = window.radarReplayDurationMs || 60000;
 
             const overlay = document.getElementById('replayOverlay');
             if (overlay) overlay.style.display = 'block';
 
             function animate(currentTime) {
-                let dt = currentTime - lastFrameTime;
-                lastFrameTime = currentTime;
+                if (window.radarReplayFinished) return;
 
-                let simulatedMs = dt * speedMultiplier;
-                window.radarReplayTime = new Date(window.radarReplayTime.getTime() + simulatedMs);
+                if (!window.radarReplayPaused) {
+                    let elapsed = currentTime - window.radarReplayStartTime;
+                    let progress = elapsed / window.radarReplayDurationMs;
 
-                if (window.radarReplayTime >= realNow) {
-                    window.radarReplayTime = null;
-                    renderRadarRussiaData();
-                    window.radarReplayFinished = true; // Signal Playwright
-                    if (overlay) overlay.style.display = 'none';
-                    return;
+                    if (progress >= 1.0) {
+                        progress = 1.0;
+                    }
+
+                    const timeWindowMs = 24 * 60 * 60 * 1000;
+                    window.radarReplayTime = new Date(startReplayTime.getTime() + (progress * timeWindowMs));
+
+                    // Update slider
+                    const slider = document.getElementById('replayProgressSlider');
+                    if (slider) {
+                        slider.value = progress * 100;
+                    }
+
+                    if (progress >= 1.0) {
+                        window.radarReplayTime = null;
+                        renderRadarRussiaData();
+                        window.radarReplayFinished = true;
+                        if (overlay) overlay.style.display = 'none';
+                        const controls = document.getElementById('replayControlsOverlay');
+                        if (controls) controls.style.display = 'none';
+                        const cp = document.getElementById('controlPanel');
+                        if (cp) {
+                            cp.style.display = '';
+                        }
+                        return;
+                    }
+                } else {
+                    // if paused, shift the start time forward so we don't jump ahead on unpause
+                    let dt = currentTime - lastFrameTime;
+                    window.radarReplayStartTime += dt;
                 }
+
+                lastFrameTime = currentTime;
 
                 // Calculate stats for overlay
                 let redAlertsCount = 0;
@@ -978,6 +1028,7 @@ window.populateOverrideName = function(encodedName) {
 
                 totalAlertsCount = alertedLocations.size;
 
+                // Update UI overlay if it exists
                 if (overlay) {
                     // Format Date nicely
                     const timeStr = window.radarReplayTime.toLocaleString('en-GB', {
@@ -1007,6 +1058,11 @@ window.populateOverrideName = function(encodedName) {
             if (params.get('radar_replay') === '1') {
                 if (params.get('hide_ui') === '1') {
                     document.getElementById('controlPanel').style.display = 'none';
+                    const rco = document.getElementById('replayControlsOverlay');
+                    if (rco) rco.style.display = 'none';
+                    const lcc = document.querySelector('.leaflet-control-container');
+                    if (lcc) lcc.style.display = 'none';
+                    window.radarReplayDurationMs = 60000;
                 }
 
                 const hasInitialView = params.has('lat') && params.has('lng') && params.has('zoom');
@@ -2140,3 +2196,77 @@ setInterval(() => {
         loadShadowFleetLayer();
     }
 }, 60000); // Poll every 60 seconds
+
+
+window.toggleRadarReplayPause = function() {
+    window.radarReplayPaused = !window.radarReplayPaused;
+    const btn = document.getElementById('replayPlayPauseBtn');
+    if (btn) {
+        btn.innerHTML = window.radarReplayPaused ? '▶️' : '⏸️';
+    }
+};
+
+window.seekRadarReplay = function(percent) {
+    if (!window.radarReplayStartTime) return;
+    const progress = parseFloat(percent) / 100.0;
+
+    // Instead of seeking, it's easier to adjust the start time of the replay
+    // so that the current time evaluates to the desired progress.
+    const duration = window.radarReplayDurationMs || 60000;
+    const newElapsed = progress * duration;
+
+    // The current performance.now() needs to be equivalent to radarReplayStartTime + newElapsed
+    window.radarReplayStartTime = performance.now() - newElapsed;
+
+    // If paused, we must manually update the replay time, because the animation loop skips time logic when paused.
+    if (window.radarReplayPaused) {
+        const realNow = new Date();
+        const startReplayTime = new Date(realNow.getTime() - 24 * 60 * 60 * 1000);
+        const timeWindowMs = 24 * 60 * 60 * 1000;
+        window.radarReplayTime = new Date(startReplayTime.getTime() + (progress * timeWindowMs));
+    }
+
+    // Force a render
+    renderRadarRussiaData();
+};
+
+window.changeRadarReplaySpeed = function() {
+    const sel = document.getElementById('replaySpeedSelect');
+    if (sel && window.radarReplayStartTime) {
+        const oldDuration = window.radarReplayDurationMs || 60000;
+        const newDuration = parseInt(sel.value) * 1000;
+
+        // Calculate current progress so we can maintain the same relative position
+        const elapsed = performance.now() - window.radarReplayStartTime;
+        let progress = elapsed / oldDuration;
+        if (progress > 1) progress = 1;
+
+        window.radarReplayDurationMs = newDuration;
+
+        // Adjust start time to maintain progress
+        window.radarReplayStartTime = performance.now() - (progress * newDuration);
+    } else if (sel) {
+        window.radarReplayDurationMs = parseInt(sel.value) * 1000;
+    }
+};
+
+window.closeRadarReplay = function() {
+    window.radarReplayTime = null;
+    window.radarReplayFinished = true;
+    window.radarReplayPaused = false;
+
+    const overlay = document.getElementById('replayOverlay');
+    if (overlay) overlay.style.display = 'none';
+
+    const controls = document.getElementById('replayControlsOverlay');
+    if (controls) controls.style.display = 'none';
+
+    const cp = document.getElementById('controlPanel');
+    if (cp) {
+        cp.style.display = ''; // Reset display
+        // Optional: you can remove the open class, or let the user click it open again
+    }
+
+    // Re-render to show live data
+    renderRadarRussiaData();
+};

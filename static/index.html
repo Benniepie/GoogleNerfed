@@ -416,6 +416,29 @@
 
     <div id="map"></div>
 
+
+    <div id="replayControlsOverlay" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 3000; background: rgba(20, 20, 25, 0.45); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 10px 20px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 6px rgba(0,0,0,0.3); color: white; align-items: center; gap: 15px; min-width: 300px; justify-content: space-between;">
+        <button id="replayPlayPauseBtn" onclick="toggleRadarReplayPause()" class="icon-btn" style="font-size: 1.5rem; padding: 5px; background: transparent; border: none; cursor: pointer; color: white;" title="Play/Pause">⏸️</button>
+
+        <div style="display: flex; flex-direction: column; flex-grow: 1; align-items: center; margin: 0 10px;">
+            <input type="range" id="replayProgressSlider" min="0" max="100" value="0" step="0.1" style="width: 100%; cursor: pointer;" oninput="seekRadarReplay(this.value)">
+            <div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.75rem; color: #cbd5e1; margin-top: 5px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
+                <span>0h</span>
+                <span>24h</span>
+            </div>
+        </div>
+
+        <select id="replaySpeedSelect" onchange="changeRadarReplaySpeed()" style="background: rgba(15, 23, 42, 0.8); color: white; border: 1px solid #475569; border-radius: 4px; padding: 4px; font-size: 0.85rem; cursor: pointer;">
+            <option value="60">60s</option>
+            <option value="120">120s</option>
+            <option value="180">180s</option>
+            <option value="300">300s</option>
+        </select>
+
+        <button id="exportVideoBtn" class="primary-btn" onclick="exportRadarVideo()" style="font-size: 0.85rem; padding: 6px; background-color: #8b5cf6;">🎬 Export Video (60s Replay, ~90s wait)</button>
+        <button onclick="closeRadarReplay()" class="icon-btn" style="font-size: 1.2rem; padding: 5px; background: transparent; border: none; cursor: pointer; color: white;" title="Close Replay">✖</button>
+    </div>
+
     <div id="replayOverlay" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 3000; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px); padding: 15px 30px; border-radius: 12px; border: 2px solid #3b82f6; box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: #f8fafc; font-size: 1.5rem; text-align: center; min-width: 300px;">
         <!-- Content will be injected here -->
     </div>
@@ -565,7 +588,7 @@
 
             <div style="margin-bottom: 10px; display: flex; gap: 10px;">
                 <button class="primary-btn" onclick="startRadarReplay()" style="flex: 1; font-size: 0.85rem; padding: 6px;">▶️ Replay 24h</button>
-                <button id="exportVideoBtn" class="primary-btn" onclick="exportRadarVideo()" style="flex: 1; font-size: 0.85rem; padding: 6px; background-color: #8b5cf6;">🎬 Export Video</button>
+
             </div>
 
             <div id="radarLegend" style="display: none; margin-top: 10px; background: rgba(15, 23, 42, 0.8); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.8rem;">
