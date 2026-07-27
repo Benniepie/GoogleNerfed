@@ -909,8 +909,8 @@ window.populateOverrideName = function(encodedName) {
 
             }
 
-            const params = new URLSearchParams(window.location.search);
-            const isVideoExport = params.get('hide_ui') === '1';
+            const replayParams = new URLSearchParams(window.location.search);
+            const isVideoExport = replayParams.get('hide_ui') === '1';
 
             const controls = document.getElementById('replayControlsOverlay');
             if (controls && !isVideoExport) {
@@ -932,8 +932,7 @@ window.populateOverrideName = function(encodedName) {
                 return;
             }
 
-            const params = new URLSearchParams(window.location.search);
-            const hasInitialView = params.has('lat') && params.has('lng') && params.has('zoom');
+            const hasInitialView = replayParams.has('lat') && replayParams.has('lng') && replayParams.has('zoom');
 
             if (!hasInitialView) {
                 // Calculate bounding box for all current features
@@ -948,7 +947,7 @@ window.populateOverrideName = function(encodedName) {
                 }
             }
 
-            if (params.get('setup_only') === '1') {
+            if (replayParams.get('setup_only') === '1') {
                 window.radarSetupDone = true;
                 return; // End early if only setting up bounds for video capture
             }
