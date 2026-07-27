@@ -906,11 +906,14 @@ window.populateOverrideName = function(encodedName) {
             if (cp) {
                 cp.classList.remove('open');
                 // Alse set style to none so it completely disappears if the class removal isn't enough
-                cp.style.display = 'none';
+
             }
 
+            const params = new URLSearchParams(window.location.search);
+            const isVideoExport = params.get('hide_ui') === '1';
+
             const controls = document.getElementById('replayControlsOverlay');
-            if (controls) {
+            if (controls && !isVideoExport) {
                 controls.style.display = 'flex';
             }
 
