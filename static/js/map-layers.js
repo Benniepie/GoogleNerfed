@@ -889,8 +889,73 @@ window.populateOverrideName = function(encodedName) {
         });
 
         // --- RADAR REPLAY LOGIC ---
+
+        // --- Radar Replay Controls State ---
+        window.radarReplayPaused = false;
+        window.radarReplayDurationMs = 60000; // default 60s
+        window.radarReplayRealNow = null;
+        window.radarReplayStartTime = null;
+
+        window.toggleRadarReplayPause = function() {
+            window.radarReplayPaused = !window.radarReplayPaused;
+            const btn = document.getElementById('replayPlayPauseBtn');
+            if (btn) {
+                btn.innerHTML = window.radarReplayPaused ? '▶️' : '⏸️';
+            }
+        };
+
+        window.changeRadarReplaySpeed = function() {
+            const select = document.getElementById('replaySpeedSelect');
+            if (select) {
+                window.radarReplayDurationMs = parseInt(select.value) * 1000;
+            }
+        };
+
+        window.seekRadarReplay = function(percent) {
+            if (!window.radarReplayStartTime || !window.radarReplayRealNow) return;
+            const totalSimulatedMs = window.radarReplayRealNow.getTime() - window.radarReplayStartTime.getTime();
+            const targetMs = (percent / 100) * totalSimulatedMs;
+            window.radarReplayTime = new Date(window.radarReplayStartTime.getTime() + targetMs);
+
+            // force render to update map and overlays immediately
+            renderRadarRussiaData();
+        };
+
+        window.closeRadarReplay = function() {
+            window.radarReplayTime = null;
+            window.radarReplayFinished = true;
+            window.radarReplayPaused = false;
+
+            const overlay = document.getElementById('replayOverlay');
+            if (overlay) overlay.style.display = 'none';
+
+            const controls = document.getElementById('replayControlsOverlay');
+            if (controls) controls.style.display = 'none';
+
+            // Re-render to show live data
+            renderRadarRussiaData();
+        };
+
         window.startRadarReplay = async function() {
+
+
             window.radarReplayFinished = false;
+            window.radarReplayPaused = false;
+
+            // Sync UI state
+            const playPauseBtn = document.getElementById('replayPlayPauseBtn');
+            if (playPauseBtn) playPauseBtn.innerHTML = '⏸️';
+
+            const speedSelect = document.getElementById('replaySpeedSelect');
+            if (speedSelect) {
+                window.radarReplayDurationMs = parseInt(speedSelect.value) * 1000;
+            }
+
+            const cp = document.getElementById('controlPanel');
+            if (cp) {
+                cp.classList.remove('open');
+            }
+
 
             if (!isRadarRussiaActive) {
                 document.getElementById('radarRussiaToggle').click();
@@ -932,26 +997,45 @@ window.populateOverrideName = function(encodedName) {
             const startReplayTime = new Date(realNow.getTime() - 24 * 60 * 60 * 1000);
             window.radarReplayTime = startReplayTime;
 
+            window.radarReplayRealNow = realNow;
+            window.radarReplayStartTime = startReplayTime;
+
             let lastFrameTime = performance.now();
-            let durationMs = 60000; // 60 seconds for 24 hours
-            let speedMultiplier = (24 * 60 * 60 * 1000) / durationMs;
 
             const overlay = document.getElementById('replayOverlay');
             if (overlay) overlay.style.display = 'block';
+
+            const controls = document.getElementById('replayControlsOverlay');
+            if (controls && params.get('hide_ui') !== '1') {
+                controls.style.display = 'flex';
+            }
 
             function animate(currentTime) {
                 let dt = currentTime - lastFrameTime;
                 lastFrameTime = currentTime;
 
-                let simulatedMs = dt * speedMultiplier;
-                window.radarReplayTime = new Date(window.radarReplayTime.getTime() + simulatedMs);
+                if (!window.radarReplayPaused) {
+                    let speedMultiplier = (24 * 60 * 60 * 1000) / window.radarReplayDurationMs;
+                    let simulatedMs = dt * speedMultiplier;
+                    window.radarReplayTime = new Date(window.radarReplayTime.getTime() + simulatedMs);
+                }
 
                 if (window.radarReplayTime >= realNow) {
                     window.radarReplayTime = null;
                     renderRadarRussiaData();
                     window.radarReplayFinished = true; // Signal Playwright
                     if (overlay) overlay.style.display = 'none';
+                    if (controls) controls.style.display = 'none';
                     return;
+                }
+
+                // Update slider value
+                const slider = document.getElementById('replayProgressSlider');
+                if (slider && window.radarReplayTime && window.radarReplayStartTime && window.radarReplayRealNow) {
+                    const totalSimMs = window.radarReplayRealNow.getTime() - window.radarReplayStartTime.getTime();
+                    const elapsedSimMs = window.radarReplayTime.getTime() - window.radarReplayStartTime.getTime();
+                    const percent = (elapsedSimMs / totalSimMs) * 100;
+                    slider.value = percent;
                 }
 
                 // Calculate stats for overlay
@@ -1007,6 +1091,10 @@ window.populateOverrideName = function(encodedName) {
             if (params.get('radar_replay') === '1') {
                 if (params.get('hide_ui') === '1') {
                     document.getElementById('controlPanel').style.display = 'none';
+                    // Hide other map controls like zoom, minimap, etc for video export
+                    document.querySelectorAll('.leaflet-control').forEach(el => {
+                        el.style.display = 'none';
+                    });
                 }
 
                 const hasInitialView = params.has('lat') && params.has('lng') && params.has('zoom');
