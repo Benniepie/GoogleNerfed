@@ -349,7 +349,7 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
             else:
                 for loc in part.split(','):
                     loc_clean = loc.strip()
-                    loc_clean = re.sub(r'(?i)и близлежащие', '', loc_clean).strip()
+                    loc_clean = re.sub(r'(?i)и близлежащие', 'округ', loc_clean).strip()
 
                     # NEW: Define expansions for common administrative abbreviations
                     admin_expansions = {
@@ -1135,6 +1135,7 @@ class GeocodeOverride(BaseModel):
     location_name: str
     osm_id: str
     english_name: str = ""
+    suppress: bool = False
 
 @app.post("/api/admin/upload_shadow_fleet", dependencies=[Depends(verify_admin)])
 async def admin_upload_shadow_fleet(file: UploadFile = File(...)):
@@ -1190,7 +1191,7 @@ async def admin_geocode_override(override: GeocodeOverride):
             actual_key = k
             break
 
-    if override.osm_id:
+    if override.osm_id and not override.suppress:
         # Fetch the exact polygon using osm_type and osm_id
         osm_type = 'R'
         osm_id_num = override.osm_id.strip()
@@ -1226,7 +1227,11 @@ async def admin_geocode_override(override: GeocodeOverride):
         except Exception:
             pass
 
-    if not override.osm_id and not override.english_name:
+    if override.suppress:
+        fresh_cache[actual_key] = {"empty": True}
+        if 'geocode_cache' in globals():
+            geocode_cache[actual_key] = {"empty": True}
+    elif not override.osm_id and not override.english_name:
         if actual_key in fresh_cache:
             del fresh_cache[actual_key]
         if 'geocode_cache' in globals() and actual_key in geocode_cache:
@@ -1339,74 +1344,208 @@ def is_in_spoofing_zone(lon, lat):
             return True
     return False
 
-@shadow_fleet_router.get("/tracks/{mmsi}")
-def get_vessel_track(mmsi: str):
-    """Returns the historical track of a specific vessel as a GeoJSON LineString."""
-    conn = sqlite3.connect(DATA_DIR / "vessels.db")
-    cursor = conn.cursor()
 
-    # Get last 500 points to keep payload small
-    cursor.execute("SELECT lon, lat, timestamp FROM tracks WHERE mmsi = ? ORDER BY timestamp DESC LIMIT 500", (mmsi,))
-    rows = cursor.fetchall()
-    conn.close()
+def calculate_intermediate_point(lon1, lat1, lon2, lat2, fraction):
+    lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    if c == 0:
+        return math.degrees(lon1), math.degrees(lat1)
+    A = math.sin((1 - fraction) * c) / math.sin(c)
+    B = math.sin(fraction * c) / math.sin(c)
+    x = A * math.cos(lat1) * math.cos(lon1) + B * math.cos(lat2) * math.cos(lon2)
+    y = A * math.cos(lat1) * math.sin(lon1) + B * math.cos(lat2) * math.sin(lon2)
+    z = A * math.sin(lat1) + B * math.sin(lat2)
+    lat_inter = math.atan2(z, math.sqrt(x**2 + y**2))
+    lon_inter = math.atan2(y, x)
+    return round(math.degrees(lon_inter), 6), round(math.degrees(lat_inter), 6)
 
-    if not rows:
-        return {"error": "No tracks found"}
 
-    # Reverse to chronological order
-    rows = list(reversed(rows))
 
-    coordinates = []
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def check_is_outage(cursor, start_time, end_time):
+    # check if there are any points across all vessels between start_time + 30 mins and end_time - 30 mins
+    import datetime
+
+    st = start_time + datetime.timedelta(minutes=30)
+    et = end_time - datetime.timedelta(minutes=30)
+
+    if st >= et:
+        return False
+
+    cursor.execute("SELECT 1 FROM tracks WHERE timestamp > ? AND timestamp < ? LIMIT 1", (st.isoformat(), et.isoformat()))
+    return cursor.fetchone() is None
+
+def generate_track_features(cursor, mmsi, points):
+    features = []
+    current_segment = []
     last_lon, last_lat, last_time = None, None, None
-
     reject_count = 0
 
-    for lon, lat, timestamp in rows:
+    for pt in points:
         try:
+            lon, lat, timestamp = pt["lon"], pt["lat"], pt["timestamp"]
             if is_in_spoofing_zone(lon, lat):
                 continue
-
             current_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
             if current_time.tzinfo is None:
                 current_time = current_time.replace(tzinfo=timezone.utc)
+
+            is_gap = False
+            gap_type = None
 
             if last_lon is not None and last_lat is not None and last_time is not None:
                 dist_km = haversine_distance(last_lon, last_lat, lon, lat)
                 time_diff_hours = (current_time - last_time).total_seconds() / 3600.0
 
+                if time_diff_hours >= 3:
+                    is_gap = True
+                    if check_is_outage(cursor, last_time, current_time):
+                        gap_type = "outage"
+                    else:
+                        gap_type = "dark"
+
                 is_valid = True
-                if time_diff_hours > 0:
-                    speed_kmh = dist_km / time_diff_hours
-                    if speed_kmh > 80 and dist_km > 20:
+                if not is_gap:
+                    if time_diff_hours > 0:
+                        speed_kmh = dist_km / time_diff_hours
+                        if speed_kmh > 80 and dist_km > 20:
+                            is_valid = False
+                    elif dist_km > 5:
                         is_valid = False
-                elif dist_km > 5:
-                    is_valid = False
 
                 if not is_valid:
                     reject_count += 1
                     if reject_count > 3:
-                        # Recover from being stuck on an outlier
                         reject_count = 0
                     else:
-                        continue # Skip this anomalous point
+                        continue
 
-            coordinates.append([lon, lat])
+                if is_gap:
+                    if current_segment and current_segment[-1] != [last_lon, last_lat]:
+                        current_segment.append([last_lon, last_lat])
+                    elif not current_segment:
+                        current_segment.append([last_lon, last_lat])
+
+                    if len(current_segment) > 1:
+                        features.append({
+                            "type": "Feature",
+                            "geometry": {"type": "LineString", "coordinates": current_segment},
+                            "properties": {"mmsi": mmsi}
+                        })
+
+                    if dist_km > 300:
+                        fraction = 25.0 / dist_km
+                        inter1 = calculate_intermediate_point(last_lon, last_lat, lon, lat, fraction)
+                        inter2 = calculate_intermediate_point(last_lon, last_lat, lon, lat, 1.0 - fraction)
+
+                        features.append({
+                            "type": "Feature",
+                            "geometry": {"type": "LineString", "coordinates": [[last_lon, last_lat], list(inter1)]},
+                            "properties": {"mmsi": mmsi, "is_dark": gap_type == "dark", "is_outage": gap_type == "outage"}
+                        })
+                        features.append({
+                            "type": "Feature",
+                            "geometry": {"type": "LineString", "coordinates": [list(inter2), [lon, lat]]},
+                            "properties": {"mmsi": mmsi, "is_dark": gap_type == "dark", "is_outage": gap_type == "outage"}
+                        })
+                    else:
+                        features.append({
+                            "type": "Feature",
+                            "geometry": {"type": "LineString", "coordinates": [[last_lon, last_lat], [lon, lat]]},
+                            "properties": {"mmsi": mmsi, "is_dark": gap_type == "dark", "is_outage": gap_type == "outage"}
+                        })
+
+                    current_segment = []
+                else:
+                    if not current_segment:
+                        current_segment.append([last_lon, last_lat])
+                    current_segment.append([lon, lat])
+
+            else:
+                if not current_segment:
+                    current_segment.append([lon, lat])
+                else:
+                    current_segment.append([lon, lat])
+
             last_lon, last_lat, last_time = lon, lat, current_time
             reject_count = 0
 
         except Exception as e:
             logger.error(f"Error parsing track point: {e}")
-            # On parse error, fallback
-            coordinates.append([lon, lat])
-            last_lon, last_lat = lon, lat
+            if not current_segment:
+                if last_lon is not None:
+                    current_segment.append([last_lon, last_lat])
+            current_segment.append([pt["lon"], pt["lat"]])
+            last_lon, last_lat = pt["lon"], pt["lat"]
 
+    if last_lon is not None and (not current_segment or current_segment[-1] != [last_lon, last_lat]):
+        current_segment.append([last_lon, last_lat])
+
+    if len(current_segment) > 1:
+        features.append({
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": current_segment},
+            "properties": {"mmsi": mmsi}
+        })
+
+    return features
+
+
+
+@shadow_fleet_router.get("/tracks/{mmsi}")
+def get_vessel_track(mmsi: str):
+    """Returns the historical track of a specific vessel as a GeoJSON FeatureCollection."""
+    conn = sqlite3.connect(DATA_DIR / "vessels.db")
+    cursor = conn.cursor()
+
+    # Get last 7 days of points, limit 500
+    cursor.execute("SELECT lon, lat, timestamp FROM tracks WHERE mmsi = ? AND timestamp >= datetime('now', '-7 days') ORDER BY timestamp DESC LIMIT 500", (mmsi,))
+    rows = cursor.fetchall()
+
+    if not rows:
+        conn.close()
+        return {"error": "No tracks found"}
+
+    rows = list(reversed(rows))
+    points = [{"lon": r[0], "lat": r[1], "timestamp": r[2]} for r in rows]
+
+    features = generate_track_features(cursor, mmsi, points)
+
+    conn.close()
     return {
-        "type": "Feature",
-        "geometry": {
-            "type": "LineString",
-            "coordinates": coordinates
-        },
-        "properties": {"mmsi": mmsi}
+        "type": "FeatureCollection",
+        "features": features
     }
 
 
@@ -1416,18 +1555,17 @@ def get_all_vessel_tracks():
     conn = sqlite3.connect(DATA_DIR / "vessels.db")
     cursor = conn.cursor()
 
-    # Use window function to grab the last 100 points per MMSI efficiently in one query
     cursor.execute('''
         WITH RankedTracks AS (
             SELECT mmsi, lon, lat, timestamp,
                    ROW_NUMBER() OVER (PARTITION BY mmsi ORDER BY timestamp DESC) as rn
             FROM tracks
+            WHERE timestamp >= datetime('now', '-7 days')
         )
         SELECT mmsi, lon, lat, timestamp FROM RankedTracks WHERE rn <= 100 ORDER BY mmsi, timestamp ASC
     ''')
     rows = cursor.fetchall()
 
-    # Group by MMSI
     tracks_by_mmsi = {}
     for row in rows:
         mmsi = row[0]
@@ -1438,60 +1576,13 @@ def get_all_vessel_tracks():
 
     features = []
     for mmsi, points in tracks_by_mmsi.items():
-        coordinates = []
-        last_lon, last_lat, last_time = None, None, None
-
-        reject_count = 0
-        for pt in points:
-            try:
-                lon, lat, timestamp = pt["lon"], pt["lat"], pt["timestamp"]
-                if is_in_spoofing_zone(lon, lat):
-                    continue
-                current_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-                if current_time.tzinfo is None:
-                    current_time = current_time.replace(tzinfo=timezone.utc)
-
-                if last_lon is not None and last_lat is not None and last_time is not None:
-                    dist_km = haversine_distance(last_lon, last_lat, lon, lat)
-                    time_diff_hours = (current_time - last_time).total_seconds() / 3600.0
-
-                    is_valid = True
-                    if time_diff_hours > 0:
-                        speed_kmh = dist_km / time_diff_hours
-                        if speed_kmh > 80 and dist_km > 20:
-                            is_valid = False
-                    elif dist_km > 5:
-                        is_valid = False
-
-                    if not is_valid:
-                        reject_count += 1
-                        if reject_count > 3:
-                            reject_count = 0
-                        else:
-                            continue
-
-                coordinates.append([lon, lat])
-                last_lon, last_lat, last_time = lon, lat, current_time
-                reject_count = 0
-
-            except Exception as e:
-                logger.error(f"Error parsing track point in get_tracks: {e}")
-                coordinates.append([pt["lon"], pt["lat"]])
-                last_lon, last_lat = pt["lon"], pt["lat"]
-
-        if len(coordinates) > 1: # Need at least 2 points for a line
-            features.append({
-                "type": "Feature",
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": coordinates
-                },
-                "properties": {"mmsi": mmsi}
-            })
+        features.extend(generate_track_features(cursor, mmsi, points))
 
     conn.close()
 
     return {"type": "FeatureCollection", "features": features}
+
+
 
 app.include_router(shadow_fleet_router)
 

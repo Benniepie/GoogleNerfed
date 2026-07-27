@@ -1,5 +1,42 @@
 const activeKMLGeoJSON = {};
 
+window.populateOverrideName = function(encodedName) {
+    const el = document.getElementById('overrideLocationName');
+    if (!el) return;
+
+    // Decode the safely encoded name
+    const name = decodeURIComponent(encodedName);
+    el.value = name;
+
+    // Attempt to open Map Admin and Live Data Layers Admin sections if they are closed
+    const allHeaders = document.querySelectorAll('.section-header');
+    allHeaders.forEach(h => {
+        const text = h.innerText.trim();
+        if (text.includes('Map Admin') || text.includes('Live Data Layers Admin')) {
+            const content = h.nextElementSibling;
+            if (content && content.classList.contains('collapsed')) {
+                // simulate toggle by calling toggleSection directly
+                if (typeof window.toggleSection === 'function') {
+                    window.toggleSection(h);
+                } else if (typeof toggleSection === 'function') {
+                    toggleSection(h);
+                } else {
+                    h.click(); // fallback
+                }
+            }
+        }
+    });
+
+    // scroll into view
+    setTimeout(() => {
+        el.scrollIntoView({behavior: 'smooth', block: 'center'});
+        // visually highlight it
+        el.style.backgroundColor = 'rgba(16, 185, 129, 0.3)';
+        setTimeout(() => el.style.backgroundColor = 'rgba(0,0,0,0.5)', 1000);
+    }, 300); // small delay to let toggles finish
+};
+
+
         // 3. Fetch and Render Layers
         async function loadLayers() {
             try {
@@ -776,9 +813,7 @@ const activeKMLGeoJSON = {};
                 if (isRegionOrDistrict) {
                     isSmallOrPoint = false; // Never make a region or district a map marker!
                 } else if (!isSmallOrPoint && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
-                    const areaSqMeters = turf.area(feature);
-                    const areaSqKm = areaSqMeters / 1000000;
-                    if (areaSqKm < 250 || feature.properties.icon) {
+                    if (feature.properties.icon) {
                         isSmallOrPoint = true;
                     }
                 }
@@ -1385,6 +1420,11 @@ async function reverseGeocodeLocation(lat, lng) {
 }
 
 map.on('click', async function(e) {
+            window.highlightedVesselMmsi = null;
+            if (shadowFleetTrackLayer) {
+                shadowFleetTrackLayer.setStyle(shadowFleetTrackLayer.options.style);
+            }
+
             if (window.currentTool && (window.currentTool === 'ruler' || window.currentTool === 'circle')) {
                 return;
             }
@@ -1515,6 +1555,10 @@ map.on('click', async function(e) {
 
                     if (closestFeature) {
                         const props = closestFeature.properties;
+                        window.highlightedVesselMmsi = props.mmsi;
+                        if (shadowFleetTrackLayer) {
+                            shadowFleetTrackLayer.setStyle(shadowFleetTrackLayer.options.style);
+                        }
                         const status = props.is_live ? "🔴 LIVE" : "⚫ DARK (AIS OFF)";
                         shadowHitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
                         shadowHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #3b82f6;">🚢 Shadow Fleet: ${props.name}</h4>`;
@@ -1543,9 +1587,7 @@ map.on('click', async function(e) {
 
                         // Hit testing fallback for small polygons rendered as markers
                         if (!isHit) {
-                            const areaSqMeters = turf.area(currentFeature);
-                            const areaSqKm = areaSqMeters / 1000000;
-                            if (areaSqKm < 250 || currentFeature.properties.icon) {
+                            if (currentFeature.properties.icon) {
                                 const centroid = turf.centroid(currentFeature);
                                 const dist = turf.distance(clickPoint, centroid, {units: 'kilometers'});
                                 // Give a 10km click radius for these tiny areas/markers
@@ -1595,7 +1637,7 @@ map.on('click', async function(e) {
                                 <h4 style="margin: 0 0 4px 0; color: #3b82f6;">🚨 Air Alert</h4>
                                 <div style="font-size: 0.85rem;">
                                     <b>Location:</b> ${props.name}<br>
-                                    <b>Nominatim Query:</b> ${props.raw_name}<br>
+                                    ${window.location.pathname.startsWith('/admin') ? `<b>Nominatim Query:</b> <span style="cursor: pointer; text-decoration: underline;" onclick="if(window.populateOverrideName) window.populateOverrideName('${encodeURIComponent(props.raw_name).replace(/'/g, "%27")}');">${props.raw_name}</span><br>` : ''}
                                     <b>Threat:</b> ${props.threat}<br>
                                     <b>Status:</b> ${props.status === 'over' ? '<span style="color:#22c55e;">Over</span>' : '<span style="color:#ef4444;">Active</span>'}<br>
                                     <b>Time:</b> ${timeStr} ${relativeTime}
@@ -1955,6 +1997,7 @@ function getShadowFleetStyle(feature) {
 
 let shadowFleetLayer = null;
 let shadowFleetTrackLayer = null;
+window.highlightedVesselMmsi = null;
 
 async function loadShadowFleetLayer() {
     const statusDiv = document.getElementById('shadowFleetStatus');
@@ -1992,12 +2035,34 @@ async function loadShadowFleetLayer() {
             map.removeLayer(shadowFleetTrackLayer);
         }
 
-        shadowFleetTrackLayer = L.geoJSON(trackGeoJSON, {
-            style: {
-                color: '#EF4444',
-                weight: 2,
-                opacity: 0.6,
-                dashArray: '5, 5' // Dashed line for tracks
+                shadowFleetTrackLayer = L.geoJSON(trackGeoJSON, {
+            style: function(feature) {
+                let color = '#EF4444'; // Red
+                let weight = 2;
+                let opacity = 0.6;
+                let dashArray = '5, 5';
+
+                if (feature.properties.is_dark) {
+                    color = '#9CA3AF'; // Gray
+                }
+
+                if (window.highlightedVesselMmsi) {
+                    if (feature.properties.mmsi === window.highlightedVesselMmsi) {
+                        weight = 4;
+                        opacity = 1.0;
+                        dashArray = '8, 8'; // Make the dashes larger to highlight the track more
+                    } else {
+                        weight = 0;
+                        opacity = 0;
+                    }
+                }
+
+                return {
+                    color: color,
+                    weight: weight,
+                    opacity: opacity,
+                    dashArray: dashArray
+                };
             }
         });
 
@@ -2031,12 +2096,34 @@ async function loadVesselTrack(mmsi) {
             map.removeLayer(shadowFleetTrackLayer);
         }
 
-        shadowFleetTrackLayer = L.geoJSON(trackGeoJSON, {
-            style: {
-                color: '#EF4444',
-                weight: 2,
-                opacity: 0.6,
-                dashArray: '5, 5' // Dashed line for tracks
+                shadowFleetTrackLayer = L.geoJSON(trackGeoJSON, {
+            style: function(feature) {
+                let color = '#EF4444'; // Red
+                let weight = 2;
+                let opacity = 0.6;
+                let dashArray = '5, 5';
+
+                if (feature.properties.is_dark) {
+                    color = '#9CA3AF'; // Gray
+                }
+
+                if (window.highlightedVesselMmsi) {
+                    if (feature.properties.mmsi === window.highlightedVesselMmsi) {
+                        weight = 4;
+                        opacity = 1.0;
+                        dashArray = '8, 8'; // Make the dashes larger to highlight the track more
+                    } else {
+                        weight = 0;
+                        opacity = 0;
+                    }
+                }
+
+                return {
+                    color: color,
+                    weight: weight,
+                    opacity: opacity,
+                    dashArray: dashArray
+                };
             }
         });
 

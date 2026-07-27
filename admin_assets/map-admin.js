@@ -59,6 +59,10 @@ document.getElementById('admin-panel-container').innerHTML = `
                     <label style="font-size: 0.8rem; color: #94a3b8;">English Translation (optional):</label>
                     <input type="text" id="overrideEnglishName" placeholder="e.g. Oryol District" style="width: 100%; box-sizing: border-box; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
                 </div>
+                <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                    <input type="checkbox" id="overrideSuppress" style="cursor: pointer;">
+                    <label for="overrideSuppress" style="font-size: 0.8rem; color: #94a3b8; cursor: pointer;">Suppress marker (hide permanently)</label>
+                </div>
                 <button type="submit" id="overrideBtn" class="primary-btn" style="width: 100%; background: #10b981; margin-top: 5px;">Save Override</button>
                 <div id="overrideStatusMsg" style="display: none; font-size: 0.85rem; color: #10b981; margin-top: 5px;"></div>
             </form>
@@ -664,6 +668,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             const locationName = document.getElementById('overrideLocationName').value;
             const osmId = document.getElementById('overrideOsmId').value;
             const englishName = document.getElementById('overrideEnglishName').value;
+            const suppress = document.getElementById('overrideSuppress').checked;
 
             const btn = document.getElementById('overrideBtn');
             const statusMsg = document.getElementById('overrideStatusMsg');
@@ -676,7 +681,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                 const response = await fetch('/api/admin/geocode_override', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ location_name: locationName, osm_id: osmId, english_name: englishName })
+                    body: JSON.stringify({ location_name: locationName, osm_id: osmId, english_name: englishName, suppress: suppress })
                 });
                 const data = await response.json();
                 if (response.ok && data.status === 'success') {
@@ -684,6 +689,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                     statusMsg.style.display = 'block';
                     document.getElementById('overrideOsmId').value = '';
                     document.getElementById('overrideEnglishName').value = '';
+                    document.getElementById('overrideSuppress').checked = false;
 
                     // Trigger map update automatically
                     if (window.forceRadarRefresh) {
