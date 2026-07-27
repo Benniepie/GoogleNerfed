@@ -1768,6 +1768,8 @@ map.on('click', async function(e) {
                 map.setView([defaultLat, defaultLng], defaultZoom, {animate: false});
 
                 const defaultBasemap = urlBasemap ? urlBasemap : (appSettings.defaultBasemap ?? 'dark');
+                console.log('Using basemap:', defaultBasemap);
+                console.log('Available baseMaps:', window.baseMaps);
                 const radioInput = document.querySelector(`input[name="basemap"][value="${defaultBasemap}"]`);
                 if (radioInput) radioInput.checked = true;
 

@@ -331,14 +331,10 @@ function toggleSection(header) {
 
 
         // Add default
-        baseMaps.dark.addTo(map);
+        // baseMaps.dark.addTo(map); removed to allow loadSettingsAndInit to handle it
 
         // Radio button listener
-        document.querySelectorAll('input[name="basemap"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                baseMaps[e.target.value].addTo(map);
-            });
-        });
+
 
                 // --- 3. Location Search (Geocoder) ---
         const geocoder = L.Control.geocoder({
