@@ -167,7 +167,12 @@ const adminModalsHTML = `
                     <option value="icon">Image URL</option>
                     <option value="emoji">Emoji</option>
                 </select>
-                <input type="text" id="editFeatureMarkerIcon" placeholder="URL or Emoji" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box; margin-bottom: 5px;">
+                <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                    <input type="text" id="editFeatureMarkerIcon" placeholder="URL, filename, or Emoji" style="flex: 1; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+                    <button type="button" class="icon-btn" onclick="document.getElementById('editFeatureImageUpload').click()" style="background: rgba(255,255,255,0.1); padding: 5px; font-size: 0.8rem;" title="Upload Image">📁</button>
+                    <input type="file" id="editFeatureImageUpload" style="display: none;" accept="image/png, image/jpeg, image/gif, image/svg+xml, image/webp" onchange="window.uploadMarkerImage(this)">
+                </div>
+                <div id="editFeatureImageStatus" style="font-size: 0.75rem; display: none; margin-bottom: 5px;"></div>
             </div>
             <div style="display: flex; gap: 10px; margin-bottom: 15px; text-align: left;">
                 <div style="flex: 1;">

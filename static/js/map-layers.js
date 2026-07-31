@@ -373,9 +373,12 @@ window.populateOverrideName = function(encodedName) {
                     pointToLayer: function (feature, latlng) {
                         const style = getFeatureStyle(feature);
 
+                        // Check if this is a frontline layer (Pins) which requires original small styling
+                        const isFrontlineLayer = filename.startsWith('AP Map') || filename.startsWith('AP Pins') || filename.startsWith('SM Map') || filename.startsWith('SM Pins');
+
                         if (style.markerType === 'emoji' || style.markerType === 'icon') {
                             const isEmoji = style.markerType === 'emoji';
-                            let contentHtml = isEmoji ? style.markerIcon : `<img src="${style.markerIcon}" style="width: 20px; height: 20px; object-fit: contain;">`;
+                            let contentHtml = isEmoji ? style.markerIcon : (style.markerIcon.startsWith('http') || style.markerIcon.startsWith('/') || style.markerIcon.startsWith('data:') ? `<img src="${style.markerIcon}" style="width: 20px; height: 20px; object-fit: contain;">` : `<img src="/data/images/${style.markerIcon}" style="width: 20px; height: 20px; object-fit: contain;">`);
                             if (!style.markerIcon) contentHtml = '?';
 
                             const markerHtml = `<div style="background:${style.color}; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid ${style.markerBorder}; font-size:18px; box-shadow:0 0 5px rgba(0,0,0,0.5);">${contentHtml}</div>`;
@@ -387,6 +390,19 @@ window.populateOverrideName = function(encodedName) {
                                 iconAnchor: [15, 15]
                             });
                             return L.marker(latlng, { icon: customIcon, interactive: false });
+                        }
+
+                        // For Front Line Tracker layers, preserve the original tiny radius (e.g. 50 meters, which maps to small visual footprints on lower zooms)
+                        if (isFrontlineLayer && style.markerType === 'circle') {
+                             return L.circle(latlng, {
+                                interactive: false,
+                                radius: 50, // Restore original 50 meters for frontline pins
+                                fillColor: style.color,
+                                color: style.markerBorder,
+                                weight: 1,
+                                opacity: 1,
+                                fillOpacity: style.opacity
+                             });
                         }
 
                         return L.circleMarker(latlng, {
@@ -1576,8 +1592,22 @@ map.on('click', async function(e) {
                         if (currentFeature.geometry.type === 'Polygon' || currentFeature.geometry.type === 'MultiPolygon') {
                             isHit = turf.booleanPointInPolygon(clickPoint, currentFeature);
                         } else if (currentFeature.geometry.type === 'Point') {
-                            const dist = turf.distance(clickPoint, currentFeature, {units: 'meters'});
-                            isHit = dist < 500; // 500m hit tolerance for points
+                            try {
+                                const dist = turf.distance(clickPoint, currentFeature, {units: 'meters'});
+                                // Let's use screen space distance for custom markers which are physically large on screen, independent of zoom
+                                const clickPx = map.latLngToContainerPoint([lat, lng]);
+                                const featPx = map.latLngToContainerPoint([currentFeature.geometry.coordinates[1], currentFeature.geometry.coordinates[0]]);
+                                const distPx = Math.sqrt(Math.pow(clickPx.x - featPx.x, 2) + Math.pow(clickPx.y - featPx.y, 2));
+
+                                // 20 pixels hit area is very forgiving for custom markers
+                                if (distPx < 20) {
+                                     isHit = true;
+                                } else {
+                                     isHit = dist < 500;
+                                }
+                            } catch(e) {
+                                console.error("Hit test error on point:", e);
+                            }
                         } else if (currentFeature.geometry.type === 'LineString' || currentFeature.geometry.type === 'MultiLineString') {
                             const dist = turf.pointToLineDistance(clickPoint, currentFeature, {units: 'meters'});
                             isHit = dist < 500; // 500m hit tolerance for lines
