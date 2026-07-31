@@ -1066,3 +1066,34 @@ setTimeout(() => {
                 await window.saveKmlToServer(filename);
             }
         };
+
+        window.uploadMarkerImage = async function(inputEl) {
+            if (!inputEl.files || inputEl.files.length === 0) return;
+            const file = inputEl.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const statusEl = document.getElementById('editFeatureImageStatus');
+            statusEl.textContent = 'Uploading...';
+            statusEl.style.color = '#94a3b8';
+            statusEl.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/upload_image', { method: 'POST', body: formData });
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success') {
+                    document.getElementById('editFeatureMarkerIcon').value = result.filename;
+                    document.getElementById('editFeatureMarkerType').value = 'icon';
+                    statusEl.textContent = 'Uploaded successfully!';
+                    statusEl.style.color = '#10b981';
+                } else {
+                    statusEl.textContent = 'Upload failed: ' + (result.message || '');
+                    statusEl.style.color = '#ef4444';
+                }
+            } catch (err) {
+                statusEl.textContent = 'Upload error.';
+                statusEl.style.color = '#ef4444';
+            }
+            setTimeout(() => statusEl.style.display = 'none', 3000);
+        };
