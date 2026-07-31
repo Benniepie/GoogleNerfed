@@ -290,6 +290,15 @@ var toGeoJSON = (function() {
                         properties[simpleDatas[i].getAttribute('name')] = nodeVal(simpleDatas[i]);
                     }
                 }
+
+                // Keep the icon if it exists in a custom property
+                if (properties.markerIcon) {
+                    properties.icon = properties.markerIcon;
+                }
+                if (properties.markerColor) {
+                    properties.color = properties.markerColor;
+                }
+
                 if (visibility) {
                     properties.visibility = nodeVal(visibility);
                 }

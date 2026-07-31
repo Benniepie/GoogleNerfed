@@ -738,6 +738,25 @@ async def get_layers():
             files.append(f.name)
     return {"layers": sorted(files)}
 
+@app.post("/api/upload_image", dependencies=[Depends(verify_admin)])
+async def upload_image(file: UploadFile = File(...)):
+    """Handles uploading custom marker images to the data/images folder."""
+    if not file.filename:
+        return {"status": "error", "message": "No filename provided."}
+
+    safe_filename = secure_filename(file.filename)
+    images_dir = DATA_DIR / "images"
+    images_dir.mkdir(exist_ok=True)
+    target_path = images_dir / safe_filename
+
+    try:
+        with open(target_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {"status": "success", "filename": safe_filename}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": repr(e)})
+
+
 @app.post("/api/upload", dependencies=[Depends(verify_admin)])
 async def upload_file(files: List[UploadFile] = File(...)):
     """Handles multiple KML and KMZ uploads, automatically extracting KMZ to KML."""

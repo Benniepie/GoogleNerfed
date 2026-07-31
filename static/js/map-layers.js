@@ -325,16 +325,43 @@ window.populateOverrideName = function(encodedName) {
                 const xmlDoc = parser.parseFromString(kmlText, "text/xml");
                 const geoJsonData = toGeoJSON.kml(xmlDoc);
 
+                // Assign unique IDs to features so they can be edited later
+                if (geoJsonData.features) {
+                    geoJsonData.features.forEach((f, idx) => {
+                        f.id = filename + '_' + idx;
+                    });
+                }
+
                 const styleConfig = layerStyles[filename] || { type: 'single', color: '#3b82f6', opacity: 0.5 }; // Default style
 
                 function getFeatureStyle(feature) {
+                    let baseStyle = { color: styleConfig.color || '#3b82f6', opacity: styleConfig.opacity !== undefined ? styleConfig.opacity : 0.5, markerType: styleConfig.markerType || 'circle', markerIcon: styleConfig.markerIcon || '', markerBorder: styleConfig.markerBorder || '#ffffff' };
+
                     if (styleConfig.type === 'grouped' && styleConfig.styles) {
                         const name = feature.properties ? feature.properties.name : null;
                         if (name && styleConfig.styles[name]) {
-                            return styleConfig.styles[name];
+                            const groupStyle = styleConfig.styles[name];
+                            baseStyle.color = groupStyle.color || baseStyle.color;
+                            baseStyle.opacity = groupStyle.opacity !== undefined ? groupStyle.opacity : baseStyle.opacity;
+                            baseStyle.markerType = groupStyle.markerType || baseStyle.markerType;
+                            baseStyle.markerIcon = groupStyle.markerIcon || baseStyle.markerIcon;
+                            baseStyle.markerBorder = groupStyle.markerBorder || baseStyle.markerBorder;
                         }
                     }
-                    return { color: styleConfig.color || '#3b82f6', opacity: styleConfig.opacity !== undefined ? styleConfig.opacity : 0.5 };
+
+                    // Feature-level overrides
+                    if (feature.properties) {
+                        if (feature.properties.markerType) baseStyle.markerType = feature.properties.markerType;
+                        if (feature.properties.markerIcon) baseStyle.markerIcon = feature.properties.markerIcon;
+                        else if (feature.properties.icon) {
+                            baseStyle.markerType = 'icon';
+                            baseStyle.markerIcon = feature.properties.icon;
+                        }
+                        if (feature.properties.markerBorder) baseStyle.markerBorder = feature.properties.markerBorder;
+                        if (feature.properties.markerColor) baseStyle.color = feature.properties.markerColor;
+                    }
+
+                    return baseStyle;
                 }
 
                 const layer = L.geoJSON(geoJsonData, {
@@ -345,12 +372,45 @@ window.populateOverrideName = function(encodedName) {
                     },
                     pointToLayer: function (feature, latlng) {
                         const style = getFeatureStyle(feature);
-                        return L.circle(latlng, {
+
+                        // Check if this is a frontline layer (Pins) which requires original small styling
+                        const isFrontlineLayer = filename.startsWith('AP Map') || filename.startsWith('AP Pins') || filename.startsWith('SM Map') || filename.startsWith('SM Pins');
+
+                        if (style.markerType === 'emoji' || style.markerType === 'icon') {
+                            const isEmoji = style.markerType === 'emoji';
+                            let contentHtml = isEmoji ? style.markerIcon : (style.markerIcon.startsWith('http') || style.markerIcon.startsWith('/') || style.markerIcon.startsWith('data:') ? `<img src="${style.markerIcon}" style="width: 20px; height: 20px; object-fit: contain;">` : `<img src="/data/images/${style.markerIcon}" style="width: 20px; height: 20px; object-fit: contain;">`);
+                            if (!style.markerIcon) contentHtml = '?';
+
+                            const markerHtml = `<div style="background:${style.color}; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid ${style.markerBorder}; font-size:18px; box-shadow:0 0 5px rgba(0,0,0,0.5);">${contentHtml}</div>`;
+
+                            const customIcon = L.divIcon({
+                                className: 'custom-kml-marker',
+                                html: markerHtml,
+                                iconSize: [30, 30],
+                                iconAnchor: [15, 15]
+                            });
+                            return L.marker(latlng, { icon: customIcon, interactive: false });
+                        }
+
+                        // For Front Line Tracker layers, preserve the original tiny radius (e.g. 50 meters, which maps to small visual footprints on lower zooms)
+                        if (isFrontlineLayer && style.markerType === 'circle') {
+                             return L.circle(latlng, {
+                                interactive: false,
+                                radius: 50, // Restore original 50 meters for frontline pins
+                                fillColor: style.color,
+                                color: style.markerBorder,
+                                weight: 1,
+                                opacity: 1,
+                                fillOpacity: style.opacity
+                             });
+                        }
+
+                        return L.circleMarker(latlng, {
                             interactive: false, // Let clicks pass through points too
-                            radius: 50,
+                            radius: 8,
                             fillColor: style.color,
-                            color: '#ffffff',
-                            weight: 1,
+                            color: style.markerBorder,
+                            weight: 1.5,
                             opacity: 1,
                             fillOpacity: style.opacity
                         });
@@ -1485,6 +1545,13 @@ map.on('click', async function(e) {
                 return;
             }
 
+            if (window.isAwaitingLocationClick) {
+                if (window.populateLocationFromClick) {
+                    window.populateLocationFromClick(e.latlng.lat, e.latlng.lng);
+                }
+                return;
+            }
+
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
             const clickPoint = turf.point([lng, lat]);
@@ -1525,8 +1592,22 @@ map.on('click', async function(e) {
                         if (currentFeature.geometry.type === 'Polygon' || currentFeature.geometry.type === 'MultiPolygon') {
                             isHit = turf.booleanPointInPolygon(clickPoint, currentFeature);
                         } else if (currentFeature.geometry.type === 'Point') {
-                            const dist = turf.distance(clickPoint, currentFeature, {units: 'meters'});
-                            isHit = dist < 500; // 500m hit tolerance for points
+                            try {
+                                const dist = turf.distance(clickPoint, currentFeature, {units: 'meters'});
+                                // Let's use screen space distance for custom markers which are physically large on screen, independent of zoom
+                                const clickPx = map.latLngToContainerPoint([lat, lng]);
+                                const featPx = map.latLngToContainerPoint([currentFeature.geometry.coordinates[1], currentFeature.geometry.coordinates[0]]);
+                                const distPx = Math.sqrt(Math.pow(clickPx.x - featPx.x, 2) + Math.pow(clickPx.y - featPx.y, 2));
+
+                                // 20 pixels hit area is very forgiving for custom markers
+                                if (distPx < 20) {
+                                     isHit = true;
+                                } else {
+                                     isHit = dist < 500;
+                                }
+                            } catch(e) {
+                                console.error("Hit test error on point:", e);
+                            }
                         } else if (currentFeature.geometry.type === 'LineString' || currentFeature.geometry.type === 'MultiLineString') {
                             const dist = turf.pointToLineDistance(clickPoint, currentFeature, {units: 'meters'});
                             isHit = dist < 500; // 500m hit tolerance for lines
@@ -1534,7 +1615,13 @@ map.on('click', async function(e) {
 
                         if (isHit) {
                             kmlHitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
-                            kmlHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #facc15;">📁 ${filename}</h4>`;
+                            let editBtnHtml = '';
+                            if (window.location.pathname.startsWith('/admin')) {
+                                // Provide feature index to the edit function (id is filename_index)
+                                const fIndex = currentFeature.id ? currentFeature.id.split('_').pop() : '-1';
+                                editBtnHtml = `<button onclick="if(window.editKmlFeature) window.editKmlFeature('${filename}', ${fIndex})" style="float: right; background: #3b82f6; border: none; color: white; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Edit</button>`;
+                            }
+                            kmlHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #facc15;">${editBtnHtml}📁 ${filename}</h4>`;
 
                             // The Magic Loop: Extracts ALL metadata dynamically
                             if (currentFeature.properties) {
