@@ -26,7 +26,10 @@ document.getElementById('admin-panel-container').innerHTML = `
                 <button type="submit" id="uploadBtn" class="primary-btn" style="width: 100%;">Upload KML / KMZ</button>
                 <div id="statusMsg" class="status-msg"></div>
             </form>
-            <button class="primary-btn" onclick="exportKML()" style="width: 100%; margin-top: 10px; background: var(--border-color);">⬇️ Export Displayed Data</button>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="primary-btn" onclick="exportKML()" style="flex: 1; background: var(--border-color); font-size: 0.8rem;">⬇️ Export Data</button>
+                <button class="primary-btn" onclick="window.addNewMarker()" style="flex: 1; background: #3b82f6; font-size: 0.8rem;">➕ Add Marker</button>
+            </div>
         </div>
 
         <!-- 4. Live Data Layers Admin (toggle - new) -->
@@ -116,10 +119,72 @@ const adminModalsHTML = `
                 </select>
             </div>
 
+            <div id="globalMarkerConfig" style="text-align: left; margin-bottom: 15px;">
+                <label style="display:block; margin-bottom:3px; font-size: 0.85rem;">Default Marker Type:</label>
+                <select id="globalMarkerType" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box; margin-bottom: 5px;">
+                    <option value="circle">Circle</option>
+                    <option value="icon">Image URL</option>
+                    <option value="emoji">Emoji</option>
+                </select>
+                <input type="text" id="globalMarkerIcon" placeholder="Icon URL or Emoji" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+                <label style="display:block; margin-bottom:3px; margin-top:5px; font-size: 0.85rem;">Marker Border Color:</label>
+                <input type="color" id="globalMarkerBorder" style="width: 100%; height: 30px;">
+            </div>
+
             <div id="colorPickerContainer" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
 
             <button class="primary-btn" onclick="applyStyle()" style="width:100%; margin-bottom: 10px;">Save Style</button>
             <button class="primary-btn" onclick="document.getElementById('colorModal').style.display='none'" style="width:100%; background:var(--border-color);">Close</button>
+        </div>
+    </div>
+
+    <!-- Edit Feature Modal -->
+    <div id="editFeatureModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="width: 350px;">
+            <h3 style="margin-top:0;" id="editFeatureTitle">Edit Marker</h3>
+            <input type="hidden" id="editFeatureLayer" />
+            <input type="hidden" id="editFeatureId" />
+
+            <div style="text-align: left; margin-bottom: 10px;">
+                <label style="display:block; margin-bottom:3px; font-size: 0.85rem;">Name:</label>
+                <input type="text" id="editFeatureName" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+            </div>
+
+            <div style="text-align: left; margin-bottom: 10px;">
+                <label style="display:block; margin-bottom:3px; font-size: 0.85rem;">Location (Lat, Lng):</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="number" step="any" id="editFeatureLat" style="width: 50%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+                    <input type="number" step="any" id="editFeatureLng" style="width: 50%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+                </div>
+                <button type="button" class="icon-btn" onclick="window.useClickForLocation()" style="font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 3px 6px; margin-top: 5px; width: 100%;">📍 Select on Map</button>
+            </div>
+
+            <div style="text-align: left; margin-bottom: 10px;">
+                <label style="display:block; margin-bottom:3px; font-size: 0.85rem;">Marker Style Override:</label>
+                <select id="editFeatureMarkerType" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box; margin-bottom: 5px;">
+                    <option value="">-- Use Layer Default --</option>
+                    <option value="circle">Circle</option>
+                    <option value="icon">Image URL</option>
+                    <option value="emoji">Emoji</option>
+                </select>
+                <input type="text" id="editFeatureMarkerIcon" placeholder="URL or Emoji" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box; margin-bottom: 5px;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; text-align: left;">
+                <div style="flex: 1;">
+                    <label style="display:block; margin-bottom:3px; font-size: 0.85rem;">Color:</label>
+                    <input type="color" id="editFeatureMarkerColor" style="width: 100%; height: 30px;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display:block; margin-bottom:3px; font-size: 0.85rem;">Border:</label>
+                    <input type="color" id="editFeatureMarkerBorder" style="width: 100%; height: 30px;">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button class="primary-btn" onclick="window.saveEditedFeature()" style="flex: 2; background: #10b981;">Save</button>
+                <button class="primary-btn" onclick="window.deleteEditedFeature()" style="flex: 1; background: #ef4444;">Delete</button>
+            </div>
+            <button class="primary-btn" onclick="document.getElementById('editFeatureModal').style.display='none'" style="width:100%; background:var(--border-color);">Cancel</button>
         </div>
     </div>
 `;
@@ -471,6 +536,10 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             const type = document.getElementById('styleTypeSelect').value;
             container.innerHTML = ''; // Clear existing
 
+            document.getElementById('globalMarkerType').value = existingStyle?.markerType || 'circle';
+            document.getElementById('globalMarkerIcon').value = existingStyle?.markerIcon || '';
+            document.getElementById('globalMarkerBorder').value = existingStyle?.markerBorder || '#ffffff';
+
             if (type === 'single') {
                 const color = existingStyle?.color || '#3b82f6';
                 const opacity = existingStyle?.opacity !== undefined ? existingStyle.opacity : 0.5;
@@ -497,7 +566,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                 }
 
                 Array.from(uniqueNames).sort().forEach((name, index) => {
-                    const style = (existingStyle?.styles && existingStyle.styles[name]) || { color: '#3b82f6', opacity: 0.5 };
+                    const style = (existingStyle?.styles && existingStyle.styles[name]) || { color: '#3b82f6', opacity: 0.5, markerType: '', markerIcon: '', markerBorder: '' };
 
                     const row = document.createElement('div');
                     row.style.cssText = "margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color);";
@@ -507,12 +576,25 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                         <div style="display: flex; flex-direction: column; gap: 5px;">
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <label style="width: 60px;">Color:</label>
-                                <input type="color" class="groupColor" data-name="${name}" value="${style.color}" style="flex-grow: 1; height: 30px;">
+                                <input type="color" class="groupColor" data-name="${name}" value="${style.color || '#3b82f6'}" style="flex-grow: 1; height: 30px;">
                             </div>
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <label style="width: 60px;">Opacity:</label>
-                                <input type="range" class="groupOpacity" data-name="${name}" min="0" max="1" step="0.1" value="${style.opacity}" style="flex-grow: 1;" oninput="this.nextElementSibling.textContent=this.value">
-                                <span style="width: 25px; font-size: 0.85rem;">${style.opacity}</span>
+                                <input type="range" class="groupOpacity" data-name="${name}" min="0" max="1" step="0.1" value="${style.opacity !== undefined ? style.opacity : 0.5}" style="flex-grow: 1;" oninput="this.nextElementSibling.textContent=this.value">
+                                <span style="width: 25px; font-size: 0.85rem;">${style.opacity !== undefined ? style.opacity : 0.5}</span>
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
+                                <select class="groupMarkerType" data-name="${name}" style="width: 40%; background: var(--border-color); color: white; border: none; padding: 2px; border-radius: 4px;">
+                                    <option value="" ${!style.markerType ? 'selected' : ''}>Inherit</option>
+                                    <option value="circle" ${style.markerType==='circle' ? 'selected' : ''}>Circle</option>
+                                    <option value="icon" ${style.markerType==='icon' ? 'selected' : ''}>Image URL</option>
+                                    <option value="emoji" ${style.markerType==='emoji' ? 'selected' : ''}>Emoji</option>
+                                </select>
+                                <input type="text" class="groupMarkerIcon" data-name="${name}" value="${style.markerIcon || ''}" placeholder="Icon/Emoji" style="flex-grow: 1; background: var(--border-color); color: white; border: none; padding: 2px; border-radius: 4px;">
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <label style="width: 60px;">Border:</label>
+                                <input type="color" class="groupMarkerBorder" data-name="${name}" value="${style.markerBorder || '#ffffff'}" style="flex-grow: 1; height: 30px;">
                             </div>
                         </div>
                     `;
@@ -527,6 +609,10 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             const type = document.getElementById('styleTypeSelect').value;
             let styleConfig = { type: type };
 
+            styleConfig.markerType = document.getElementById('globalMarkerType').value;
+            styleConfig.markerIcon = document.getElementById('globalMarkerIcon').value;
+            styleConfig.markerBorder = document.getElementById('globalMarkerBorder').value;
+
             if (type === 'single') {
                 const colorInput = document.getElementById('singleColor');
                 const opacityInput = document.getElementById('singleOpacity');
@@ -538,11 +624,27 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                 styleConfig.styles = {};
                 const colorInputs = document.querySelectorAll('.groupColor');
                 const opacityInputs = document.querySelectorAll('.groupOpacity');
+                const markerTypeInputs = document.querySelectorAll('.groupMarkerType');
+                const markerIconInputs = document.querySelectorAll('.groupMarkerIcon');
+                const markerBorderInputs = document.querySelectorAll('.groupMarkerBorder');
 
                 colorInputs.forEach((input, index) => {
                     const name = input.getAttribute('data-name');
                     const opacity = parseFloat(opacityInputs[index].value);
-                    styleConfig.styles[name] = { color: input.value, opacity: opacity };
+
+                    let groupStyle = { color: input.value, opacity: opacity };
+
+                    if (markerTypeInputs[index] && markerTypeInputs[index].value) {
+                         groupStyle.markerType = markerTypeInputs[index].value;
+                    }
+                    if (markerIconInputs[index] && markerIconInputs[index].value) {
+                         groupStyle.markerIcon = markerIconInputs[index].value;
+                    }
+                    if (markerBorderInputs[index] && markerBorderInputs[index].value) {
+                         groupStyle.markerBorder = markerBorderInputs[index].value;
+                    }
+
+                    styleConfig.styles[name] = groupStyle;
                 });
             }
 
@@ -766,3 +868,196 @@ setTimeout(() => {
         }
     });
 }, 1000);
+
+        window.editKmlFeature = function(filename, indexStr) {
+            const index = parseInt(indexStr);
+            if (index < 0 || !activeKMLGeoJSON[filename] || !activeKMLGeoJSON[filename].features[index]) {
+                alert("Feature not found.");
+                return;
+            }
+
+            const feature = activeKMLGeoJSON[filename].features[index];
+            const props = feature.properties || {};
+
+            document.getElementById('editFeatureTitle').textContent = 'Edit Marker';
+            document.getElementById('editFeatureLayer').value = filename;
+            document.getElementById('editFeatureId').value = index;
+
+            document.getElementById('editFeatureName').value = props.name || '';
+
+            if (feature.geometry && feature.geometry.type === 'Point') {
+                document.getElementById('editFeatureLng').value = feature.geometry.coordinates[0];
+                document.getElementById('editFeatureLat').value = feature.geometry.coordinates[1];
+            } else {
+                document.getElementById('editFeatureLng').value = '';
+                document.getElementById('editFeatureLat').value = '';
+            }
+
+            document.getElementById('editFeatureMarkerType').value = props.markerType || '';
+            document.getElementById('editFeatureMarkerIcon').value = props.markerIcon || props.icon || '';
+            document.getElementById('editFeatureMarkerColor').value = props.markerColor || '#3b82f6';
+            document.getElementById('editFeatureMarkerBorder').value = props.markerBorder || '#ffffff';
+
+            // Close any map popups so it doesn't get in the way
+            if (map) map.closePopup();
+            document.getElementById('editFeatureModal').style.display = 'flex';
+        };
+
+        window.addNewMarker = function() {
+            // Find a valid KML layer to add to. Use the first static layer by default.
+            const staticItems = document.querySelectorAll('#staticLayerList .layer-item');
+            if (staticItems.length === 0) {
+                alert("Please upload at least one KML layer first to hold the new marker.");
+                return;
+            }
+            const filename = staticItems[0].dataset.filename;
+
+            if (!activeKMLGeoJSON[filename]) {
+                 alert("Layer not loaded yet. Please check the box to load it first.");
+                 return;
+            }
+
+            document.getElementById('editFeatureTitle').textContent = 'Add New Marker to ' + filename;
+            document.getElementById('editFeatureLayer').value = filename;
+            document.getElementById('editFeatureId').value = '-1'; // -1 means new
+
+            document.getElementById('editFeatureName').value = 'New Marker';
+
+            const center = map.getCenter();
+            document.getElementById('editFeatureLng').value = center.lng.toFixed(5);
+            document.getElementById('editFeatureLat').value = center.lat.toFixed(5);
+
+            document.getElementById('editFeatureMarkerType').value = '';
+            document.getElementById('editFeatureMarkerIcon').value = '';
+            document.getElementById('editFeatureMarkerColor').value = '#3b82f6';
+            document.getElementById('editFeatureMarkerBorder').value = '#ffffff';
+
+            if (map) map.closePopup();
+            document.getElementById('editFeatureModal').style.display = 'flex';
+        };
+
+        window.useClickForLocation = function() {
+            document.getElementById('editFeatureModal').style.display = 'none';
+            window.isAwaitingLocationClick = true;
+            document.body.style.cursor = 'crosshair';
+
+            window.populateLocationFromClick = function(lat, lng) {
+                document.getElementById('editFeatureLat').value = lat.toFixed(5);
+                document.getElementById('editFeatureLng').value = lng.toFixed(5);
+
+                window.isAwaitingLocationClick = false;
+                document.body.style.cursor = '';
+                delete window.populateLocationFromClick;
+
+                document.getElementById('editFeatureModal').style.display = 'flex';
+            };
+        };
+
+        window.saveKmlToServer = async function(filename) {
+            if (!activeKMLGeoJSON[filename]) return;
+
+            try {
+                // Remove the internal .id properties we added so tokml doesn't encode them uselessly
+                const geoJsonClone = JSON.parse(JSON.stringify(activeKMLGeoJSON[filename]));
+                geoJsonClone.features.forEach(f => delete f.id);
+
+                const kmlStr = tokml(geoJsonClone, {
+                    name: 'name',
+                    description: 'description'
+                });
+
+                const blob = new Blob([kmlStr], { type: "application/vnd.google-earth.kml+xml" });
+                const file = new File([blob], filename, { type: "application/vnd.google-earth.kml+xml" });
+
+                const formData = new FormData();
+                formData.append('files', file);
+
+                const response = await fetch('/api/upload', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error('Upload failed');
+
+                // Success! Force a re-fetch of this layer to ensure UI sync
+                if (map.hasLayer(activeLayers[filename])) {
+                   await fetchAndAddKML(filename);
+                   reorderActiveLayers();
+                }
+            } catch(e) {
+                console.error("Failed to save KML to server", e);
+                alert("Failed to save changes to the server.");
+            }
+        };
+
+        window.saveEditedFeature = async function() {
+            const filename = document.getElementById('editFeatureLayer').value;
+            const index = parseInt(document.getElementById('editFeatureId').value);
+
+            if (!activeKMLGeoJSON[filename]) return;
+
+            const lat = parseFloat(document.getElementById('editFeatureLat').value);
+            const lng = parseFloat(document.getElementById('editFeatureLng').value);
+
+            if (isNaN(lat) || isNaN(lng)) {
+                alert("Invalid coordinates");
+                return;
+            }
+
+            let feature;
+            if (index === -1) {
+                feature = {
+                    type: "Feature",
+                    geometry: { type: "Point", coordinates: [lng, lat] },
+                    properties: {},
+                    id: filename + '_' + activeKMLGeoJSON[filename].features.length
+                };
+                activeKMLGeoJSON[filename].features.push(feature);
+            } else {
+                feature = activeKMLGeoJSON[filename].features[index];
+                if (feature.geometry.type === 'Point') {
+                    feature.geometry.coordinates = [lng, lat];
+                }
+            }
+
+            if (!feature.properties) feature.properties = {};
+
+            feature.properties.name = document.getElementById('editFeatureName').value;
+
+            const markerType = document.getElementById('editFeatureMarkerType').value;
+            if (markerType) feature.properties.markerType = markerType;
+            else delete feature.properties.markerType;
+
+            const markerIcon = document.getElementById('editFeatureMarkerIcon').value;
+            if (markerIcon) feature.properties.markerIcon = markerIcon;
+            else delete feature.properties.markerIcon;
+
+            const markerColor = document.getElementById('editFeatureMarkerColor').value;
+            if (markerColor !== '#3b82f6' && markerColor !== '#000000') feature.properties.markerColor = markerColor;
+            else delete feature.properties.markerColor;
+
+            const markerBorder = document.getElementById('editFeatureMarkerBorder').value;
+            if (markerBorder !== '#ffffff' && markerBorder !== '#000000') feature.properties.markerBorder = markerBorder;
+            else delete feature.properties.markerBorder;
+
+            document.getElementById('editFeatureModal').style.display = 'none';
+            await window.saveKmlToServer(filename);
+        };
+
+        window.deleteEditedFeature = async function() {
+            const filename = document.getElementById('editFeatureLayer').value;
+            const index = parseInt(document.getElementById('editFeatureId').value);
+
+            if (index === -1) {
+                document.getElementById('editFeatureModal').style.display = 'none';
+                return;
+            }
+
+            if (confirm("Are you sure you want to delete this marker?")) {
+                activeKMLGeoJSON[filename].features.splice(index, 1);
+
+                // Reassign IDs
+                activeKMLGeoJSON[filename].features.forEach((f, idx) => {
+                    f.id = filename + '_' + idx;
+                });
+
+                document.getElementById('editFeatureModal').style.display = 'none';
+                await window.saveKmlToServer(filename);
+            }
+        };
