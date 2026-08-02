@@ -113,10 +113,15 @@ const adminModalsHTML = `
 
             <div style="text-align: left; margin-bottom: 15px;">
                 <label style="display:block; margin-bottom:5px;">Style Type:</label>
-                <select id="styleTypeSelect" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;" onchange="renderColorPickers()">
-                    <option value="single">Single Style</option>
-                    <option value="grouped">Group by Name</option>
-                </select>
+                <div style="display: flex; gap: 5px;">
+                    <select id="styleTypeSelect" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;" onchange="renderColorPickers()">
+                        <option value="single">Single Style</option>
+                        <option value="grouped">Group by Field</option>
+                    </select>
+                    <select id="styleGroupFieldSelect" style="display: none; width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;" onchange="renderColorPickers()">
+                        <!-- Options populated dynamically -->
+                    </select>
+                </div>
             </div>
 
             <div id="globalMarkerConfig" style="text-align: left; margin-bottom: 15px;">
@@ -539,6 +544,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
         function renderColorPickers(existingStyle = null) {
             const container = document.getElementById('colorPickerContainer');
             const type = document.getElementById('styleTypeSelect').value;
+            const fieldSelect = document.getElementById('styleGroupFieldSelect');
             container.innerHTML = ''; // Clear existing
 
             document.getElementById('globalMarkerType').value = existingStyle?.markerType || 'circle';
@@ -546,6 +552,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             document.getElementById('globalMarkerBorder').value = existingStyle?.markerBorder || '#ffffff';
 
             if (type === 'single') {
+                fieldSelect.style.display = 'none';
                 const color = existingStyle?.color || '#3b82f6';
                 const opacity = existingStyle?.opacity !== undefined ? existingStyle.opacity : 0.5;
 
@@ -558,19 +565,39 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                     </div>
                 `;
             } else if (type === 'grouped') {
-                const uniqueNames = new Set();
+                fieldSelect.style.display = 'block';
+
+                // Populate field options
+                if (fieldSelect.options.length === 0 || fieldSelect.getAttribute('data-layer') !== currentStylingLayer) {
+                    fieldSelect.innerHTML = '<option value="name">name</option>';
+                    if (appSettings.layerFields && appSettings.layerFields[currentStylingLayer]) {
+                        appSettings.layerFields[currentStylingLayer].forEach(f => {
+                            if (f.type === 'text') {
+                                fieldSelect.innerHTML += `<option value="${f.name}">${f.name}</option>`;
+                            }
+                        });
+                    }
+                    if (existingStyle?.groupField) {
+                        fieldSelect.value = existingStyle.groupField;
+                    }
+                    fieldSelect.setAttribute('data-layer', currentStylingLayer);
+                }
+
+                const groupField = fieldSelect.value || 'name';
+
+                const uniqueVals = new Set();
                 currentStylingFeatures.forEach(f => {
-                    if (f.properties && f.properties.name) {
-                        uniqueNames.add(f.properties.name);
+                    if (f.properties && f.properties[groupField]) {
+                        uniqueVals.add(f.properties[groupField]);
                     }
                 });
 
-                if (uniqueNames.size === 0) {
-                    container.innerHTML = '<p style="font-size: 0.85rem; color: #cbd5e1;">No named features found in this layer.</p>';
+                if (uniqueVals.size === 0) {
+                    container.innerHTML = `<p style="font-size: 0.85rem; color: #cbd5e1;">No features with a value for '${groupField}' found.</p>`;
                     return;
                 }
 
-                Array.from(uniqueNames).sort().forEach((name, index) => {
+                Array.from(uniqueVals).sort().forEach((name, index) => {
                     const style = (existingStyle?.styles && existingStyle.styles[name]) || { color: '#3b82f6', opacity: 0.5, markerType: '', markerIcon: '', markerBorder: '' };
 
                     const row = document.createElement('div');
@@ -627,6 +654,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                 styleConfig.opacity = parseFloat(opacityInput.value);
             } else if (type === 'grouped') {
                 styleConfig.styles = {};
+                styleConfig.groupField = document.getElementById('styleGroupFieldSelect').value || 'name';
                 const colorInputs = document.querySelectorAll('.groupColor');
                 const opacityInputs = document.querySelectorAll('.groupOpacity');
                 const markerTypeInputs = document.querySelectorAll('.groupMarkerType');
@@ -1034,11 +1062,11 @@ setTimeout(() => {
             else delete feature.properties.markerIcon;
 
             const markerColor = document.getElementById('editFeatureMarkerColor').value;
-            if (markerColor !== '#3b82f6' && markerColor !== '#000000') feature.properties.markerColor = markerColor;
+            if (markerColor !== '#3b82f6') feature.properties.markerColor = markerColor;
             else delete feature.properties.markerColor;
 
             const markerBorder = document.getElementById('editFeatureMarkerBorder').value;
-            if (markerBorder !== '#ffffff' && markerBorder !== '#000000') feature.properties.markerBorder = markerBorder;
+            if (markerBorder !== '#ffffff') feature.properties.markerBorder = markerBorder;
             else delete feature.properties.markerBorder;
 
             document.getElementById('editFeatureModal').style.display = 'none';
