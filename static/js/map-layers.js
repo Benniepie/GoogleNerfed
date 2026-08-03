@@ -197,47 +197,49 @@ window.populateOverrideName = function(encodedName) {
                         const actionsDiv = document.createElement('div');
                         actionsDiv.className = 'layer-actions';
 
-                        const addBtn = document.createElement('button');
-                        addBtn.className = 'icon-btn';
-                        addBtn.innerHTML = '➕';
-                        addBtn.title = 'Add Marker';
-                        addBtn.onclick = () => {
-                            if (window.addNewMarker) window.addNewMarker(filename);
-                        };
+                        if (!isFrontline) {
+                            const addBtn = document.createElement('button');
+                            addBtn.className = 'icon-btn';
+                            addBtn.innerHTML = '➕';
+                            addBtn.title = 'Add Marker';
+                            addBtn.onclick = () => {
+                                if (window.addNewMarker) window.addNewMarker(filename);
+                            };
+                            actionsDiv.appendChild(addBtn);
 
-                        const downloadBtn = document.createElement('a');
-                        downloadBtn.className = 'icon-btn';
-                        downloadBtn.innerHTML = '⬇️';
-                        downloadBtn.title = 'Download Layer';
-                        downloadBtn.href = `/data/${filename}`;
-                        downloadBtn.download = filename;
-                        downloadBtn.style.textDecoration = 'none';
+                            const downloadBtn = document.createElement('a');
+                            downloadBtn.className = 'icon-btn';
+                            downloadBtn.innerHTML = '⬇️';
+                            downloadBtn.title = 'Download Layer';
+                            downloadBtn.href = `/data/${filename}`;
+                            downloadBtn.download = filename;
+                            downloadBtn.style.textDecoration = 'none';
+                            actionsDiv.appendChild(downloadBtn);
+
+                            const fieldsBtn = document.createElement('button');
+                            fieldsBtn.className = 'icon-btn';
+                            fieldsBtn.innerHTML = '📋';
+                            fieldsBtn.title = 'Manage Fields';
+                            fieldsBtn.onclick = () => {
+                                if (window.openFieldsModal) window.openFieldsModal(filename);
+                            };
+                            actionsDiv.appendChild(fieldsBtn);
+                        }
 
                         const styleBtn = document.createElement('button');
                         styleBtn.className = 'icon-btn';
                         styleBtn.innerHTML = '🎨';
                         styleBtn.title = 'Change Colour';
                         styleBtn.onclick = () => openColorPicker(filename);
-
-                        const fieldsBtn = document.createElement('button');
-                        fieldsBtn.className = 'icon-btn';
-                        fieldsBtn.innerHTML = '📋';
-                        fieldsBtn.title = 'Manage Fields';
-                        fieldsBtn.onclick = () => {
-                            if (window.openFieldsModal) window.openFieldsModal(filename);
-                        };
+                        actionsDiv.appendChild(styleBtn);
 
                         const deleteBtn = document.createElement('button');
                         deleteBtn.className = 'icon-btn delete';
                         deleteBtn.innerHTML = '🗑️';
                         deleteBtn.title = 'Delete Layer';
                         deleteBtn.onclick = () => deleteLayer(filename);
-
-                        actionsDiv.appendChild(addBtn);
-                        actionsDiv.appendChild(fieldsBtn);
-                        actionsDiv.appendChild(downloadBtn);
-                        actionsDiv.appendChild(styleBtn);
                         actionsDiv.appendChild(deleteBtn);
+
                         item.appendChild(actionsDiv);
                     }
                     // ------------------------
@@ -1644,7 +1646,9 @@ map.on('click', async function(e) {
                         if (isHit) {
                             kmlHitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
                             let editBtnHtml = '';
-                            if (window.location.pathname.startsWith('/admin')) {
+                            const isFrontlineLayer = filename.startsWith('AP Map') || filename.startsWith('AP Pins') || filename.startsWith('SM Map') || filename.startsWith('SM Pins');
+
+                            if (window.location.pathname.startsWith('/admin') && !isFrontlineLayer) {
                                 // Provide feature index to the edit function (id is filename_index)
                                 const fIndex = currentFeature.id ? currentFeature.id.split('_').pop() : '-1';
                                 editBtnHtml = `<button onclick="if(window.editKmlFeature) window.editKmlFeature('${filename}', ${fIndex})" style="float: right; background: #3b82f6; border: none; color: white; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Edit</button>`;
