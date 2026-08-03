@@ -936,17 +936,34 @@ setTimeout(() => {
             document.getElementById('editFeatureModal').style.display = 'flex';
         };
 
-        window.addNewMarker = function() {
-            // Find a valid KML layer to add to. Use the first static layer by default.
-            const staticItems = document.querySelectorAll('#staticLayerList .layer-item');
-            if (staticItems.length === 0) {
-                alert("Please upload at least one KML layer first to hold the new marker.");
-                return;
+        window.addNewMarker = function(filename) {
+            if (!filename) {
+                // Find a valid KML layer to add to. Use the first static layer by default.
+                const staticItems = document.querySelectorAll('#staticLayerList .layer-item');
+                if (staticItems.length === 0) {
+                    alert("Please upload at least one KML layer first to hold the new marker.");
+                    return;
+                }
+
+                // Find a loaded layer
+                let loadedFilename = null;
+                for (let item of staticItems) {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    if (checkbox && checkbox.checked && activeKMLGeoJSON[item.dataset.filename]) {
+                        loadedFilename = item.dataset.filename;
+                        break;
+                    }
+                }
+
+                if (loadedFilename) {
+                    filename = loadedFilename;
+                } else {
+                    filename = staticItems[0].dataset.filename;
+                }
             }
-            const filename = staticItems[0].dataset.filename;
 
             if (!activeKMLGeoJSON[filename]) {
-                 alert("Layer not loaded yet. Please check the box to load it first.");
+                 alert(`Layer "${filename}" not loaded yet. Please check the box to load it first.`);
                  return;
             }
 

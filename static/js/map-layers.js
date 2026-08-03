@@ -124,7 +124,7 @@ window.populateOverrideName = function(encodedName) {
 
                     // Only allow drag and drop for Static Data Layers
                     if (!isFrontline) {
-                        if (window.location.pathname === '/admin') {
+                        if (window.location.pathname.startsWith('/admin')) {
                             item.draggable = true;
 
                             // Drag and Drop Events
@@ -193,9 +193,25 @@ window.populateOverrideName = function(encodedName) {
                     item.appendChild(checkbox);
                     item.appendChild(label);
 
-                    if (window.location.pathname === '/admin') {
+                    if (window.location.pathname.startsWith('/admin')) {
                         const actionsDiv = document.createElement('div');
                         actionsDiv.className = 'layer-actions';
+
+                        const addBtn = document.createElement('button');
+                        addBtn.className = 'icon-btn';
+                        addBtn.innerHTML = '➕';
+                        addBtn.title = 'Add Marker';
+                        addBtn.onclick = () => {
+                            if (window.addNewMarker) window.addNewMarker(filename);
+                        };
+
+                        const downloadBtn = document.createElement('a');
+                        downloadBtn.className = 'icon-btn';
+                        downloadBtn.innerHTML = '⬇️';
+                        downloadBtn.title = 'Download Layer';
+                        downloadBtn.href = `/data/${filename}`;
+                        downloadBtn.download = filename;
+                        downloadBtn.style.textDecoration = 'none';
 
                         const styleBtn = document.createElement('button');
                         styleBtn.className = 'icon-btn';
@@ -203,12 +219,23 @@ window.populateOverrideName = function(encodedName) {
                         styleBtn.title = 'Change Colour';
                         styleBtn.onclick = () => openColorPicker(filename);
 
+                        const fieldsBtn = document.createElement('button');
+                        fieldsBtn.className = 'icon-btn';
+                        fieldsBtn.innerHTML = '📋';
+                        fieldsBtn.title = 'Manage Fields';
+                        fieldsBtn.onclick = () => {
+                            if (window.openFieldsModal) window.openFieldsModal(filename);
+                        };
+
                         const deleteBtn = document.createElement('button');
                         deleteBtn.className = 'icon-btn delete';
                         deleteBtn.innerHTML = '🗑️';
                         deleteBtn.title = 'Delete Layer';
                         deleteBtn.onclick = () => deleteLayer(filename);
 
+                        actionsDiv.appendChild(addBtn);
+                        actionsDiv.appendChild(fieldsBtn);
+                        actionsDiv.appendChild(downloadBtn);
                         actionsDiv.appendChild(styleBtn);
                         actionsDiv.appendChild(deleteBtn);
                         item.appendChild(actionsDiv);
