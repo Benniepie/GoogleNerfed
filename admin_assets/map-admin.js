@@ -178,6 +178,8 @@ const adminModalsHTML = `
                 <input type="text" id="editFeatureName" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
             </div>
 
+            <div id="editFeatureCustomFields" style="border-top: 1px solid var(--border-color); padding-top: 10px; margin-bottom: 10px;"></div>
+
             <div style="text-align: left; margin-bottom: 10px;">
                 <label style="display:block; margin-bottom:3px; font-size: 0.85rem;">Location (Lat, Lng):</label>
                 <div style="display: flex; gap: 5px;">
@@ -1161,6 +1163,7 @@ setTimeout(() => {
             document.getElementById('editFeatureId').value = '-1'; // -1 means new
 
             document.getElementById('editFeatureName').value = 'New Marker';
+            renderEditFeatureCustomFields(filename, {});
 
             const center = map.getCenter();
             document.getElementById('editFeatureLng').value = center.lng.toFixed(5);
