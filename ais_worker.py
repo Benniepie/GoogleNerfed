@@ -83,6 +83,13 @@ async def connect_ais():
     print("Connecting to AISStream...")
     conn = init_db()
 
+    # Local cache to prevent querying SQLite for every single websocket message
+    cursor = conn.cursor()
+    cursor.execute("SELECT mmsi FROM shadow_fleet_targets")
+    target_mmsis = {str(row[0]) for row in cursor.fetchall()}
+    last_cache_update = time.time()
+    CACHE_TTL = 60 # Refresh target list every 60 seconds
+
     # Optional filtering to reduce load
     subscription = {
         "APIKey": API_KEY,
@@ -90,10 +97,8 @@ async def connect_ais():
         "FilterMessageTypes": ["PositionReport", "StandardClassBPositionReport", "ShipStaticData"]
     }
 
-    # Local cache to prevent querying SQLite for every single websocket message
-    target_mmsis = set()
-    last_cache_update = 0
-    CACHE_TTL = 60 # Refresh target list every 60 seconds
+    if target_mmsis:
+        subscription["FiltersShipMMSI"] = list(target_mmsis)
 
     msg_count = 0
     target_hits = 0
@@ -122,19 +127,36 @@ async def _handle_connection(ws, subscription, conn, target_mmsis, last_cache_up
     print("Connected and subscribed! Waiting for data...")
 
     while True:
-        message = await ws.recv()
-        data = json.loads(message)
-
-        msg_count += 1
         current_time = time.time()
 
         # Refresh target cache if expired
         if current_time - last_cache_update > CACHE_TTL:
             cursor = conn.cursor()
             cursor.execute("SELECT mmsi FROM shadow_fleet_targets")
-            target_mmsis = {row[0] for row in cursor.fetchall()}
+            new_target_mmsis = {str(row[0]) for row in cursor.fetchall()}
             last_cache_update = current_time
-            print(f"Refreshed target cache. Monitoring {len(target_mmsis)} target vessels.")
+
+            if new_target_mmsis != target_mmsis:
+                target_mmsis = new_target_mmsis
+                print(f"Refreshed target cache. Monitoring {len(target_mmsis)} target vessels.")
+
+                # Update subscription with new filters
+                if target_mmsis:
+                    subscription["FiltersShipMMSI"] = list(target_mmsis)
+                elif "FiltersShipMMSI" in subscription:
+                    del subscription["FiltersShipMMSI"]
+
+                await ws.send(json.dumps(subscription))
+                print("Updated AISStream subscription with new MMSI list.")
+
+        try:
+            message = await asyncio.wait_for(ws.recv(), timeout=1.0)
+        except asyncio.TimeoutError:
+            continue
+
+        data = json.loads(message)
+        msg_count += 1
+        current_time = time.time()
 
         # Log metrics every 10 seconds
         if current_time - last_log_time > 10:
