@@ -189,6 +189,7 @@ window.populateOverrideName = function(encodedName) {
                     const label = document.createElement('label');
                     label.htmlFor = 'chk_' + filename;
                     label.textContent = filename;
+                    label.title = filename; // add title so full name is visible on hover when truncated
 
                     item.appendChild(checkbox);
                     item.appendChild(label);
