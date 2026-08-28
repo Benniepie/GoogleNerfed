@@ -798,7 +798,7 @@ async def upload_file(files: List[UploadFile] = File(...)):
 
 
 @app.get("/api/settings")
-async def get_settings():
+def get_settings():
     """Returns application settings and styles from settings.json."""
     settings_path = DATA_DIR / "settings.json"
     if settings_path.exists() and settings_path.is_file():
