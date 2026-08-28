@@ -7,7 +7,6 @@ import httpx
 import urllib.request
 import urllib.parse
 import tempfile
-import os
 import secrets
 import re
 import sqlite3
