@@ -330,7 +330,7 @@ def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
         line = line.strip()
         if not line: continue
         # Filter out boilerplate
-        if any(kw in line for kw in ["❗️", "Обход белых списков", "@radarrussiia", "Радар по всей России", "Internet_Boost_bot", "🌐", "Ускоритель Интернета", "Остались какие-то вопросы"]):
+        if any(kw in line for kw in ["❗️", "Обход белых списков", "@radarrussiia", "📲", "https://max.ru/join/radarrussiia", "https://max.ru/tyrbazaa", "Наш канал в МАХ", "Радар по всей России", "Internet_Boost_bot", "🌐", "Ускоритель Интернета", "Остались какие-то вопросы"]):
             continue
         cleaned_lines.append(line)
 
