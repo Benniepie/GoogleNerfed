@@ -1,6 +1,6 @@
 import geopandas as gpd
 import fiona
-from shapely.geometry import Polygon, MultiPolygon, MultiLineString, LineString, Point
+from shapely.geometry import Polygon, MultiPolygon
 import shapely
 from shapely.validation import make_valid
 import warnings
