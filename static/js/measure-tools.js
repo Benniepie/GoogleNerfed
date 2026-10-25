@@ -191,7 +191,7 @@ function updateRulerDrawing() {
     }
 
     if (drawPoints.length > 1) {
-        const line = turf.lineString(drawPoints);
+        const line = turf.lineString(createGreatCirclePath(drawPoints));
         currentDrawLayer = L.geoJSON(line, {
             style: { color: 'red', weight: 2, dashArray: '5, 5' },
             interactive: false
@@ -217,6 +217,25 @@ function updateRulerDrawing() {
             .addTo(window.map);
         }
     }
+}
+
+
+function createGreatCirclePath(pointsArray) {
+    let allCoords = [];
+    for (let i = 0; i < pointsArray.length - 1; i++) {
+        // turf.greatCircle handles points or coordinates, but let's be safe
+        const start = turf.point(pointsArray[i]);
+        const end = turf.point(pointsArray[i+1]);
+        const gc = turf.greatCircle(start, end);
+        const gcCoords = gc.geometry.coordinates;
+
+        if (i > 0) {
+            allCoords = allCoords.concat(gcCoords.slice(1));
+        } else {
+            allCoords = allCoords.concat(gcCoords);
+        }
+    }
+    return allCoords;
 }
 
 function formatLength(km) {
@@ -250,7 +269,7 @@ function updateCircleDrawing() {
 
         if (radius > 0) {
             const circle = turf.circle(center, radius, {steps: 64, units: 'kilometers'});
-            const line = turf.lineString([points[0], mouseMovePoint]);
+            const line = turf.greatCircle(turf.point(points[0]), turf.point(mouseMovePoint));
 
             // Create a feature collection with both circle and radius line
             const featureCollection = turf.featureCollection([circle, line]);
@@ -299,10 +318,14 @@ function finishRuler() {
                                 points[0][1] === points[points.length-1][1]);
 
     if (isExplicitlyClosed) {
-        geojson = turf.polygon([points]);
+        geojson = turf.polygon([createGreatCirclePath(points)]);
+    geojson.properties = geojson.properties || {};
+    geojson.properties.originalPoints = points;
         type = 'polygon';
     } else {
-        geojson = turf.lineString(points);
+        geojson = turf.lineString(createGreatCirclePath(points));
+    geojson.properties = geojson.properties || {};
+    geojson.properties.originalPoints = points;
     }
 
     addMeasurementToMap(geojson, type);
@@ -356,7 +379,7 @@ function addMeasurementToMap(geojson, type) {
     let contentHTML = '';
 
     if (type === 'polygon' || type === 'line') {
-        const coords = type === 'polygon' ? geojson.geometry.coordinates[0] : geojson.geometry.coordinates;
+        const coords = geojson.properties && geojson.properties.originalPoints ? geojson.properties.originalPoints : (type === 'polygon' ? geojson.geometry.coordinates[0] : geojson.geometry.coordinates);
 
         let legsHTML = '';
         for (let i = 0; i < coords.length - 1; i++) {
