@@ -124,7 +124,7 @@ window.populateOverrideName = function(encodedName) {
 
                     // Only allow drag and drop for Static Data Layers
                     if (!isFrontline) {
-                        if (window.location.pathname === '/admin') {
+                        if (window.location.pathname.startsWith('/admin')) {
                             item.draggable = true;
 
                             // Drag and Drop Events
@@ -189,28 +189,58 @@ window.populateOverrideName = function(encodedName) {
                     const label = document.createElement('label');
                     label.htmlFor = 'chk_' + filename;
                     label.textContent = filename;
+                    label.title = filename; // add title so full name is visible on hover when truncated
 
                     item.appendChild(checkbox);
                     item.appendChild(label);
 
-                    if (window.location.pathname === '/admin') {
+                    if (window.location.pathname.startsWith('/admin')) {
                         const actionsDiv = document.createElement('div');
                         actionsDiv.className = 'layer-actions';
+
+                        if (!isFrontline) {
+                            const addBtn = document.createElement('button');
+                            addBtn.className = 'icon-btn';
+                            addBtn.innerHTML = '➕';
+                            addBtn.title = 'Add Marker';
+                            addBtn.onclick = () => {
+                                if (window.addNewMarker) window.addNewMarker(filename);
+                            };
+                            actionsDiv.appendChild(addBtn);
+
+                            const downloadBtn = document.createElement('a');
+                            downloadBtn.className = 'icon-btn';
+                            downloadBtn.innerHTML = '⬇️';
+                            downloadBtn.title = 'Download Layer';
+                            downloadBtn.href = `/data/${filename}`;
+                            downloadBtn.download = filename;
+                            downloadBtn.style.textDecoration = 'none';
+                            actionsDiv.appendChild(downloadBtn);
+
+                            const fieldsBtn = document.createElement('button');
+                            fieldsBtn.className = 'icon-btn';
+                            fieldsBtn.innerHTML = '📋';
+                            fieldsBtn.title = 'Manage Fields';
+                            fieldsBtn.onclick = () => {
+                                if (window.openFieldsModal) window.openFieldsModal(filename);
+                            };
+                            actionsDiv.appendChild(fieldsBtn);
+                        }
 
                         const styleBtn = document.createElement('button');
                         styleBtn.className = 'icon-btn';
                         styleBtn.innerHTML = '🎨';
                         styleBtn.title = 'Change Colour';
                         styleBtn.onclick = () => openColorPicker(filename);
+                        actionsDiv.appendChild(styleBtn);
 
                         const deleteBtn = document.createElement('button');
                         deleteBtn.className = 'icon-btn delete';
                         deleteBtn.innerHTML = '🗑️';
                         deleteBtn.title = 'Delete Layer';
                         deleteBtn.onclick = () => deleteLayer(filename);
-
-                        actionsDiv.appendChild(styleBtn);
                         actionsDiv.appendChild(deleteBtn);
+
                         item.appendChild(actionsDiv);
                     }
                     // ------------------------
@@ -338,9 +368,10 @@ window.populateOverrideName = function(encodedName) {
                     let baseStyle = { color: styleConfig.color || '#3b82f6', opacity: styleConfig.opacity !== undefined ? styleConfig.opacity : 0.5, markerType: styleConfig.markerType || 'circle', markerIcon: styleConfig.markerIcon || '', markerBorder: styleConfig.markerBorder || '#ffffff' };
 
                     if (styleConfig.type === 'grouped' && styleConfig.styles) {
-                        const name = feature.properties ? feature.properties.name : null;
-                        if (name && styleConfig.styles[name]) {
-                            const groupStyle = styleConfig.styles[name];
+                        const groupField = styleConfig.groupField || 'name';
+                        const val = feature.properties ? feature.properties[groupField] : null;
+                        if (val && styleConfig.styles[val]) {
+                            const groupStyle = styleConfig.styles[val];
                             baseStyle.color = groupStyle.color || baseStyle.color;
                             baseStyle.opacity = groupStyle.opacity !== undefined ? groupStyle.opacity : baseStyle.opacity;
                             baseStyle.markerType = groupStyle.markerType || baseStyle.markerType;
@@ -1616,44 +1647,123 @@ map.on('click', async function(e) {
                         if (isHit) {
                             kmlHitsHTML += `<div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">`;
                             let editBtnHtml = '';
-                            if (window.location.pathname.startsWith('/admin')) {
+                            const isFrontlineLayer = filename.startsWith('AP Map') || filename.startsWith('AP Pins') || filename.startsWith('SM Map') || filename.startsWith('SM Pins');
+
+                            if (window.location.pathname.startsWith('/admin') && !isFrontlineLayer) {
                                 // Provide feature index to the edit function (id is filename_index)
                                 const fIndex = currentFeature.id ? currentFeature.id.split('_').pop() : '-1';
                                 editBtnHtml = `<button onclick="if(window.editKmlFeature) window.editKmlFeature('${filename}', ${fIndex})" style="float: right; background: #3b82f6; border: none; color: white; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Edit</button>`;
                             }
-                            kmlHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #facc15;">${editBtnHtml}📁 ${filename}</h4>`;
 
-                            // The Magic Loop: Extracts ALL metadata dynamically
+                            const formattedLayerName = filename.replace('.kml', '').replace('.kmz', '').replace(/_/g, ' ');
+
+                            // Reconstruct style for the marker icon
+                            const styleConfig = layerStyles[filename] || { type: 'single', color: '#3b82f6', opacity: 0.5 };
+                            let bStyle = { color: styleConfig.color || '#3b82f6', markerType: styleConfig.markerType || 'circle', markerIcon: styleConfig.markerIcon || '', markerBorder: styleConfig.markerBorder || '#ffffff' };
+                            if (styleConfig.type === 'grouped' && styleConfig.styles) {
+                                const groupField = styleConfig.groupField || 'name';
+                                const val = currentFeature.properties ? currentFeature.properties[groupField] : null;
+                                if (val && styleConfig.styles[val]) {
+                                    const gStyle = styleConfig.styles[val];
+                                    bStyle.color = gStyle.color || bStyle.color;
+                                    bStyle.markerType = gStyle.markerType || bStyle.markerType;
+                                    bStyle.markerIcon = gStyle.markerIcon || bStyle.markerIcon;
+                                    bStyle.markerBorder = gStyle.markerBorder || bStyle.markerBorder;
+                                }
+                            }
                             if (currentFeature.properties) {
-                                let metaCount = 0;
-                                let hiddenMetaHTML = '';
+                                if (currentFeature.properties.markerType) bStyle.markerType = currentFeature.properties.markerType;
+                                if (currentFeature.properties.markerIcon) bStyle.markerIcon = currentFeature.properties.markerIcon;
+                                else if (currentFeature.properties.icon) bStyle.markerIcon = currentFeature.properties.icon;
+                                if (currentFeature.properties.markerBorder) bStyle.markerBorder = currentFeature.properties.markerBorder;
+                                if (currentFeature.properties.markerColor) bStyle.color = currentFeature.properties.markerColor;
+                            }
+
+                            let markerRep = '';
+                            if (bStyle.markerType === 'emoji' || bStyle.markerType === 'icon') {
+                                const isEmoji = bStyle.markerType === 'emoji';
+                                let cHtml = isEmoji ? bStyle.markerIcon : (bStyle.markerIcon.startsWith('http') || bStyle.markerIcon.startsWith('/') || bStyle.markerIcon.startsWith('data:') ? `<img src="${bStyle.markerIcon}" style="width: 14px; height: 14px; object-fit: contain;">` : `<img src="/data/images/${bStyle.markerIcon}" style="width: 14px; height: 14px; object-fit: contain;">`);
+                                if (!bStyle.markerIcon) cHtml = '?';
+                                markerRep = `<span style="display:inline-flex; align-items:center; justify-content:center; background:${bStyle.color}; width:20px; height:20px; border-radius:50%; border:1px solid ${bStyle.markerBorder}; font-size:12px; margin-right:5px; vertical-align:middle;">${cHtml}</span>`;
+                            } else {
+                                markerRep = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${bStyle.color}; border:1px solid ${bStyle.markerBorder}; margin-right:5px; vertical-align:middle;"></span>`;
+                            }
+
+                            kmlHitsHTML += `<h4 style="margin: 0 0 6px 0; color: #facc15;">${editBtnHtml}${markerRep}${formattedLayerName}</h4>`;
+
+                            if (currentFeature.properties) {
+                                let nameHtml = '';
+                                let imagesHtml = '';
+                                let urlsHtml = '';
+                                let otherFieldsHtml = '';
+                                let hiddenFieldsHtml = '';
+                                let fieldCount = 0;
+
+                                const ignoredKeys = ['styleUrl', 'styleHash', 'styleMapHash', 'markerType', 'markerIcon', 'icon', 'markerColor', 'markerBorder'];
+                                const layerSchema = (appSettings.layerFields && appSettings.layerFields[filename]) ? appSettings.layerFields[filename] : [];
+
+                                // Separate name
+                                if (currentFeature.properties.name) {
+                                    nameHtml = `<div style="font-size: 0.95rem; font-weight: bold; margin-bottom: 5px;">${currentFeature.properties.name}</div>`;
+                                }
 
                                 for (const key in currentFeature.properties) {
-                                    // Ignore useless internal styling keys generated by toGeoJSON
-                                    if (key !== 'styleUrl' && key !== 'styleHash' && key !== 'styleMapHash') {
-                                        const val = currentFeature.properties[key];
-                                        // Format links cleanly if they exist
-                                        if (val) {
-                                            const displayVal = String(val).startsWith('http') ? `<a href="${val}" target="_blank" style="color:#3b82f6;">Link</a>` : val;
-                                            const rowHTML = `<div style="font-size: 0.85rem; margin-bottom: 3px; word-wrap: break-word;"><b>${key}:</b> ${displayVal}</div>`;
+                                    if (ignoredKeys.includes(key) || key === 'name') continue;
+                                    const val = currentFeature.properties[key];
+                                    if (!val) continue;
 
-                                            if (metaCount < 4) {
-                                                kmlHitsHTML += rowHTML;
-                                            } else {
-                                                hiddenMetaHTML += rowHTML;
-                                            }
-                                            metaCount++;
+                                    let schemaType = 'text';
+                                    const fieldDef = layerSchema.find(f => f.name === key);
+                                    if (fieldDef) schemaType = fieldDef.type;
+                                    // Infer links for old/un-schema'd data
+                                    if (String(val).startsWith('http') && schemaType !== 'image') schemaType = 'url';
+
+                                    if (schemaType === 'image') {
+                                        const src = (val.startsWith('http') || val.startsWith('/') || val.startsWith('data:')) ? val : `/data/images/${val}`;
+                                        imagesHtml += `<a href="${src}" target="_blank"><img src="${src}" style="max-height: 75px; border-radius: 4px; border: 1px solid #475569; object-fit: cover; cursor: pointer;"></a>`;
+                                    } else if (schemaType === 'url') {
+                                        let icon = '🔗';
+                                        if (val.includes('t.me') || val.includes('telegram.me')) icon = '✈️'; // Telegram-ish
+                                        if (val.includes('x.com') || val.includes('twitter.com')) icon = '🐦'; // X-ish
+                                        urlsHtml += `<a href="${val}" target="_blank" title="${key}: ${val}" style="display:inline-block; margin-right:8px; font-size:1.2rem; text-decoration:none;">${icon}</a>`;
+                                    } else if (schemaType === 'date') {
+                                        const d = new Date(val);
+                                        let timeAgoStr = '';
+                                        if (!isNaN(d)) {
+                                            const diff = Date.now() - d.getTime();
+                                            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                            if (days === 0) timeAgoStr = ' (Today)';
+                                            else if (days === 1) timeAgoStr = ' (1 day ago)';
+                                            else if (days > 1) timeAgoStr = ` (${days} days ago)`;
                                         }
+                                        const rowHTML = `<div style="font-size: 0.85rem; margin-bottom: 3px; word-wrap: break-word;"><b>${key}:</b> ${val}${timeAgoStr}</div>`;
+                                        if (fieldCount < 4) otherFieldsHtml += rowHTML;
+                                        else hiddenFieldsHtml += rowHTML;
+                                        fieldCount++;
+                                    } else {
+                                        const rowHTML = `<div style="font-size: 0.85rem; margin-bottom: 3px; word-wrap: break-word;"><b>${key}:</b> ${val}</div>`;
+                                        if (fieldCount < 4) otherFieldsHtml += rowHTML;
+                                        else hiddenFieldsHtml += rowHTML;
+                                        fieldCount++;
                                     }
                                 }
 
-                                // Wrap excess metadata in a details block
-                                if (hiddenMetaHTML) {
+                                if (imagesHtml) {
+                                    kmlHitsHTML += `<div style="display: flex; gap: 5px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 4px;">${imagesHtml}</div>`;
+                                }
+                                if (nameHtml) kmlHitsHTML += nameHtml;
+                                if (urlsHtml) {
+                                    kmlHitsHTML += `<div style="margin-bottom: 8px;">${urlsHtml}</div>`;
+                                }
+
+                                kmlHitsHTML += otherFieldsHtml;
+
+                                if (hiddenFieldsHtml) {
                                     kmlHitsHTML += `
                                         <details style="margin-top: 6px; font-size: 0.85rem;">
-                                            <summary style="cursor: pointer; color: #94a3b8; user-select: none;">More info...</summary>
+                                            <summary style="cursor: pointer; color: #94a3b8; user-select: none;">Show more...</summary>
                                             <div style="margin-top: 6px; padding-left: 8px; border-left: 2px solid #475569;">
-                                                ${hiddenMetaHTML}
+                                                ${hiddenFieldsHtml}
                                             </div>
                                         </details>
                                     `;

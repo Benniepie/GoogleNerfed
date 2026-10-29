@@ -113,10 +113,15 @@ const adminModalsHTML = `
 
             <div style="text-align: left; margin-bottom: 15px;">
                 <label style="display:block; margin-bottom:5px;">Style Type:</label>
-                <select id="styleTypeSelect" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;" onchange="renderColorPickers()">
-                    <option value="single">Single Style</option>
-                    <option value="grouped">Group by Name</option>
-                </select>
+                <div style="display: flex; gap: 5px;">
+                    <select id="styleTypeSelect" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;" onchange="renderColorPickers()">
+                        <option value="single">Single Style</option>
+                        <option value="grouped">Group by Field</option>
+                    </select>
+                    <select id="styleGroupFieldSelect" style="display: none; width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;" onchange="renderColorPickers()">
+                        <!-- Options populated dynamically -->
+                    </select>
+                </div>
             </div>
 
             <div id="globalMarkerConfig" style="text-align: left; margin-bottom: 15px;">
@@ -138,6 +143,29 @@ const adminModalsHTML = `
         </div>
     </div>
 
+    <!-- Manage Layer Fields Modal -->
+    <div id="fieldsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="width: 350px;">
+            <h3 style="margin-top:0;">Manage Layer Fields</h3>
+            <p id="fieldsLayerName" style="font-size:0.8rem; color:#94a3b8; word-break:break-all;"></p>
+            <div id="fieldsContainer" style="margin-bottom: 15px; text-align: left; max-height: 250px; overflow-y: auto;"></div>
+
+            <div style="display: flex; gap: 5px; margin-bottom: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                <input type="text" id="newFieldName" placeholder="New Field Name" style="flex: 2; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;">
+                <select id="newFieldType" style="flex: 1; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px;">
+                    <option value="text">Text (w/ Dropdown)</option>
+                    <option value="date">Date</option>
+                    <option value="image">Image</option>
+                    <option value="url">URL</option>
+                </select>
+                <button class="primary-btn" onclick="addField()" style="background: #10b981; padding: 5px 10px;">Add</button>
+            </div>
+
+            <button class="primary-btn" onclick="saveFields()" style="width:100%; margin-bottom:10px;">Save Fields</button>
+            <button class="primary-btn" onclick="document.getElementById('fieldsModal').style.display='none'" style="width:100%; background:var(--border-color);">Close</button>
+        </div>
+    </div>
+
     <!-- Edit Feature Modal -->
     <div id="editFeatureModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; align-items: center; justify-content: center;">
         <div class="modal-content" style="width: 350px;">
@@ -149,6 +177,8 @@ const adminModalsHTML = `
                 <label style="display:block; margin-bottom:3px; font-size: 0.85rem;">Name:</label>
                 <input type="text" id="editFeatureName" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
             </div>
+
+            <div id="editFeatureCustomFields" style="border-top: 1px solid var(--border-color); padding-top: 10px; margin-bottom: 10px;"></div>
 
             <div style="text-align: left; margin-bottom: 10px;">
                 <label style="display:block; margin-bottom:3px; font-size: 0.85rem;">Location (Lat, Lng):</label>
@@ -539,6 +569,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
         function renderColorPickers(existingStyle = null) {
             const container = document.getElementById('colorPickerContainer');
             const type = document.getElementById('styleTypeSelect').value;
+            const fieldSelect = document.getElementById('styleGroupFieldSelect');
             container.innerHTML = ''; // Clear existing
 
             document.getElementById('globalMarkerType').value = existingStyle?.markerType || 'circle';
@@ -546,6 +577,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             document.getElementById('globalMarkerBorder').value = existingStyle?.markerBorder || '#ffffff';
 
             if (type === 'single') {
+                fieldSelect.style.display = 'none';
                 const color = existingStyle?.color || '#3b82f6';
                 const opacity = existingStyle?.opacity !== undefined ? existingStyle.opacity : 0.5;
 
@@ -558,19 +590,39 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                     </div>
                 `;
             } else if (type === 'grouped') {
-                const uniqueNames = new Set();
+                fieldSelect.style.display = 'block';
+
+                // Populate field options
+                if (fieldSelect.options.length === 0 || fieldSelect.getAttribute('data-layer') !== currentStylingLayer) {
+                    fieldSelect.innerHTML = '<option value="name">name</option>';
+                    if (appSettings.layerFields && appSettings.layerFields[currentStylingLayer]) {
+                        appSettings.layerFields[currentStylingLayer].forEach(f => {
+                            if (f.type === 'text') {
+                                fieldSelect.innerHTML += `<option value="${f.name}">${f.name}</option>`;
+                            }
+                        });
+                    }
+                    if (existingStyle?.groupField) {
+                        fieldSelect.value = existingStyle.groupField;
+                    }
+                    fieldSelect.setAttribute('data-layer', currentStylingLayer);
+                }
+
+                const groupField = fieldSelect.value || 'name';
+
+                const uniqueVals = new Set();
                 currentStylingFeatures.forEach(f => {
-                    if (f.properties && f.properties.name) {
-                        uniqueNames.add(f.properties.name);
+                    if (f.properties && f.properties[groupField]) {
+                        uniqueVals.add(f.properties[groupField]);
                     }
                 });
 
-                if (uniqueNames.size === 0) {
-                    container.innerHTML = '<p style="font-size: 0.85rem; color: #cbd5e1;">No named features found in this layer.</p>';
+                if (uniqueVals.size === 0) {
+                    container.innerHTML = `<p style="font-size: 0.85rem; color: #cbd5e1;">No features with a value for '${groupField}' found.</p>`;
                     return;
                 }
 
-                Array.from(uniqueNames).sort().forEach((name, index) => {
+                Array.from(uniqueVals).sort().forEach((name, index) => {
                     const style = (existingStyle?.styles && existingStyle.styles[name]) || { color: '#3b82f6', opacity: 0.5, markerType: '', markerIcon: '', markerBorder: '' };
 
                     const row = document.createElement('div');
@@ -627,6 +679,7 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                 styleConfig.opacity = parseFloat(opacityInput.value);
             } else if (type === 'grouped') {
                 styleConfig.styles = {};
+                styleConfig.groupField = document.getElementById('styleGroupFieldSelect').value || 'name';
                 const colorInputs = document.querySelectorAll('.groupColor');
                 const opacityInputs = document.querySelectorAll('.groupOpacity');
                 const markerTypeInputs = document.querySelectorAll('.groupMarkerType');
@@ -768,6 +821,80 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             }
         }
 
+        let currentFieldsLayer = null;
+
+        window.openFieldsModal = function(filename) {
+            currentFieldsLayer = filename;
+            document.getElementById('fieldsLayerName').textContent = filename;
+            renderFieldsList();
+            document.getElementById('fieldsModal').style.display = 'flex';
+        };
+
+        function renderFieldsList() {
+            const container = document.getElementById('fieldsContainer');
+            container.innerHTML = '';
+
+            if (!appSettings.layerFields) appSettings.layerFields = {};
+            const fields = appSettings.layerFields[currentFieldsLayer] || [];
+
+            if (fields.length === 0) {
+                container.innerHTML = '<p style="font-size: 0.85rem; color: #cbd5e1;">No custom fields defined for this layer.</p>';
+                return;
+            }
+
+            fields.forEach((f, index) => {
+                const div = document.createElement('div');
+                div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 5px; margin-bottom: 5px; border-radius: 4px;";
+                div.innerHTML = `
+                    <span><strong>${f.name}</strong> <span style="color:#94a3b8; font-size:0.8rem;">(${f.type})</span></span>
+                    <button class="icon-btn delete" onclick="deleteField(${index})" style="font-size:0.8rem;">🗑️</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.addField = function() {
+            const nameInput = document.getElementById('newFieldName');
+            const typeInput = document.getElementById('newFieldType');
+            const name = nameInput.value.trim();
+            const type = typeInput.value;
+
+            if (!name) return;
+
+            if (!appSettings.layerFields) appSettings.layerFields = {};
+            if (!appSettings.layerFields[currentFieldsLayer]) appSettings.layerFields[currentFieldsLayer] = [];
+
+            // Check for duplicates
+            if (appSettings.layerFields[currentFieldsLayer].some(f => f.name === name)) {
+                alert("A field with this name already exists.");
+                return;
+            }
+
+            appSettings.layerFields[currentFieldsLayer].push({ name, type });
+            nameInput.value = '';
+            renderFieldsList();
+        };
+
+        window.deleteField = function(index) {
+            if (!confirm("Remove this field? Existing data in markers will not be deleted until markers are individually edited.")) return;
+            appSettings.layerFields[currentFieldsLayer].splice(index, 1);
+            renderFieldsList();
+        };
+
+        window.saveFields = async function() {
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(appSettings)
+                });
+                document.getElementById('fieldsModal').style.display = 'none';
+            } catch (err) {
+                console.error('Error saving fields:', err);
+                alert("Failed to save fields.");
+            }
+        };
+
 
         // 5. Override Geocodes
                         document.getElementById('overrideForm').addEventListener('submit', async (e) => {
@@ -874,6 +1001,97 @@ setTimeout(() => {
     });
 }, 1000);
 
+        function renderEditFeatureCustomFields(filename, props) {
+            const container = document.getElementById('editFeatureCustomFields');
+            container.innerHTML = '';
+
+            if (!appSettings.layerFields || !appSettings.layerFields[filename]) return;
+            const fields = appSettings.layerFields[filename];
+
+            fields.forEach(f => {
+                const val = props[f.name] || '';
+                const fieldDiv = document.createElement('div');
+                fieldDiv.style.marginBottom = '10px';
+
+                let inputHtml = '';
+                if (f.type === 'text') {
+                    // Gather existing values for this field across all features in this layer
+                    const existingVals = new Set();
+                    if (activeKMLGeoJSON[filename]) {
+                        activeKMLGeoJSON[filename].features.forEach(feat => {
+                            if (feat.properties && feat.properties[f.name]) existingVals.add(feat.properties[f.name]);
+                        });
+                    }
+                    const dataListId = `dl_${f.name.replace(/\s+/g, '')}`;
+                    let optionsHtml = '';
+                    existingVals.forEach(v => optionsHtml += `<option value="${v}">`);
+
+                    inputHtml = `
+                        <input type="text" id="customField_${f.name}" list="${dataListId}" value="${val}" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+                        <datalist id="${dataListId}">${optionsHtml}</datalist>
+                    `;
+                } else if (f.type === 'date') {
+                    inputHtml = `<input type="date" id="customField_${f.name}" value="${val}" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">`;
+                } else if (f.type === 'url') {
+                    inputHtml = `<input type="url" id="customField_${f.name}" value="${val}" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">`;
+                } else if (f.type === 'image') {
+                    inputHtml = `
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="customField_${f.name}" value="${val}" placeholder="Image URL or filename" style="flex: 1; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+                            <button type="button" class="icon-btn" onclick="document.getElementById('customFieldImgUpload_${f.name}').click()" style="background: rgba(255,255,255,0.1); padding: 5px; font-size: 0.8rem;" title="Upload Image">📁</button>
+                            <input type="file" id="customFieldImgUpload_${f.name}" style="display: none;" accept="image/png, image/jpeg, image/gif, image/svg+xml, image/webp" onchange="window.uploadCustomFieldImage(this, 'customField_${f.name}')">
+                        </div>
+                        <div id="customFieldStatus_${f.name}" style="font-size: 0.75rem; display: none; margin-top: 3px;"></div>
+                    `;
+                }
+
+                fieldDiv.innerHTML = `
+                    <label style="display:block; margin-bottom:3px; font-size: 0.85rem;">${f.name}:</label>
+                    ${inputHtml}
+                `;
+                container.appendChild(fieldDiv);
+            });
+        }
+
+        window.uploadCustomFieldImage = async function(inputEl, targetInputId) {
+            if (!inputEl.files || inputEl.files.length === 0) return;
+            const file = inputEl.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const statusElId = targetInputId.replace('customField_', 'customFieldStatus_');
+            const statusEl = document.getElementById(statusElId);
+            if (statusEl) {
+                statusEl.textContent = 'Uploading...';
+                statusEl.style.color = '#94a3b8';
+                statusEl.style.display = 'block';
+            }
+
+            try {
+                const response = await fetch('/api/upload_image', { method: 'POST', body: formData });
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success') {
+                    document.getElementById(targetInputId).value = result.filename;
+                    if (statusEl) {
+                        statusEl.textContent = 'Uploaded successfully!';
+                        statusEl.style.color = '#10b981';
+                    }
+                } else {
+                    if (statusEl) {
+                        statusEl.textContent = 'Upload failed: ' + (result.message || '');
+                        statusEl.style.color = '#ef4444';
+                    }
+                }
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.textContent = 'Upload error.';
+                    statusEl.style.color = '#ef4444';
+                }
+            }
+            if (statusEl) setTimeout(() => statusEl.style.display = 'none', 3000);
+        };
+
         window.editKmlFeature = function(filename, indexStr) {
             const index = parseInt(indexStr);
             if (index < 0 || !activeKMLGeoJSON[filename] || !activeKMLGeoJSON[filename].features[index]) {
@@ -889,6 +1107,7 @@ setTimeout(() => {
             document.getElementById('editFeatureId').value = index;
 
             document.getElementById('editFeatureName').value = props.name || '';
+            renderEditFeatureCustomFields(filename, props);
 
             if (feature.geometry && feature.geometry.type === 'Point') {
                 document.getElementById('editFeatureLng').value = feature.geometry.coordinates[0];
@@ -908,17 +1127,34 @@ setTimeout(() => {
             document.getElementById('editFeatureModal').style.display = 'flex';
         };
 
-        window.addNewMarker = function() {
-            // Find a valid KML layer to add to. Use the first static layer by default.
-            const staticItems = document.querySelectorAll('#staticLayerList .layer-item');
-            if (staticItems.length === 0) {
-                alert("Please upload at least one KML layer first to hold the new marker.");
-                return;
+        window.addNewMarker = function(filename) {
+            if (!filename) {
+                // Find a valid KML layer to add to. Use the first static layer by default.
+                const staticItems = document.querySelectorAll('#staticLayerList .layer-item');
+                if (staticItems.length === 0) {
+                    alert("Please upload at least one KML layer first to hold the new marker.");
+                    return;
+                }
+
+                // Find a loaded layer
+                let loadedFilename = null;
+                for (let item of staticItems) {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    if (checkbox && checkbox.checked && activeKMLGeoJSON[item.dataset.filename]) {
+                        loadedFilename = item.dataset.filename;
+                        break;
+                    }
+                }
+
+                if (loadedFilename) {
+                    filename = loadedFilename;
+                } else {
+                    filename = staticItems[0].dataset.filename;
+                }
             }
-            const filename = staticItems[0].dataset.filename;
 
             if (!activeKMLGeoJSON[filename]) {
-                 alert("Layer not loaded yet. Please check the box to load it first.");
+                 alert(`Layer "${filename}" not loaded yet. Please check the box to load it first.`);
                  return;
             }
 
@@ -927,6 +1163,7 @@ setTimeout(() => {
             document.getElementById('editFeatureId').value = '-1'; // -1 means new
 
             document.getElementById('editFeatureName').value = 'New Marker';
+            renderEditFeatureCustomFields(filename, {});
 
             const center = map.getCenter();
             document.getElementById('editFeatureLng').value = center.lng.toFixed(5);
@@ -1025,6 +1262,21 @@ setTimeout(() => {
 
             feature.properties.name = document.getElementById('editFeatureName').value;
 
+            // Save custom fields
+            if (appSettings.layerFields && appSettings.layerFields[filename]) {
+                appSettings.layerFields[filename].forEach(f => {
+                    const inputEl = document.getElementById(`customField_${f.name}`);
+                    if (inputEl) {
+                        const val = inputEl.value.trim();
+                        if (val) {
+                            feature.properties[f.name] = val;
+                        } else {
+                            delete feature.properties[f.name];
+                        }
+                    }
+                });
+            }
+
             const markerType = document.getElementById('editFeatureMarkerType').value;
             if (markerType) feature.properties.markerType = markerType;
             else delete feature.properties.markerType;
@@ -1034,11 +1286,11 @@ setTimeout(() => {
             else delete feature.properties.markerIcon;
 
             const markerColor = document.getElementById('editFeatureMarkerColor').value;
-            if (markerColor !== '#3b82f6' && markerColor !== '#000000') feature.properties.markerColor = markerColor;
+            if (markerColor !== '#3b82f6') feature.properties.markerColor = markerColor;
             else delete feature.properties.markerColor;
 
             const markerBorder = document.getElementById('editFeatureMarkerBorder').value;
-            if (markerBorder !== '#ffffff' && markerBorder !== '#000000') feature.properties.markerBorder = markerBorder;
+            if (markerBorder !== '#ffffff') feature.properties.markerBorder = markerBorder;
             else delete feature.properties.markerBorder;
 
             document.getElementById('editFeatureModal').style.display = 'none';
