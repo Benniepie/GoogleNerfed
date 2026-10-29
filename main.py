@@ -1036,7 +1036,8 @@ def process_updates(
 @app.delete("/api/layers/{filename}", dependencies=[Depends(verify_admin)])
 async def delete_layer(filename: str):
     """Safeguards the file by renaming it with a .deleted extension."""
-    file_path = DATA_DIR / filename
+    safe_filename = secure_filename(filename)
+    file_path = DATA_DIR / safe_filename
     if file_path.exists() and file_path.is_file():
         # Rename instead of permanent deletion
         file_path.rename(file_path.with_suffix('.kml.deleted'))
