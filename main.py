@@ -22,7 +22,12 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from geoprocessing import load_kml, save_kml, run_ap_model, run_sm_model, copy_kml_styles
+from dotenv import load_dotenv
+load_dotenv()
+try:
+    from geoprocessing import load_kml, save_kml, run_ap_model, run_sm_model, copy_kml_styles
+except ImportError:
+    load_kml = save_kml = run_ap_model = run_sm_model = copy_kml_styles = None
 from telegram_config import CHANNEL_CONFIGS
 from telegram_shared import (
     resolve_data_dir,
