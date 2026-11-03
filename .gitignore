@@ -6,3 +6,6 @@ __pycache__/
 node_modules/
 uvicorn.log
 *.session
+*.session-journal
+mapping_userbot.session
+telegramold/

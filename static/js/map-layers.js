@@ -750,12 +750,16 @@ window.populateOverrideName = function(encodedName) {
                 features: currentFeatures
             };
 
+            // Separate automated Telegram Strike / Hit incidents (e.g. znua_live) from standard Radar Alerts
+            const standardRadarFeatures = currentFeatures.filter(f => f.properties.source !== 'telegram');
+            const telegramIncidentFeatures = currentFeatures.filter(f => f.properties.source === 'telegram');
+
             // The user requested stacked opacities for Red/Orange/Yellow (active alerts) to show intensity,
             // but older Green (clear) or Grey (stale) alerts should not render if there's a newer alert,
             // as it causes muddy color mixing. And if the latest is clear/stale, we only render it once (no stacking).
 
             const latestStatePerLoc = new Map();
-            currentFeatures.forEach(feature => {
+            standardRadarFeatures.forEach(feature => {
                 const locName = feature.properties.name;
                 // Since radarAllFeatures is sorted newest to oldest, the first one we see is the newest
                 if (!latestStatePerLoc.has(locName)) {
@@ -813,7 +817,7 @@ window.populateOverrideName = function(encodedName) {
 
             // Count recent active alerts per location for opacity
             const recentAlertCounts = new Map();
-            currentFeatures.forEach(feature => {
+            standardRadarFeatures.forEach(feature => {
                 const locName = feature.properties.name;
                 const props = feature.properties;
                 const ageMinutes = (now - new Date(props.time)) / (1000 * 60);
@@ -948,6 +952,89 @@ window.populateOverrideName = function(encodedName) {
                         }
                     });
                     radarRussiaLayerGroup.addLayer(layer);
+                }
+            });
+
+            // Render Telegram Strike / Hit incidents (with layer/grouped/per-marker custom styling)
+            const strikeLayerStyle = (layerStyles && layerStyles['RadarRussia']) || {
+                type: 'single',
+                color: '#f97316',
+                opacity: 0.9,
+                markerType: 'emoji',
+                markerIcon: '🔥',
+                markerBorder: '#ffffff'
+            };
+
+            telegramIncidentFeatures.forEach(feature => {
+                const props = feature.properties || {};
+                let bStyle = {
+                    color: strikeLayerStyle.color || '#f97316',
+                    opacity: strikeLayerStyle.opacity !== undefined ? strikeLayerStyle.opacity : 0.9,
+                    markerType: strikeLayerStyle.markerType || 'emoji',
+                    markerIcon: strikeLayerStyle.markerIcon || '🔥',
+                    markerBorder: strikeLayerStyle.markerBorder || '#ffffff'
+                };
+
+                if (strikeLayerStyle.type === 'grouped' && strikeLayerStyle.styles) {
+                    const groupField = strikeLayerStyle.groupField || 'category';
+                    const val = props[groupField];
+                    if (val && strikeLayerStyle.styles[val]) {
+                        const gStyle = strikeLayerStyle.styles[val];
+                        bStyle.color = gStyle.color || bStyle.color;
+                        bStyle.opacity = gStyle.opacity !== undefined ? gStyle.opacity : bStyle.opacity;
+                        bStyle.markerType = gStyle.markerType || bStyle.markerType;
+                        bStyle.markerIcon = gStyle.markerIcon || bStyle.markerIcon;
+                        bStyle.markerBorder = gStyle.markerBorder || bStyle.markerBorder;
+                    }
+                }
+
+                if (props.markerType) bStyle.markerType = props.markerType;
+                if (props.markerIcon) bStyle.markerIcon = props.markerIcon;
+                else if (props.icon) bStyle.markerIcon = props.icon;
+                if (props.markerColor) bStyle.color = props.markerColor;
+                if (props.markerBorder) bStyle.markerBorder = props.markerBorder;
+
+                let center = null;
+                if (feature.geometry && feature.geometry.type === 'Point') {
+                    center = [feature.geometry.coordinates[1], feature.geometry.coordinates[0]];
+                } else if (feature.geometry) {
+                    try {
+                        const c = turf.centroid(feature);
+                        center = [c.geometry.coordinates[1], c.geometry.coordinates[0]];
+                    } catch (e) {}
+                }
+                if (!center) return;
+
+                const ageMinutes = (now - new Date(props.time)) / (1000 * 60);
+                const animClass = ageMinutes <= 60 ? 'radar-pulse' : '';
+
+                if (bStyle.markerType === 'circle') {
+                    const circleMarker = L.circleMarker(center, {
+                        interactive: false,
+                        radius: 10,
+                        fillColor: bStyle.color,
+                        color: bStyle.markerBorder,
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: bStyle.opacity
+                    });
+                    radarRussiaLayerGroup.addLayer(circleMarker);
+                } else {
+                    const isEmoji = bStyle.markerType === 'emoji';
+                    let contentHtml = isEmoji
+                        ? (bStyle.markerIcon || '🔥')
+                        : ((bStyle.markerIcon.startsWith('http') || bStyle.markerIcon.startsWith('/') || bStyle.markerIcon.startsWith('data:'))
+                            ? `<img src="${bStyle.markerIcon}" style="width: 20px; height: 20px; object-fit: contain;">`
+                            : `<img src="/data/images/${bStyle.markerIcon}" style="width: 20px; height: 20px; object-fit: contain;">`);
+                    const markerHtml = `<div style="background:${bStyle.color}; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid ${bStyle.markerBorder}; font-size:18px; box-shadow:0 0 10px rgba(0,0,0,0.6);">${contentHtml}</div>`;
+                    const customIcon = L.divIcon({
+                        className: `radar-custom-icon ${animClass}`,
+                        html: markerHtml,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    });
+                    const markerLayer = L.marker(center, { icon: customIcon, interactive: false });
+                    radarRussiaLayerGroup.addLayer(markerLayer);
                 }
             });
 
@@ -1832,6 +1919,9 @@ map.on('click', async function(e) {
             if (map.hasLayer(radarRussiaLayerGroup) && activeKMLGeoJSON['RadarRussia']) {
                 let radarHitsHTML = '';
                 const radarHits = [];
+                const telegramHits = [];
+                const clickPointPx = map.latLngToContainerPoint(e.latlng);
+
                 turf.featureEach(activeKMLGeoJSON['RadarRussia'], function (currentFeature) {
                     let isHit = false;
 
@@ -1840,7 +1930,8 @@ map.on('click', async function(e) {
 
                         // Hit testing fallback for small polygons rendered as markers
                         if (!isHit) {
-                            if (currentFeature.properties.icon) {
+                            const areaSqKm = turf.area(currentFeature) / 1000000;
+                            if (areaSqKm < 250 || currentFeature.properties.icon || currentFeature.properties.plot_type === 'marker') {
                                 const centroid = turf.centroid(currentFeature);
                                 const dist = turf.distance(clickPoint, centroid, {units: 'kilometers'});
                                 // Give a 10km click radius for these tiny areas/markers
@@ -1850,25 +1941,121 @@ map.on('click', async function(e) {
                             }
                         }
                     } else if (currentFeature.geometry.type === 'Point') {
+                        const coords = currentFeature.geometry.coordinates;
+                        const featPx = map.latLngToContainerPoint([coords[1], coords[0]]);
+                        const distPx = Math.sqrt(Math.pow(clickPointPx.x - featPx.x, 2) + Math.pow(clickPointPx.y - featPx.y, 2));
                         const dist = turf.distance(clickPoint, currentFeature, {units: 'meters'});
-                        isHit = dist < 20000; // Allow 20km hit tolerance for cities/regions point representations
+                        isHit = distPx < 22 || dist < 20000; // Screen-space hit tolerance + 20km fallback
                     } else if (currentFeature.geometry.type === 'LineString' || currentFeature.geometry.type === 'MultiLineString') {
                         const dist = turf.pointToLineDistance(clickPoint, currentFeature, {units: 'meters'});
                         isHit = dist < 5000;
                     }
 
                     if (isHit) {
-                        radarHits.push(currentFeature);
+                        if (currentFeature.properties.source === 'telegram') {
+                            telegramHits.push(currentFeature);
+                        } else {
+                            radarHits.push(currentFeature);
+                        }
                     }
                 });
 
+                // 3a. Render Telegram Strike / Hit Incidents FIRST (Location Intelligence format with photos, text, link, custom fields, and admin Edit button)
+                telegramHits.forEach(feature => {
+                    const props = feature.properties || {};
+                    const timeStr = props.time ? new Date(props.time).toLocaleString('en-GB') : '';
+                    const now = new Date();
+                    let timeAgo = '';
+                    if (props.time) {
+                        const diffMins = Math.floor((now - new Date(props.time)) / 60000);
+                        if (diffMins < 2) timeAgo = 'just now';
+                        else if (diffMins < 60) timeAgo = `${diffMins}m ago`;
+                        else timeAgo = `${Math.floor(diffMins / 60)}h ${diffMins % 60}m ago`;
+                    }
+
+                    let editBtnHtml = '';
+                    if (window.location.pathname.startsWith('/admin')) {
+                        const safeId = String(props.id || '').replace(/'/g, "\\'");
+                        editBtnHtml = `<button onclick="if(window.editTelegramIncident) window.editTelegramIncident('${safeId}')" style="float: right; background: #3b82f6; border: none; color: white; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">Edit</button>`;
+                    }
+
+                    const markerColor = props.markerColor || '#f97316';
+                    const markerBorder = props.markerBorder || '#ffffff';
+                    const markerType = props.markerType || 'emoji';
+                    const markerIcon = props.markerIcon || props.icon || '🔥';
+                    let markerBadge = '';
+                    if (markerType === 'circle') {
+                        markerBadge = `<span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${markerColor}; border:1px solid ${markerBorder}; margin-right:6px; vertical-align:middle;"></span>`;
+                    } else {
+                        const isEmoji = markerType === 'emoji';
+                        const iconInner = isEmoji
+                            ? markerIcon
+                            : ((markerIcon.startsWith('http') || markerIcon.startsWith('/') || markerIcon.startsWith('data:'))
+                                ? `<img src="${markerIcon}" style="width:14px; height:14px; object-fit:contain;">`
+                                : `<img src="/data/images/${markerIcon}" style="width:14px; height:14px; object-fit:contain;">`);
+                        markerBadge = `<span style="display:inline-flex; align-items:center; justify-content:center; background:${markerColor}; width:22px; height:22px; border-radius:50%; border:1px solid ${markerBorder}; font-size:13px; margin-right:6px; vertical-align:middle;">${iconInner}</span>`;
+                    }
+
+                    let imagesHtml = '';
+                    const imgs = Array.isArray(props.images) ? props.images : [];
+                    imgs.forEach(img => {
+                        if (!img) return;
+                        const src = (img.startsWith('http') || img.startsWith('/') || img.startsWith('data:')) ? img : `/data/images/${img}`;
+                        imagesHtml += `<a href="${src}" target="_blank"><img src="${src}" style="max-height: 90px; border-radius: 4px; border: 1px solid #475569; object-fit: cover; cursor: pointer;"></a>`;
+                    });
+
+                    let customFieldsHtml = '';
+                    let urlsHtml = '';
+                    if (props.post_url) {
+                        urlsHtml += `<a href="${props.post_url}" target="_blank" title="View source Telegram post" style="display:inline-flex; align-items:center; gap:4px; margin-right:8px; padding:2px 8px; background:rgba(59,130,246,0.2); border:1px solid #3b82f6; border-radius:4px; color:#93c5fd; font-size:0.8rem; text-decoration:none;">✈️ Source Post</a>`;
+                    }
+
+                    const layerSchema = (appSettings.layerFields && appSettings.layerFields['RadarRussia']) ? appSettings.layerFields['RadarRussia'] : [];
+                    const customObj = (props.custom_fields && typeof props.custom_fields === 'object') ? props.custom_fields : {};
+                    for (const key in customObj) {
+                        const val = customObj[key];
+                        if (!val) continue;
+                        let schemaType = 'text';
+                        const fieldDef = layerSchema.find(f => f.name === key);
+                        if (fieldDef) schemaType = fieldDef.type;
+                        if (String(val).startsWith('http') && schemaType !== 'image') schemaType = 'url';
+
+                        if (schemaType === 'image') {
+                            const src = (val.startsWith('http') || val.startsWith('/') || val.startsWith('data:')) ? val : `/data/images/${val}`;
+                            imagesHtml += `<a href="${src}" target="_blank"><img src="${src}" style="max-height: 90px; border-radius: 4px; border: 1px solid #475569; object-fit: cover; cursor: pointer;"></a>`;
+                        } else if (schemaType === 'url') {
+                            urlsHtml += `<a href="${val}" target="_blank" title="${key}: ${val}" style="display:inline-flex; align-items:center; gap:4px; margin-right:8px; padding:2px 8px; background:rgba(255,255,255,0.1); border-radius:4px; color:#e2e8f0; font-size:0.8rem; text-decoration:none;">🔗 ${key}</a>`;
+                        } else {
+                            customFieldsHtml += `<div style="font-size: 0.82rem; margin-top: 3px;"><b>${key}:</b> ${val}</div>`;
+                        }
+                    }
+
+                    const bodyText = (props.description || props.threat || '').replace(/\n/g, '<br>');
+
+                    radarHitsHTML += `
+                        <div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">
+                            <h4 style="margin: 0 0 6px 0; color: #f97316;">${editBtnHtml}${markerBadge}${props.name} ${timeAgo ? `<span style="font-size:0.75rem; color:#94a3b8; font-weight:normal;">(${timeAgo})</span>` : ''}</h4>
+                            ${props.category ? `<div style="font-size: 0.78rem; color: #fb923c; margin-bottom: 4px;"><b>Category:</b> ${props.category}</div>` : ''}
+                            ${imagesHtml ? `<div style="display: flex; gap: 6px; overflow-x: auto; margin-bottom: 8px; padding-bottom: 4px;">${imagesHtml}</div>` : ''}
+                            <div style="font-size: 0.85rem; line-height: 1.35; margin-bottom: 6px; max-height: 150px; overflow-y: auto; padding-right: 4px;">${bodyText}</div>
+                            ${urlsHtml ? `<div style="margin-bottom: 6px;">${urlsHtml}</div>` : ''}
+                            ${customFieldsHtml}
+                            <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 6px;">
+                                ${window.location.pathname.startsWith('/admin') && props.raw_name ? `<b>Nominatim Query:</b> <span style="cursor: pointer; text-decoration: underline;" onclick="if(window.populateOverrideName) window.populateOverrideName('${encodeURIComponent(props.raw_name).replace(/'/g, "%27")}');">${props.raw_name}</span><br>` : ''}
+                                ${timeStr ? `<b>Time:</b> ${timeStr}` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // 3b. Render standard Radar Russia Air Alerts
                 if (radarHits.length > 0) {
                     const liveCount = radarHits.filter(f => f.properties.status !== 'over').length;
 
-                    radarHitsHTML += `<div style="font-size: 0.85rem; margin-bottom: 4px; color: #ef4444;"><b>${liveCount} live alert${liveCount === 1 ? '' : 's'} received (24 hours)</b></div>`;
+                    radarHitsHTML += `<div style="font-size: 0.85rem; margin-top: 8px; margin-bottom: 4px; color: #ef4444;"><b>${liveCount} live alert${liveCount === 1 ? '' : 's'} received (24 hours)</b></div>`;
 
                     const now = new Date();
-                    radarHits.forEach(currentFeature => {
+                    radarHits.forEach((currentFeature, index) => {
                         const props = currentFeature.properties;
                         const timeStr = new Date(props.time).toLocaleString('en-GB');
 
@@ -1885,6 +2072,15 @@ map.on('click', async function(e) {
                             relativeTime = `(just now)`;
                         }
 
+                        if (index === 2) {
+                            const expandId = 'radarExpand_' + Math.random().toString(36).substr(2, 9);
+                            radarHitsHTML += `
+                                <div style="margin-top: 8px;">
+                                    <a href="#" onclick="document.getElementById('${expandId}').style.display='block'; this.style.display='none'; return false;" style="color: #3b82f6; text-decoration: none; font-size: 0.85rem;">+ Show ${radarHits.length - 2} more alerts</a>
+                                    <div id="${expandId}" style="display: none;">
+                            `;
+                        }
+
                         radarHitsHTML += `
                             <div style="margin-top: 12px; border-top: 1px solid #475569; padding-top: 8px;">
                                 <h4 style="margin: 0 0 4px 0; color: #3b82f6;">🚨 Air Alert</h4>
@@ -1894,9 +2090,14 @@ map.on('click', async function(e) {
                                     <b>Threat:</b> ${props.threat}<br>
                                     <b>Status:</b> ${props.status === 'over' ? '<span style="color:#22c55e;">Over</span>' : '<span style="color:#ef4444;">Active</span>'}<br>
                                     <b>Time:</b> ${timeStr} ${relativeTime}
+                                    ${props.post_url ? `<br><a href="${props.post_url}" target="_blank" style="color: #93c5fd; font-size: 0.8rem; text-decoration: none;">✈️ Source (@${props.channel || 'radar'})</a>` : ''}
                                 </div>
                             </div>
                         `;
+
+                        if (index === radarHits.length - 1 && radarHits.length > 2) {
+                            radarHitsHTML += `</div></div>`;
+                        }
                     });
                 }
 

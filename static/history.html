@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar & Strike History Archive | ATP Geopolitics Map</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --card-bg: rgba(30, 41, 59, 0.85);
+            --border-color: #334155;
+            --text-color: #f8fafc;
+            --muted-color: #94a3b8;
+            --accent-color: #3b82f6;
+            --success-color: #10b981;
+            --warning-color: #f97316;
+            --danger-color: #ef4444;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-color);
+        }
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: rgba(15, 23, 42, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            gap: 12px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: var(--panel-bg);
+            color: var(--text-color);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .btn:hover { background: #334155; }
+        .btn-primary { background: var(--accent-color); border-color: #2563eb; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-success { background: var(--success-color); border-color: #059669; }
+        .btn-success:hover { background: #059669; }
+        .btn-purple { background: #8b5cf6; border-color: #7c3aed; }
+        .btn-purple:hover { background: #7c3aed; }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px 24px 40px 24px;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px 18px;
+        }
+        .kpi-label {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--muted-color);
+            margin-bottom: 6px;
+        }
+        .kpi-value {
+            font-size: 1.65rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .kpi-sub {
+            font-size: 0.78rem;
+            color: var(--muted-color);
+            margin-top: 4px;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: grid;
+            grid-template-columns: 2fr 1.3fr 1fr 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+        @media (max-width: 1100px) {
+            .filter-bar {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .filter-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--muted-color);
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+        .filter-group input, .filter-group select {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: #0f172a;
+            color: var(--text-color);
+            font-size: 0.85rem;
+        }
+
+        /* Pagination Bar */
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: var(--muted-color);
+        }
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Data Table */
+        .table-wrap {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th {
+            background: rgba(15, 23, 42, 0.9);
+            color: #cbd5e1;
+            text-align: left;
+            padding: 11px 12px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+            vertical-align: top;
+        }
+        tr:hover td {
+            background: rgba(59, 130, 246, 0.06);
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .badge-alert { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); }
+        .badge-strike { background: rgba(249, 115, 22, 0.2); color: #fdba74; border: 1px solid rgba(249, 115, 22, 0.5); }
+        .badge-active { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .badge-over { background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
+        .badge-unresolved { background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.4); }
+
+        .channel-link {
+            color: #60a5fa;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .channel-link:hover { text-decoration: underline; }
+
+        .query-sub {
+            font-size: 0.76rem;
+            color: var(--muted-color);
+            margin-top: 2px;
+            font-family: monospace;
+        }
+        .raw-text-toggle {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            cursor: pointer;
+            margin-top: 4px;
+            display: inline-block;
+            text-decoration: underline;
+        }
+        .raw-text-box {
+            display: none;
+            margin-top: 6px;
+            padding: 8px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-size: 0.78rem;
+            color: #cbd5e1;
+            max-width: 480px;
+        }
+        .thumb-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+        .thumb-row img {
+            width: 56px;
+            height: 42px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .mini-btn {
+            padding: 3px 7px;
+            font-size: 0.73rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: rgba(255,255,255,0.06);
+            color: #cbd5e1;
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-block;
+        }
+        .mini-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>📊 Longitudinal Radar &amp; Strike Archive <span style="font-size: 0.8rem; font-weight: normal; color: var(--muted-color);">(SQLite: radar_history.db)</span></h1>
+        <div class="header-actions">
+            <button class="btn btn-success" onclick="exportCSV()">⬇️ Export Filtered CSV</button>
+            <a href="/" class="btn btn-primary">🗺️ Live 24h Map</a>
+            <a href="/admin" class="btn btn-purple">⚙️ Map Admin</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Summary KPIs -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Total Archive Rows</div>
+                <div class="kpi-value" id="kpiTotal">—</div>
+                <div class="kpi-sub">Separate from live 24h map cache</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Filtered Matches</div>
+                <div class="kpi-value" id="kpiFiltered" style="color: #60a5fa;">—</div>
+                <div class="kpi-sub">Matching current search/filters</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Reported Strikes / Hits</div>
+                <div class="kpi-value" id="kpiIncidents" style="color: #fb923c;">—</div>
+                <div class="kpi-sub">Regex-matched strike posts</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Active Channels</div>
+                <div class="kpi-value" id="kpiChannels" style="color: #34d399;">—</div>
+                <div class="kpi-sub">Subscribed Telegram channels</div>
+            </div>
+            <div class="kpi-card" style="cursor: pointer;" onclick="document.getElementById('filterStatus').value='unresolved'; resetAndLoad();" title="Click to filter unresolved geocodes">
+                <div class="kpi-label">Unresolved Geocodes</div>
+                <div class="kpi-value" id="kpiUnresolved" style="color: #facc15;">—</div>
+                <div class="kpi-sub">Click to filter un-geocoded rows</div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label>Search (Location, Nominatim Query, Threat, Text)</label>
+                <input type="text" id="filterQuery" placeholder="e.g. Yaroslavl, Московская область, UAV, НПЗ..." oninput="debouncedLoad()">
+            </div>
+            <div class="filter-group">
+                <label>Telegram Channel</label>
+                <select id="filterChannel" onchange="resetAndLoad()">
+                    <option value="">All Channels</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Record Type</label>
+                <select id="filterType" onchange="resetAndLoad()">
+                    <option value="">All Types</option>
+                    <option value="radar_alert">🚨 Radar Alerts</option>
+                    <option value="telegram_incident">🔥 Strike / Hit</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Status / Geocode</label>
+                <select id="filterStatus" onchange="resetAndLoad()">
+                    <option value="">All Statuses</option>
+                    <option value="active">Active Threat</option>
+                    <option value="over">All Clear / Over</option>
+                    <option value="unresolved">⚠️ Unresolved Geocode</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>From Date (UTC)</label>
+                <input type="date" id="filterDateFrom" onchange="resetAndLoad()">
+            </div>
+            <div class="filter-group">
+                <label>To Date (UTC)</label>
+                <input type="date" id="filterDateTo" onchange="resetAndLoad()">
+            </div>
+            <div class="filter-group">
+                <button class="btn" onclick="clearFilters()" style="height: 35px;">✖ Reset</button>
+            </div>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div class="pagination-bar">
+            <div id="showingSummary">Loading records...</div>
+            <div class="pagination-controls">
+                <label style="font-size: 0.8rem;">Rows:</label>
+                <select id="pageSize" onchange="resetAndLoad()" style="background:#0f172a; color:white; border:1px solid var(--border-color); padding:4px 8px; border-radius:4px;">
+                    <option value="50">50</option>
+                    <option value="100" selected>100</option>
+                    <option value="250">250</option>
+                    <option value="500">500</option>
+                </select>
+                <button class="btn" id="btnPrev" onclick="changePage(-1)">◀ Prev</button>
+                <span id="pageIndicator" style="min-width: 90px; text-align: center; color: #fff; font-weight: 600;">Page 1</span>
+                <button class="btn" id="btnNext" onclick="changePage(1)">Next ▶</button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp (UTC)</th>
+                        <th>Channel</th>
+                        <th>Type</th>
+                        <th>Location (Resolved &amp; Nominatim Query)</th>
+                        <th>Threat / Post Intelligence</th>
+                        <th>Status</th>
+                        <th>Coordinates / OSM</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--muted-color);">Loading historical records...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentOffset = 0;
+        let currentTotal = 0;
+        let debounceTimer = null;
+        let channelOptionsPopulated = false;
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function buildQueryParams(forCsv = false) {
+            const limit = forCsv ? 100000 : parseInt(document.getElementById('pageSize').value || '100', 10);
+            const params = new URLSearchParams();
+            params.set('limit', limit);
+            params.set('offset', forCsv ? 0 : currentOffset);
+
+            const q = document.getElementById('filterQuery').value.trim();
+            const ch = document.getElementById('filterChannel').value;
+            const tp = document.getElementById('filterType').value;
+            const st = document.getElementById('filterStatus').value;
+            const df = document.getElementById('filterDateFrom').value;
+            const dt = document.getElementById('filterDateTo').value;
+
+            if (q) params.set('query', q);
+            if (ch) params.set('channel', ch);
+            if (tp) params.set('source_type', tp);
+            if (st) params.set('status_filter', st);
+            if (df) params.set('date_from', df);
+            if (dt) params.set('date_to', dt);
+            if (forCsv) params.set('format', 'csv');
+            return params;
+        }
+
+        function exportCSV() {
+            const params = buildQueryParams(true);
+            window.location.href = '/api/radar-russia/history?' + params.toString();
+        }
+
+        function debouncedLoad() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                resetAndLoad();
+            }, 300);
+        }
+
+        function resetAndLoad() {
+            currentOffset = 0;
+            loadHistory();
+        }
+
+        function clearFilters() {
+            document.getElementById('filterQuery').value = '';
+            document.getElementById('filterChannel').value = '';
+            document.getElementById('filterType').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterDateFrom').value = '';
+            document.getElementById('filterDateTo').value = '';
+            resetAndLoad();
+        }
+
+        function changePage(dir) {
+            const limit = parseInt(document.getElementById('pageSize').value || '100', 10);
+            const nextOffset = currentOffset + dir * limit;
+            if (nextOffset < 0 || nextOffset >= currentTotal) return;
+            currentOffset = nextOffset;
+            loadHistory();
+        }
+
+        function toggleRawText(idx) {
+            const el = document.getElementById('rawText_' + idx);
+            if (el) {
+                el.style.display = el.style.display === 'block' ? 'none' : 'block';
+            }
+        }
+
+        async function loadHistory() {
+            const tbody = document.getElementById('historyTableBody');
+            const params = buildQueryParams(false);
+            try {
+                const res = await fetch('/api/radar-russia/history?' + params.toString());
+                const data = await res.json();
+
+                currentTotal = data.total || 0;
+                const limit = parseInt(document.getElementById('pageSize').value || '100', 10);
+
+                document.getElementById('kpiTotal').textContent = (data.db_total ?? currentTotal).toLocaleString();
+                document.getElementById('kpiFiltered').textContent = currentTotal.toLocaleString();
+                document.getElementById('kpiIncidents').textContent = (data.incident_total ?? 0).toLocaleString();
+                document.getElementById('kpiUnresolved').textContent = (data.unresolved_total ?? 0).toLocaleString();
+
+                const byChannel = data.by_channel || [];
+                const channelTotals = {};
+                byChannel.forEach(item => {
+                    channelTotals[item.channel] = (channelTotals[item.channel] || 0) + item.count;
+                });
+                document.getElementById('kpiChannels').textContent = Object.keys(channelTotals).length;
+
+                if (!channelOptionsPopulated && Object.keys(channelTotals).length > 0) {
+                    const chSelect = document.getElementById('filterChannel');
+                    const currentVal = chSelect.value;
+                    Object.entries(channelTotals)
+                        .sort((a, b) => b[1] - a[1])
+                        .forEach(([ch, cnt]) => {
+                            const opt = document.createElement('option');
+                            opt.value = ch;
+                            opt.textContent = `@${ch} (${cnt.toLocaleString()})`;
+                            chSelect.appendChild(opt);
+                        });
+                    chSelect.value = currentVal;
+                    channelOptionsPopulated = true;
+                }
+
+                const startNum = currentTotal === 0 ? 0 : currentOffset + 1;
+                const endNum = Math.min(currentOffset + limit, currentTotal);
+                document.getElementById('showingSummary').textContent =
+                    `Showing ${startNum.toLocaleString()}–${endNum.toLocaleString()} of ${currentTotal.toLocaleString()} records`;
+
+                const totalPages = Math.max(1, Math.ceil(currentTotal / limit));
+                const curPage = Math.floor(currentOffset / limit) + 1;
+                document.getElementById('pageIndicator').textContent = `Page ${curPage} / ${totalPages}`;
+                document.getElementById('btnPrev').disabled = currentOffset <= 0;
+                document.getElementById('btnNext').disabled = currentOffset + limit >= currentTotal;
+
+                const records = data.records || [];
+                if (records.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--muted-color);">No records match your current filters.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = records.map((r, idx) => {
+                    const isStrike = r.source_type === 'telegram_incident';
+                    const typeBadge = isStrike
+                        ? '<span class="badge badge-strike">🔥 Strike</span>'
+                        : '<span class="badge badge-alert">🚨 Alert</span>';
+
+                    const hasCoords = r.lat !== null && r.lat !== undefined && r.lon !== null && r.lon !== undefined;
+                    let statusBadge = '';
+                    if (!hasCoords) {
+                        statusBadge = '<span class="badge badge-unresolved">⚠️ Unresolved</span>';
+                    } else if (r.status === 'over') {
+                        statusBadge = '<span class="badge badge-over">All Clear</span>';
+                    } else {
+                        statusBadge = '<span class="badge badge-active">Active</span>';
+                    }
+
+                    const dtStr = r.timestamp ? r.timestamp.replace('T', ' ').substring(0, 19) : '—';
+                    const postUrl = r.post_url || (r.channel && r.msg_id ? `https://t.me/${r.msg_id}` : '');
+
+                    let mediaHtml = '';
+                    try {
+                        const imgs = JSON.parse(r.media_json || '[]');
+                        if (Array.isArray(imgs) && imgs.length > 0) {
+                            mediaHtml = '<div class="thumb-row">' + imgs.map(img => {
+                                const src = img.startsWith('http') || img.startsWith('/') ? img : `/data/images/${img}`;
+                                return `<a href="${escapeHtml(src)}" target="_blank"><img src="${escapeHtml(src)}" loading="lazy" alt="Strike media"></a>`;
+                            }).join('') + '</div>';
+                        }
+                    } catch (e) {}
+
+                    const coordsHtml = hasCoords
+                        ? `<div>${Number(r.lat).toFixed(4)}, ${Number(r.lon).toFixed(4)}</div>` +
+                          (r.osm_id ? `<div class="query-sub">${escapeHtml((r.osm_type || '')[0]?.toUpperCase() || '')}${escapeHtml(r.osm_id)}</div>` : '')
+                        : `<span style="color: #facc15; font-size: 0.78rem;">Not geocoded</span>`;
+
+                    const nomQuery = r.nominatim_query || r.raw_location || '';
+                    const overrideHref = `/admin?override=${encodeURIComponent(nomQuery)}`;
+
+                    return `
+                        <tr>
+                            <td style="white-space: nowrap; font-family: monospace; color: #cbd5e1;">${escapeHtml(dtStr)}</td>
+                            <td>
+                                ${postUrl
+                                    ? `<a href="${escapeHtml(postUrl)}" target="_blank" class="channel-link">@${escapeHtml(r.channel)}</a>`
+                                    : `<span class="channel-link">@${escapeHtml(r.channel)}</span>`
+                                }
+                                <div class="query-sub">${escapeHtml(r.msg_id || '')}</div>
+                            </td>
+                            <td>${typeBadge}</td>
+                            <td>
+                                <div style="font-weight: 600; color: #fff;">${escapeHtml(r.resolved_name || nomQuery || '—')}</div>
+                                <div class="query-sub">Query: ${escapeHtml(nomQuery)}</div>
+                            </td>
+                            <td style="max-width: 480px;">
+                                <div>${escapeHtml(r.icon || '')} ${escapeHtml(r.threat || '—')}</div>
+                                ${mediaHtml}
+                                ${r.raw_text ? `
+                                    <span class="raw-text-toggle" onclick="toggleRawText(${idx})">📄 Show original Telegram text</span>
+                                    <div id="rawText_${idx}" class="raw-text-box">${escapeHtml(r.raw_text)}</div>
+                                ` : ''}
+                            </td>
+                            <td>${statusBadge}</td>
+                            <td style="white-space: nowrap;">${coordsHtml}</td>
+                            <td style="white-space: nowrap;">
+                                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                    ${postUrl ? `<a href="${escapeHtml(postUrl)}" target="_blank" class="mini-btn" title="Open Telegram Post">✈️ Post</a>` : ''}
+                                    <a href="${escapeHtml(overrideHref)}" class="mini-btn" title="Open in Admin Geocode Override">🎯 Override</a>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 30px; color: #ef4444;">Failed to load history: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        loadHistory();
+    </script>
+</body>
+</html>

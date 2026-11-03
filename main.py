@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 import shutil
 import zipfile
@@ -18,10 +19,26 @@ from bs4 import BeautifulSoup
 from fastapi import FastAPI, APIRouter, UploadFile, File, Body, Form, HTTPException, Request, Response, Depends, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from geoprocessing import load_kml, save_kml, run_ap_model, run_sm_model, copy_kml_styles
+from dotenv import load_dotenv
+load_dotenv()
+try:
+    from geoprocessing import load_kml, save_kml, run_ap_model, run_sm_model, copy_kml_styles
+except ImportError:
+    load_kml = save_kml = run_ap_model = run_sm_model = copy_kml_styles = None
+from telegram_config import CHANNEL_CONFIGS
+from telegram_shared import (
+    resolve_data_dir,
+    should_skip_radar_message,
+    get_radar_icon,
+    parse_telegram_message,
+    init_radar_history_db,
+    record_alert_to_history_db,
+    record_incident_to_history_db,
+    save_incident_to_live_cache,
+)
 from titiler.core.factory import TilerFactory
 import math
 import mercantile
@@ -58,7 +75,6 @@ http_client = httpx.AsyncClient(
     timeout=4.0
 )
 import anyio
-import fcntl
 import os
 
 _radar_lock_file = None
@@ -102,6 +118,7 @@ async def startup_event():
         conn.close()
 
     init_vessels_db()
+    init_radar_history_db(DATA_DIR)
 
     lock_path = DATA_DIR / "radar_polling.lock"
     try:
@@ -110,8 +127,11 @@ async def startup_event():
         fcntl.flock(_radar_lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
         logger.info("Acquired radar polling lock. Starting background task.")
         _radar_polling_task = asyncio.create_task(poll_radar_russia_background())
-    except (BlockingIOError, IOError, ModuleNotFoundError):
-        logger.info("Another worker is already running the radar polling task (or fcntl unavailable).")
+    except ModuleNotFoundError:
+        logger.info("fcntl unavailable (Windows); starting radar polling task directly.")
+        _radar_polling_task = asyncio.create_task(poll_radar_russia_background())
+    except (BlockingIOError, IOError):
+        logger.info("Another worker is already running the radar polling task.")
         if _radar_lock_file:
             _radar_lock_file.close()
         _radar_lock_file = None
@@ -126,8 +146,11 @@ async def shutdown_event():
     if _radar_polling_task:
         _radar_polling_task.cancel()
     if _radar_lock_file:
-        import fcntl
-        fcntl.flock(_radar_lock_file, fcntl.LOCK_UN)
+        try:
+            import fcntl
+            fcntl.flock(_radar_lock_file, fcntl.LOCK_UN)
+        except Exception:
+            pass
         _radar_lock_file.close()
     await http_client.aclose()
 
@@ -283,8 +306,7 @@ def get_latest_sentinel(z: int, x: int, y: int):
 #    return RedirectResponse(url=titiler_url)
 
 
-DATA_DIR = Path("/app/data")
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR = resolve_data_dir()
 
 
 # Grab secrets from the environment injected by Docker
@@ -315,133 +337,10 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
 # ----------------------
 
 # --- TELEGRAM SCRAPER LOGIC ---
-def get_radar_icon(location_str, threat_str):
-    combined = (location_str + " " + threat_str).lower()
-    if any(kw in combined for kw in ["аэропорт", "аэродром", "airport", "авиабаза", "air base"]): return "✈️"
-    if any(kw in combined for kw in ["нпз", "нефте", "oil", "naval base", "порт", "терминал", "refinery"]): return "⚓"
-    if any(kw in combined for kw in ["море", "залив", "sea", "вода", "океан", "акватория"]): return "🌊"
-    if any(kw in combined for kw in ["база", "base", "вч", "войсковая часть", "military"]): return "🪖"
-    return ""
+# `get_radar_icon` and `parse_telegram_message` are imported from `telegram_shared.py`
+# so both the HTTP fallback scraper and the Telethon multi-channel worker share the exact
+# same parsing, context-fallback, and geolocation rules.
 
-def parse_telegram_message(text: str, msg_id: str, time_str: str) -> dict:
-    lines = text.split('\n')
-    cleaned_lines = []
-    for line in lines:
-        line = line.strip()
-        if not line: continue
-        # Filter out boilerplate
-        if any(kw in line for kw in ["❗️", "Обход белых списков", "@radarrussiia", "📲", "https://max.ru/join/radarrussiia", "https://max.ru/tyrbazaa", "Наш канал в МАХ", "Радар по всей России", "Internet_Boost_bot", "🌐", "Ускоритель Интернета", "Остались какие-то вопросы"]):
-            continue
-        cleaned_lines.append(line)
-
-    threat_keywords = ["опасность", "фиксация", "отбой", "работа", "пво", "ракет", "бпла", "приготовиться", "тревога", "меры", "сбит", "угроза", "внимание"]
-
-    locations = []
-    threats = []
-
-    for line in cleaned_lines:
-        parts = line.split(' - ')
-        for part in parts:
-            part = part.strip()
-            is_threat = any(kw in part.lower() for kw in threat_keywords)
-            if is_threat:
-                threats.append(part)
-            else:
-                for loc in part.split(','):
-                    loc_clean = loc.strip()
-                    loc_clean = re.sub(r'(?i)и близлежащие', 'округ', loc_clean).strip()
-
-                    # NEW: Define expansions for common administrative abbreviations
-                    admin_expansions = {
-                        "мо ": "муниципальный округ ",
-                        "го ": "городской округ ",
-                        "мр ": "муниципальный район ",
-                        "зато ": "закрытое административно-территориальное образование "
-                    }
-
-                    # NEW: Check if the location starts with any of our abbreviations
-                    lower_loc = loc_clean.lower()
-                    for prefix, expansion in admin_expansions.items():
-                        if lower_loc.startswith(prefix):
-                            # Replace the abbreviation with the full text, keeping the rest of the name intact
-                            loc_clean = expansion + loc_clean[len(prefix):].strip()
-                            break # We only need to match the first one
-
-                    if loc_clean:
-                        locations.append(loc_clean)
-
-    status_val = "active"
-    if any("отбой" in t.lower() for t in threats):
-        status_val = "over"
-
-    combined_threat = " | ".join(threats)
-
-    # Simple manual translation dictionary for common radar terms
-    threat_translations = {
-        "опасность по бпла": "UAV Danger",
-        "ракетная опасность": "Missile Danger",
-        "отбой опасности по бпла": "UAV Danger Over",
-        "отбой ракетной опасности": "Missile Danger Over",
-        "фиксация бпла": "UAV Detected",
-        "работа пво": "Air Defense Active",
-        "тревога": "Alarm",
-        "сбиты": "Shot Down",
-        "сбит": "Shot Down",
-        "внимание": "Attention",
-        "угроза": "Threat",
-        "отбой": "All Clear / Over",
-        "реактивным": "Jet",
-        "волна": "Wave",
-        "приготовиться к волне бпла": "Prepare for UAV wave",
-        "в вашем направлении": "in your direction",
-        "со стороны": "from the direction of",
-        "крылатые ракеты большой дальности": "long-range cruise missiles",
-        "возможно от": "possibly from"
-    }
-
-    english_threat = combined_threat
-    for ru, en in threat_translations.items():
-        english_threat = re.sub(re.escape(ru), en, english_threat, flags=re.IGNORECASE)
-
-    # --- NEW MASTER CONTEXT LOGIC ---
-
-    # We remove "крым" from the general substring list to prevent it triggering on towns like "Крымск"
-    top_level_keywords = ["область", "край", "республика", "окг", "автономный округ", "oblast", "krai", "republic", "okrug"]
-
-    # 1. Find any top-level regions mentioned in the parsed locations
-    contexts = []
-    for loc in locations:
-        lower_loc = loc.lower()
-        is_region = any(kw in lower_loc for kw in top_level_keywords)
-
-        # We strictly match "крым" or "crimea" as exact words so it doesn't match substrings
-        if is_region or lower_loc in ["крым", "республика крым", "crimea"]:
-            contexts.append(loc)
-
-    # 2. If there is exactly ONE top-level region, it becomes our master context.
-    master_context = contexts[0] if len(contexts) == 1 else ""
-
-    final_locs = []
-
-    for loc in locations:
-        lower_loc = loc.lower()
-        is_top_level = any(kw in lower_loc for kw in top_level_keywords) or lower_loc in ["крым", "республика крым", "crimea"]
-
-        if is_top_level:
-            # It is already a region, so it doesn't need context.
-            final_locs.append({"name": loc, "icon": get_radar_icon(loc, combined_threat), "raw_name": loc})
-        else:
-            # It is a district or town. Append the master context if we have one.
-            full_name = f"{loc}, {master_context}" if master_context else loc
-            final_locs.append({"name": full_name, "icon": get_radar_icon(loc, combined_threat), "raw_name": full_name})
-
-    return {
-        "id": msg_id,
-        "time": time_str,
-        "locations": final_locs,
-        "threat": english_threat if english_threat else combined_threat,
-        "status": status_val
-    }
 async def poll_radar_russia_background():
     """Background task to poll radar alerts every 60 seconds."""
     while True:
@@ -467,7 +366,6 @@ async def fetch_and_cache_radar_russia():
     cached_alerts = {}
     if cache_file.exists():
         try:
-            import json
             with open(cache_file, "r", encoding="utf-8") as f:
                 cached_alerts = json.load(f)
         except Exception:
@@ -479,10 +377,14 @@ async def fetch_and_cache_radar_russia():
     for msg_id in list(cached_alerts.keys()):
         try:
             alert_time = datetime.fromisoformat(cached_alerts[msg_id]['time'].replace('Z', '+00:00'))
+            if alert_time.tzinfo is None:
+                alert_time = alert_time.replace(tzinfo=timezone.utc)
             if (now - alert_time).total_seconds() > 24 * 3600:
                 del cached_alerts[msg_id]
         except Exception:
             del cached_alerts[msg_id]
+
+    newly_parsed = []
 
     # Process new alerts
     for msg in messages:
@@ -494,16 +396,8 @@ async def fetch_and_cache_radar_russia():
         if not text_div: continue
         text = text_div.get_text(separator='\n').strip()
 
-        # --- NEW CODE: Skip daily summaries ---
-        # If the text contains typical morning summary phrases, skip the message entirely
-        summary_phrases = [
-            "За прошедшую ночь",
-            "Дежурными средствами ПВО перехвачено и уничтожено",
-            "Реклама"
-        ]
-        if any(phrase in text for phrase in summary_phrases):
+        if should_skip_radar_message(text):
             continue
-        # --------------------------------------
 
         time_tag = msg.find('time')
         time_str = time_tag.get('datetime', '') if time_tag else ''
@@ -511,8 +405,20 @@ async def fetch_and_cache_radar_russia():
         if not time_str:
             continue
 
-        parsed = parse_telegram_message(text, msg_id, time_str)
-        cached_alerts[msg_id] = parsed
+        parsed = parse_telegram_message(text, msg_id, time_str, channel_username="radarrussiia")
+        if not parsed.get("locations") or not parsed.get("threat"):
+            continue
+
+        try:
+            alert_time = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
+            if alert_time.tzinfo is None:
+                alert_time = alert_time.replace(tzinfo=timezone.utc)
+            if (now - alert_time).total_seconds() <= 24 * 3600:
+                cached_alerts[msg_id] = parsed
+        except Exception:
+            cached_alerts[msg_id] = parsed
+
+        newly_parsed.append(parsed)
 
     # Fully resolve missing geocodes in the background
     geocode_cache = {}
@@ -520,31 +426,53 @@ async def fetch_and_cache_radar_russia():
     if gc_file.exists():
         try:
             with open(gc_file, "r", encoding="utf-8") as f:
-                import json
                 geocode_cache = json.load(f)
-        except:
+        except Exception:
             pass
 
     for msg_id, parsed in cached_alerts.items():
         for loc_info in parsed["locations"]:
             if loc_info["name"] not in geocode_cache:
                 await get_cached_geocode(loc_info["name"], cache_dict=geocode_cache)
-                import asyncio
                 await asyncio.sleep(1.5) # Prevent Nominatim 429 Too Many Requests
+
+    # Re-read cache_file before writing so we never clobber concurrent writes from the Telethon worker
+    fresh_alerts = {}
+    if cache_file.exists():
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                fresh_alerts = json.load(f)
+        except Exception:
+            pass
+    for k in list(fresh_alerts.keys()):
+        try:
+            t = datetime.fromisoformat(fresh_alerts[k]['time'].replace('Z', '+00:00'))
+            if t.tzinfo is None:
+                t = t.replace(tzinfo=timezone.utc)
+            if (now - t).total_seconds() > 24 * 3600:
+                del fresh_alerts[k]
+        except Exception:
+            del fresh_alerts[k]
+    fresh_alerts.update(cached_alerts)
 
     temp_file = cache_file.with_suffix(f'.tmp.{uuid.uuid4().hex}')
     with open(temp_file, "w", encoding="utf-8") as f:
-        import json
-        json.dump(cached_alerts, f, ensure_ascii=False, indent=2)
+        json.dump(fresh_alerts, f, ensure_ascii=False, indent=2)
     os.replace(temp_file, cache_file)
 
+    # Record into longitudinal SQLite history DB
+    for parsed in newly_parsed:
+        try:
+            record_alert_to_history_db(parsed, geocode_cache=geocode_cache, data_dir=DATA_DIR)
+        except Exception as db_e:
+            logger.error(f"Error recording alert to history DB: {db_e}")
 
-async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = None) -> Optional[dict]:
+
+async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = None, restrict_country: str = "ru,ua") -> Optional[dict]:
     cache_file = DATA_DIR / "geocode_cache.json"
     cache = cache_dict if cache_dict is not None else {}
     if cache_dict is None and cache_file.exists():
         try:
-            import json
             with open(cache_file, "r", encoding="utf-8") as f:
                 cache = json.load(f)
         except Exception:
@@ -555,7 +483,7 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
         return res if "empty" not in res else None
 
     # Use extremely aggressive simplification (0.05) to reduce polygon size
-    # and restrict responses to Russia and Ukraine only (countrycodes=ru,ua) to prevent huge global multi-polygons
+    # and restrict responses to Russia and Ukraine only (countrycodes={restrict_country}) to prevent huge global multi-polygons
 
     # We pass accept-language=en,ru so that Nominatim tries to return the English name but understands the raw Russian query
 
@@ -566,13 +494,12 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
     if "," not in lower_loc and any(x in lower_loc for x in ["область", "республика", "край", "округ"]):
         feature_type = "&featureType=state"
 
-    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005&countrycodes=ru,ua&accept-language=en,ru{feature_type}"
+    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(location_name)}&format=json&polygon_geojson=1&limit=1&polygon_threshold=0.005&countrycodes={restrict_country}&accept-language=en,ru{feature_type}"
     headers = {'User-Agent': 'ATPGeopolitics/1.0'}
     try:
         resp = await http_client.get(url, headers=headers, timeout=10.0)
         if resp.status_code == 429:
             logger.warning("Nominatim 429 Too Many Requests, pausing for 5 seconds...")
-            import asyncio
             await asyncio.sleep(5)
             # Retry once
             resp = await http_client.get(url, headers=headers, timeout=10.0)
@@ -601,7 +528,6 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
         fresh_cache = {}
         if cache_file.exists():
             try:
-                import json
                 with open(cache_file, "r", encoding="utf-8") as f:
                     fresh_cache = json.load(f)
             except Exception:
@@ -616,7 +542,6 @@ async def get_cached_geocode(location_name: str, cache_dict: Optional[dict] = No
         # Atomic write to prevent JSONDecodeError from race conditions
         temp_file = cache_file.with_suffix(f'.tmp.{uuid.uuid4().hex}')
         with open(temp_file, "w", encoding="utf-8") as f:
-            import json
             json.dump(fresh_cache, f, ensure_ascii=False, indent=2)
         os.replace(temp_file, cache_file)
 
@@ -632,53 +557,56 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
     cached_alerts = {}
     if cache_file.exists():
         try:
-            import json
             with open(cache_file, "r", encoding="utf-8") as f:
                 cached_alerts = json.load(f)
         except Exception as e:
             logger.error(f"Error reading radar alerts cache: {e}")
             raise HTTPException(status_code=500, detail="Error reading radar data cache")
 
+    incidents_file = DATA_DIR / "telegram_incidents.json"
+    incidents = {}
+    if incidents_file.exists():
+        try:
+            with open(incidents_file, "r", encoding="utf-8") as f:
+                incidents = json.load(f)
+        except Exception as e:
+            logger.error(f"Error reading telegram incidents cache: {e}")
+
     features = []
 
-    # Load cache once per API request
+    # Load geocode cache once per API request
     geocode_cache = {}
     gc_file = DATA_DIR / "geocode_cache.json"
     if gc_file.exists():
         try:
             with open(gc_file, "r", encoding="utf-8") as f:
-                import json
                 geocode_cache = json.load(f)
-        except:
+        except Exception:
             pass
 
+    # 1. Process Radar Russia Air Alerts (from all radar channels)
     for msg_id, parsed in cached_alerts.items():
-        # Delta filtering: If `since` is provided, skip older records
         if since:
             try:
-                # Use strptime to be safe if fromisoformat fails on timezone
                 alert_time = datetime.fromisoformat(parsed["time"].replace('Z', '+00:00'))
-                # Replace ' ' with '+' in case urllib.parse unquoted the '+' to a space
                 since_time_str = since.replace(' ', '+').replace('Z', '+00:00')
                 since_time = datetime.fromisoformat(since_time_str)
-
-                # Make timezone naive if one is naive and other is aware, or just use timestamp
                 if alert_time.timestamp() <= since_time.timestamp():
                     continue
             except Exception as e:
-                # Print exception here for safety
                 print(f"Date parse error in since parameter: {e}")
-                pass # Parse error, include it anyway
+                pass
 
-        for loc_info in parsed["locations"]:
+        channel_name = parsed.get("channel") or (str(msg_id).split("/")[0] if "/" in str(msg_id) else "radarrussiia")
+        post_num = str(msg_id).split("/")[-1] if "/" in str(msg_id) else str(msg_id)
+        post_url = f"https://t.me/{channel_name}/{post_num}" if channel_name and post_num else ""
+
+        for loc_info in parsed.get("locations", []):
             geo_data = await get_cached_geocode(loc_info["name"], cache_dict=geocode_cache)
             if geo_data and "geojson" in geo_data:
-                # Get the localized English name, fallback to the raw russian query
                 display_name = geo_data.get("display_name", "")
                 english_name = geo_data.get("name", "")
 
-                # Sometime Nominatim's display_name has the better English translation than "name"
-                # so we take the first part of the English display name if it exists.
                 if display_name and "," in display_name:
                     english_name = display_name.split(",")[0].strip()
                 elif not english_name:
@@ -687,18 +615,122 @@ async def get_radar_russia_alerts(since: Optional[str] = None):
                 feature = {
                     "type": "Feature",
                     "properties": {
-                        # NEW: Append the location name to make the ID completely unique
                         "id": f"{parsed['id']}_{loc_info['name']}",
                         "time": parsed["time"],
                         "name": english_name,
                         "raw_name": loc_info.get("raw_name", loc_info["name"]),
                         "threat": parsed["threat"],
                         "status": parsed["status"],
-                        "icon": loc_info["icon"]
+                        "icon": loc_info.get("icon", ""),
+                        "channel": channel_name,
+                        "post_url": post_url,
                     },
                     "geometry": geo_data["geojson"]
                 }
                 features.append(feature)
+
+    # 2. Process Regex-Matched Telegram Strike/Hit Incidents (e.g. znua_live)
+    for record_id, data in incidents.items():
+        if data.get("suppressed"):
+            continue
+
+        if since:
+            try:
+                inc_time = datetime.fromisoformat(data["time"].replace('Z', '+00:00'))
+                since_time_str = since.replace(' ', '+').replace('Z', '+00:00')
+                since_time = datetime.fromisoformat(since_time_str)
+                if inc_time.timestamp() <= since_time.timestamp() and not data.get("admin_modified"):
+                    continue
+            except Exception:
+                pass
+
+        location_query = data.get("location_text", "")
+        manual_lat = data.get("lat")
+        manual_lng = data.get("lng")
+
+        geometry = None
+        english_name = data.get("name", "")
+
+        if manual_lat is not None and manual_lng is not None:
+            try:
+                geometry = {
+                    "type": "Point",
+                    "coordinates": [float(manual_lng), float(manual_lat)],
+                }
+                if not english_name:
+                    english_name = location_query or "Strike Incident"
+            except (ValueError, TypeError):
+                geometry = None
+
+        if geometry is None and location_query:
+            geo_data = await get_cached_geocode(
+                location_query,
+                cache_dict=geocode_cache,
+                restrict_country=data.get("country_restrict", "ru"),
+            )
+            if geo_data:
+                if not english_name:
+                    display_name = geo_data.get("display_name", "")
+                    english_name = geo_data.get("name", "")
+                    if display_name and "," in display_name:
+                        english_name = display_name.split(",")[0].strip()
+                    elif not english_name:
+                        english_name = location_query
+
+                # Plot hits as Point markers when plot_type == "marker" and lat/lon exist
+                if data.get("plot_type", "marker") == "marker" and "lat" in geo_data and "lon" in geo_data:
+                    try:
+                        geometry = {
+                            "type": "Point",
+                            "coordinates": [float(geo_data["lon"]), float(geo_data["lat"])],
+                        }
+                    except (ValueError, TypeError):
+                        geometry = geo_data.get("geojson")
+                else:
+                    geometry = geo_data.get("geojson")
+
+        if not geometry:
+            continue
+
+        channel_name = data.get("channel", "znua_live")
+        msg_num = data.get("msg_id", "")
+        post_url = data.get("post_url") or (f"https://t.me/{channel_name}/{msg_num}" if channel_name and msg_num else "")
+
+        props = {
+            "id": record_id,
+            "time": data.get("time", ""),
+            "name": english_name or location_query,
+            "raw_name": location_query,
+            "threat": data.get("description", ""),
+            "description": data.get("description", ""),
+            "full_text": data.get("full_text", data.get("description", "")),
+            "status": data.get("status", "active"),
+            "icon": data.get("markerIcon") or data.get("icon", "🔥"),
+            "markerType": data.get("markerType", "emoji"),
+            "markerIcon": data.get("markerIcon") or data.get("icon", "🔥"),
+            "markerColor": data.get("markerColor", "#f97316"),
+            "markerBorder": data.get("markerBorder", "#ffffff"),
+            "category": data.get("category", "Strike / Hit"),
+            "post_url": post_url,
+            "embed_url": data.get("embed_url", ""),
+            "images": data.get("images", []),
+            "custom_fields": data.get("custom_fields", {}),
+            "source": "telegram",
+            "channel": channel_name,
+            "plot_type": data.get("plot_type", "marker"),
+            "embed_post": data.get("embed_post", False),
+        }
+        # Also expose custom_fields at top level of properties so grouped styling and popups work seamlessly
+        if isinstance(data.get("custom_fields"), dict):
+            for cf_k, cf_v in data["custom_fields"].items():
+                if cf_k not in props:
+                    props[cf_k] = cf_v
+
+        features.append({
+            "type": "Feature",
+            "properties": props,
+            "geometry": geometry,
+        })
 
     return {"type": "FeatureCollection", "features": features}
 
@@ -1045,7 +1077,7 @@ async def delete_layer(filename: str):
     return {"error": "File not found"}
 
 # Serve the data directory so the frontend can fetch the KML files
-app.mount("/data", StaticFiles(directory="/app/data"), name="data")
+app.mount("/data", StaticFiles(directory=str(DATA_DIR)), name="data")
 
 # Serve the frontend HTML
 @app.get("/")
@@ -1248,9 +1280,9 @@ async def admin_geocode_override(override: GeocodeOverride):
             pass
 
     if override.suppress:
-        fresh_cache[actual_key] = {"empty": True}
+        fresh_cache[actual_key] = {"empty": True, "suppressed": True}
         if 'geocode_cache' in globals():
-            geocode_cache[actual_key] = {"empty": True}
+            geocode_cache[actual_key] = {"empty": True, "suppressed": True}
     elif not override.osm_id and not override.english_name:
         if actual_key in fresh_cache:
             del fresh_cache[actual_key]
@@ -1276,7 +1308,433 @@ async def admin_geocode_override(override: GeocodeOverride):
     import os
     os.replace(temp_file, cache_file)
 
+    # Remove this location from any geocode_failures_*.txt files and update radar_history.db if resolved
+    _remove_from_geocode_failure_logs(target_name)
+    if actual_key != target_name:
+        _remove_from_geocode_failure_logs(actual_key)
+
+    if actual_key in fresh_cache and isinstance(fresh_cache[actual_key], dict) and "empty" not in fresh_cache[actual_key]:
+        try:
+            geo_entry = fresh_cache[actual_key]
+            disp = geo_entry.get("display_name", "")
+            res_name = geo_entry.get("name", "")
+            if disp and "," in disp:
+                res_name = disp.split(",")[0].strip()
+            elif not res_name:
+                res_name = actual_key
+            osm_id_val = str(geo_entry.get("osm_id", "")) if geo_entry.get("osm_id") else ""
+            osm_type_val = str(geo_entry.get("osm_type", "")) if geo_entry.get("osm_type") else ""
+            lat_val = float(geo_entry["lat"]) if "lat" in geo_entry else None
+            lon_val = float(geo_entry["lon"]) if "lon" in geo_entry else None
+            db_path = init_radar_history_db(DATA_DIR)
+            conn = sqlite3.connect(db_path, timeout=30.0)
+            conn.execute(
+                """
+                UPDATE radar_alerts_history
+                SET resolved_name = ?, osm_id = ?, osm_type = ?, lat = COALESCE(?, lat), lon = COALESCE(?, lon)
+                WHERE LOWER(nominatim_query) = LOWER(?)
+                """,
+                (res_name, osm_id_val, osm_type_val, lat_val, lon_val, actual_key),
+            )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.warning(f"Failed to update radar_history.db after geocode override: {e}")
+
     return {"status": "success"}
+
+
+def _remove_from_geocode_failure_logs(location_name: str) -> int:
+    """Removes lines matching `location_name` from all geocode_failures_*.txt files in DATA_DIR."""
+    target = (location_name or "").strip().lower()
+    if not target:
+        return 0
+    removed_count = 0
+    for fpath in DATA_DIR.glob("geocode_failures_*.txt"):
+        try:
+            lines = fpath.read_text(encoding="utf-8").splitlines()
+            kept = []
+            for line in lines:
+                m = re.search(r"Failed to geocode:\s*(.+)$", line)
+                if m and m.group(1).strip().lower() == target:
+                    removed_count += 1
+                else:
+                    kept.append(line)
+            if len(kept) != len(lines):
+                fpath.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+        except Exception as e:
+            logger.warning(f"Error cleaning {fpath}: {e}")
+    return removed_count
+
+
+@app.get("/api/admin/geocode_failures", dependencies=[Depends(verify_admin)])
+async def admin_list_geocode_failures():
+    """Returns deduplicated unresolved locations from data/geocode_failures_*.txt files."""
+    cache_file = DATA_DIR / "geocode_cache.json"
+    cache = {}
+    if cache_file.exists():
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+        except Exception:
+            cache = {}
+
+    cache_lower = {k.lower(): v for k, v in cache.items()}
+    failures_map: Dict[str, Dict[str, Any]] = {}
+
+    for fpath in sorted(DATA_DIR.glob("geocode_failures_*.txt"), reverse=True):
+        date_part = fpath.stem.replace("geocode_failures_", "")
+        try:
+            lines = fpath.read_text(encoding="utf-8").splitlines()
+        except Exception:
+            continue
+        for line in lines:
+            m = re.match(r"^\[([^\]]+)\]\s*Failed to geocode:\s*(.+)$", line.strip())
+            if not m:
+                continue
+            ts_str, loc_name = m.group(1).strip(), m.group(2).strip()
+            if not loc_name:
+                continue
+            loc_key = loc_name.lower()
+            cached_val = cache_lower.get(loc_key)
+            # If already resolved to a valid geometry in geocode_cache, skip it
+            if isinstance(cached_val, dict) and ("empty" not in cached_val or cached_val.get("suppressed")):
+                continue
+
+            if loc_key not in failures_map:
+                failures_map[loc_key] = {
+                    "location_name": loc_name,
+                    "count": 1,
+                    "last_seen": ts_str,
+                    "date": date_part,
+                }
+            else:
+                failures_map[loc_key]["count"] += 1
+                if ts_str > failures_map[loc_key]["last_seen"]:
+                    failures_map[loc_key]["last_seen"] = ts_str
+                    failures_map[loc_key]["date"] = date_part
+
+    items = sorted(failures_map.values(), key=lambda x: x["last_seen"], reverse=True)
+    return {"status": "success", "total": len(items), "items": items, "failures": items}
+
+
+@app.delete("/api/admin/geocode_failures", dependencies=[Depends(verify_admin)])
+async def admin_delete_geocode_failure(location_name: str = ""):
+    """Removes a specific location_name from geocode_failures_*.txt files."""
+    if not location_name.strip():
+        raise HTTPException(status_code=400, detail="location_name is required")
+    removed = _remove_from_geocode_failure_logs(location_name)
+    return {"status": "success", "removed": removed}
+
+
+class TelegramIncidentEdit(BaseModel):
+    id: str = ""
+    name: str = ""
+    location_text: str = ""
+    description: str = ""
+    full_text: str = ""
+    post_url: str = ""
+    time: str = ""
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    markerType: str = "emoji"
+    markerIcon: str = "🔥"
+    markerColor: str = "#f97316"
+    markerBorder: str = "#ffffff"
+    category: str = "Strike / Hit"
+    plot_type: str = "marker"
+    images: List[str] = []
+    custom_fields: Dict[str, Any] = {}
+    suppressed: bool = False
+
+
+@app.get("/api/admin/telegram_incidents", dependencies=[Depends(verify_admin)])
+async def admin_list_telegram_incidents():
+    incidents_file = DATA_DIR / "telegram_incidents.json"
+    if incidents_file.exists():
+        try:
+            with open(incidents_file, "r", encoding="utf-8") as f:
+                return {"status": "success", "incidents": json.load(f)}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    return {"status": "success", "incidents": {}}
+
+
+@app.post("/api/admin/telegram_incidents", dependencies=[Depends(verify_admin)])
+async def admin_save_telegram_incident(item: TelegramIncidentEdit):
+    incidents_file = DATA_DIR / "telegram_incidents.json"
+    records = {}
+    if incidents_file.exists():
+        try:
+            with open(incidents_file, "r", encoding="utf-8") as f:
+                records = json.load(f)
+        except Exception:
+            records = {}
+
+    record_id = item.id.strip() if item.id else f"manual_{uuid.uuid4().hex[:8]}"
+    existing = records.get(record_id, {})
+
+    updated = {
+        **existing,
+        "id": record_id,
+        "channel": existing.get("channel", "znua_live"),
+        "msg_id": existing.get("msg_id", record_id),
+        "time": item.time or existing.get("time") or datetime.now(timezone.utc).isoformat(),
+        "name": item.name.strip(),
+        "location_text": item.location_text.strip() or existing.get("location_text", ""),
+        "description": item.description.strip(),
+        "full_text": item.full_text.strip() or item.description.strip(),
+        "post_url": item.post_url.strip() or existing.get("post_url", ""),
+        "lat": item.lat,
+        "lng": item.lng,
+        "icon": item.markerIcon or "🔥",
+        "markerType": item.markerType or "emoji",
+        "markerIcon": item.markerIcon or "🔥",
+        "markerColor": item.markerColor or "#f97316",
+        "markerBorder": item.markerBorder or "#ffffff",
+        "category": item.category or "Strike / Hit",
+        "plot_type": item.plot_type or "marker",
+        "images": item.images if item.images is not None else existing.get("images", []),
+        "custom_fields": item.custom_fields or {},
+        "suppressed": item.suppressed,
+        "country_restrict": existing.get("country_restrict", "ru"),
+        "admin_modified": True,
+    }
+
+    records[record_id] = updated
+    temp_file = incidents_file.with_suffix(f".tmp.{uuid.uuid4().hex}")
+    with open(temp_file, "w", encoding="utf-8") as f:
+        json.dump(records, f, ensure_ascii=False, indent=2)
+    os.replace(temp_file, incidents_file)
+
+    try:
+        record_incident_to_history_db(updated, data_dir=DATA_DIR)
+    except Exception as e:
+        logger.warning(f"Failed to update incident in history DB: {e}")
+
+    return {"status": "success", "id": record_id, "incident": updated}
+
+
+@app.delete("/api/admin/telegram_incidents/{record_id}", dependencies=[Depends(verify_admin)])
+async def admin_delete_telegram_incident(record_id: str):
+    incidents_file = DATA_DIR / "telegram_incidents.json"
+    if not incidents_file.exists():
+        return {"status": "success"}
+    try:
+        with open(incidents_file, "r", encoding="utf-8") as f:
+            records = json.load(f)
+        if record_id in records:
+            del records[record_id]
+            temp_file = incidents_file.with_suffix(f".tmp.{uuid.uuid4().hex}")
+            with open(temp_file, "w", encoding="utf-8") as f:
+                json.dump(records, f, ensure_ascii=False, indent=2)
+            os.replace(temp_file, incidents_file)
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/history")
+async def serve_history_ui():
+    """Serves the human-friendly web UI for exploring the longitudinal radar & strike history database."""
+    return FileResponse("static/history.html")
+
+
+@app.get("/api/radar-russia/history")
+async def get_radar_russia_history(
+    limit: int = 100,
+    offset: int = 0,
+    channel: Optional[str] = None,
+    source_type: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    query: Optional[str] = None,
+    format: Optional[str] = None,
+):
+    """Returns longitudinal historical air alerts and strike incidents from radar_history.db (JSON or CSV)."""
+    import csv
+    import io
+
+    db_path = init_radar_history_db(DATA_DIR)
+    conn = sqlite3.connect(db_path, timeout=30.0)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    clauses = []
+    params: List[Any] = []
+    if channel:
+        clauses.append("channel = ?")
+        params.append(channel.lower())
+    if source_type:
+        clauses.append("source_type = ?")
+        params.append(source_type)
+    if status_filter == "unresolved":
+        clauses.append("(lat IS NULL OR lon IS NULL)")
+    elif status_filter in ("active", "over"):
+        clauses.append("status = ?")
+        params.append(status_filter)
+    if date_from:
+        clauses.append("timestamp >= ?")
+        params.append(date_from)
+    if date_to:
+        clauses.append("timestamp <= ?")
+        params.append(date_to + "T23:59:59" if "T" not in date_to else date_to)
+    if query:
+        clauses.append("(nominatim_query LIKE ? OR resolved_name LIKE ? OR threat LIKE ? OR raw_text LIKE ?)")
+        q_like = f"%{query}%"
+        params.extend([q_like, q_like, q_like, q_like])
+
+    where_sql = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+
+    if format and format.lower() == "csv":
+        cursor.execute(
+            f"SELECT timestamp, channel, source_type, resolved_name, nominatim_query, raw_location, threat, status, lat, lon, osm_id, post_url FROM radar_alerts_history{where_sql} ORDER BY timestamp DESC LIMIT ?",
+            [*params, min(limit, 100000)],
+        )
+        csv_rows = cursor.fetchall()
+        conn.close()
+        buf = io.StringIO()
+        buf.write("\ufeff")  # UTF-8 BOM for Excel compatibility
+        writer = csv.writer(buf)
+        writer.writerow([
+            "timestamp",
+            "channel",
+            "source_type",
+            "resolved_name",
+            "nominatim_query",
+            "raw_location",
+            "threat",
+            "status",
+            "lat",
+            "lon",
+            "osm_id",
+            "post_url",
+        ])
+        for r in csv_rows:
+            writer.writerow(list(r))
+        return Response(
+            content=buf.getvalue(),
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": 'attachment; filename="radar_history_export.csv"'},
+        )
+
+    cursor.execute(f"SELECT COUNT(*) FROM radar_alerts_history{where_sql}", params)
+    total = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM radar_alerts_history")
+    db_total = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM radar_alerts_history WHERE source_type = 'telegram_incident'")
+    incident_total = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM radar_alerts_history WHERE lat IS NULL OR lon IS NULL")
+    unresolved_total = cursor.fetchone()[0]
+
+    cursor.execute(
+        f"SELECT * FROM radar_alerts_history{where_sql} ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+        [*params, min(limit, 2000), offset],
+    )
+    rows = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute(
+        "SELECT channel, source_type, COUNT(*) as count FROM radar_alerts_history GROUP BY channel, source_type ORDER BY count DESC"
+    )
+    by_channel = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    return {
+        "total": total,
+        "db_total": db_total,
+        "incident_total": incident_total,
+        "unresolved_total": unresolved_total,
+        "limit": limit,
+        "offset": offset,
+        "by_channel": by_channel,
+        "records": rows,
+    }
+
+
+_backfill_task_state: Dict[str, Any] = {
+    "running": False,
+    "limit": 0,
+    "started_at": None,
+    "finished_at": None,
+    "last_status": "idle",
+    "last_message": "",
+}
+
+
+async def _run_background_backfill(limit: int):
+    global _backfill_task_state
+    _backfill_task_state["running"] = True
+    _backfill_task_state["limit"] = limit
+    _backfill_task_state["started_at"] = datetime.now(timezone.utc).isoformat()
+    _backfill_task_state["finished_at"] = None
+    _backfill_task_state["last_status"] = "running"
+    _backfill_task_state["last_message"] = f"Backfilling up to {limit} messages per channel across {len(CHANNEL_CONFIGS)} channels..."
+    try:
+        process = await asyncio.create_subprocess_exec(
+            sys.executable if "sys" in globals() else "python",
+            "-u",
+            "telegram_userbot_scraper.py",
+            "--backfill",
+            str(max(1, min(limit, 10000))),
+            "--backfill-only",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await process.communicate()
+        if process.returncode != 0:
+            err_msg = stderr.decode("utf-8", errors="replace") or stdout.decode("utf-8", errors="replace")
+            _backfill_task_state["last_status"] = "error"
+            _backfill_task_state["last_message"] = err_msg[-600:]
+        else:
+            out_lines = [l.strip() for l in stdout.decode("utf-8", errors="replace").splitlines() if l.strip()]
+            summary_line = out_lines[-1] if out_lines else "Backfill completed."
+            _backfill_task_state["last_status"] = "success"
+            _backfill_task_state["last_message"] = summary_line
+    except Exception as e:
+        _backfill_task_state["last_status"] = "error"
+        _backfill_task_state["last_message"] = str(e)
+    finally:
+        _backfill_task_state["running"] = False
+        _backfill_task_state["finished_at"] = datetime.now(timezone.utc).isoformat()
+
+
+@app.post("/api/admin/telegram_backfill", dependencies=[Depends(verify_admin)])
+async def admin_trigger_telegram_backfill(limit: int = 250):
+    """Triggers background telegram_userbot_scraper.py --backfill-only (up to 10,000 msgs/channel for 100k+ records)."""
+    if _backfill_task_state.get("running"):
+        return {
+            "status": "running",
+            "message": "A backfill task is already running in the background.",
+            "state": _backfill_task_state,
+        }
+    asyncio.create_task(_run_background_backfill(max(1, min(limit, 10000))))
+    return {
+        "status": "started",
+        "message": f"Started background backfill ({limit} messages/channel).",
+        "state": _backfill_task_state,
+    }
+
+
+@app.get("/api/admin/telegram_backfill/status", dependencies=[Depends(verify_admin)])
+async def admin_get_telegram_backfill_status():
+    db_path = init_radar_history_db(DATA_DIR)
+    conn = sqlite3.connect(db_path, timeout=30.0)
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM radar_alerts_history")
+    total_rows = cur.fetchone()[0]
+    conn.close()
+    return {
+        "status": "success",
+        "db_total_rows": total_rows,
+        "db_total": total_rows,
+        "running": _backfill_task_state.get("running", False),
+        "last_result": f"error: {_backfill_task_state.get('last_message', '')}" if _backfill_task_state.get("last_status") == "error" else _backfill_task_state.get("last_message", ""),
+        "state": _backfill_task_state,
+    }
 
 @app.get("/admin", dependencies=[Depends(verify_admin)])
 async def serve_admin():

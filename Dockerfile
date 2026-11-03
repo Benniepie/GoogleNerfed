@@ -26,6 +26,12 @@ COPY main.py .
 COPY geoprocessing.py .
 COPY ais_worker.py .
 COPY generate_radar_video.py .
+COPY telegram_config.py .
+COPY telegram_shared.py .
+COPY telegram_userbot_scraper.py .
+COPY auth.py .
+COPY telegram_auth.py .
+COPY mapping_userbot.session* ./
 COPY static/ ./static/
 COPY admin_assets/ ./admin_assets/
 # Ensure the data directory exists
