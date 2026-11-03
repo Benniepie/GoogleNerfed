@@ -70,6 +70,21 @@ document.getElementById('admin-panel-container').innerHTML = `
                 <div id="overrideStatusMsg" style="display: none; font-size: 0.85rem; color: #10b981; margin-top: 5px;"></div>
             </form>
 
+            <hr style="border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+
+            <h3 style="margin-top:0; font-size: 0.95rem;">🔥 Telegram Strike / Hit Markers</h3>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px;">Manage automated Telegram strike pins (e.g. ZN.UA hits), custom fields, and layer styling.</p>
+            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                <button type="button" class="primary-btn" onclick="openColorPicker('RadarRussia')" style="flex: 1; background: #f97316; font-size: 0.78rem; padding: 6px;">🎨 Hit Layer Style</button>
+                <button type="button" class="primary-btn" onclick="window.openFieldsModal('RadarRussia')" style="flex: 1; background: #64748b; font-size: 0.78rem; padding: 6px;">📋 Custom Fields</button>
+            </div>
+            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                <button type="button" class="primary-btn" onclick="window.openTelegramIncidentsManager()" style="flex: 1; background: #3b82f6; font-size: 0.78rem; padding: 6px;">✏️ Manage Markers</button>
+                <button type="button" class="primary-btn" onclick="window.editTelegramIncident('')" style="flex: 1; background: #10b981; font-size: 0.78rem; padding: 6px;">➕ Add Hit Marker</button>
+            </div>
+            <button type="button" id="telegramBackfillBtn" class="primary-btn" onclick="window.runTelegramHistoryBackfill()" style="width: 100%; background: #8b5cf6; font-size: 0.78rem; padding: 6px;">📥 Backfill Telegram History to DB</button>
+            <div id="telegramBackfillStatus" style="display: none; font-size: 0.78rem; color: #94a3b8; margin-top: 5px;"></div>
+
         </div>
     </div>
 `;
@@ -220,6 +235,107 @@ const adminModalsHTML = `
                 <button class="primary-btn" onclick="window.deleteEditedFeature()" style="flex: 1; background: #ef4444;">Delete</button>
             </div>
             <button class="primary-btn" onclick="document.getElementById('editFeatureModal').style.display='none'" style="width:100%; background:var(--border-color);">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Telegram Incidents List Modal -->
+    <div id="tgIncidentsListModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="width: 440px; max-width: 95vw;">
+            <h3 style="margin-top:0;">🔥 Automated Telegram Strike Markers</h3>
+            <div id="tgIncidentsListContainer" style="max-height: 360px; overflow-y: auto; text-align: left; margin-bottom: 15px;"></div>
+            <div style="display: flex; gap: 8px;">
+                <button class="primary-btn" onclick="document.getElementById('tgIncidentsListModal').style.display='none'; window.editTelegramIncident('');" style="flex: 1; background: #10b981;">➕ Add Marker</button>
+                <button class="primary-btn" onclick="document.getElementById('tgIncidentsListModal').style.display='none'" style="flex: 1; background:var(--border-color);">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Telegram Incident Modal -->
+    <div id="editTgIncidentModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3100; align-items: center; justify-content: center;">
+        <div class="modal-content" style="width: 380px; max-width: 95vw; max-height: 90vh; overflow-y: auto;">
+            <h3 style="margin-top:0;" id="editTgIncidentTitle">Edit Telegram Strike Marker</h3>
+            <input type="hidden" id="editTgId" />
+
+            <div style="text-align: left; margin-bottom: 8px;">
+                <label style="display:block; margin-bottom:2px; font-size: 0.8rem;">Display Name (English / Title):</label>
+                <input type="text" id="editTgName" placeholder="e.g. Yaroslavl Oil Refinery" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+            </div>
+
+            <div style="text-align: left; margin-bottom: 8px;">
+                <label style="display:block; margin-bottom:2px; font-size: 0.8rem;">Nominatim Location Query (Russian/English):</label>
+                <input type="text" id="editTgLocationText" placeholder="e.g. Ярославль" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+            </div>
+
+            <div style="text-align: left; margin-bottom: 8px;">
+                <label style="display:block; margin-bottom:2px; font-size: 0.8rem;">Category (for grouped styling):</label>
+                <input type="text" id="editTgCategory" placeholder="e.g. Strike / Hit, Refinery, Airfield" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+            </div>
+
+            <div style="text-align: left; margin-bottom: 8px;">
+                <label style="display:block; margin-bottom:2px; font-size: 0.8rem;">Post Text / Description:</label>
+                <textarea id="editTgDescription" rows="4" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box; font-family: inherit;"></textarea>
+            </div>
+
+            <div style="text-align: left; margin-bottom: 8px;">
+                <label style="display:block; margin-bottom:2px; font-size: 0.8rem;">Source Telegram Post Link:</label>
+                <input type="url" id="editTgPostUrl" placeholder="https://t.me/znua_live/..." style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+            </div>
+
+            <div style="text-align: left; margin-bottom: 8px;">
+                <label style="display:block; margin-bottom:2px; font-size: 0.8rem;">Photos (comma-separated filenames or URLs):</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="editTgImages" placeholder="tg_znua_live_123.jpg" style="flex: 1; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+                    <button type="button" class="icon-btn" onclick="document.getElementById('editTgPhotoUpload').click()" style="background: rgba(255,255,255,0.1); padding: 5px; font-size: 0.8rem;" title="Upload Photo">📁</button>
+                    <input type="file" id="editTgPhotoUpload" style="display: none;" accept="image/png, image/jpeg, image/gif, image/svg+xml, image/webp" onchange="window.uploadTgIncidentPhoto(this)">
+                </div>
+            </div>
+
+            <div id="editTgCustomFields" style="border-top: 1px solid var(--border-color); padding-top: 8px; margin-bottom: 8px; text-align: left;"></div>
+
+            <div style="text-align: left; margin-bottom: 8px;">
+                <label style="display:block; margin-bottom:2px; font-size: 0.8rem;">Coordinate Override (Lat, Lng - optional):</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="number" step="any" id="editTgLat" placeholder="Auto (Nominatim)" style="width: 50%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+                    <input type="number" step="any" id="editTgLng" placeholder="Auto (Nominatim)" style="width: 50%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+                </div>
+                <button type="button" class="icon-btn" onclick="window.useClickForTgLocation()" style="font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 3px 6px; margin-top: 4px; width: 100%;">📍 Pick Coordinates on Map</button>
+            </div>
+
+            <div style="text-align: left; margin-bottom: 8px;">
+                <label style="display:block; margin-bottom:2px; font-size: 0.8rem;">Marker Style:</label>
+                <select id="editTgMarkerType" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box; margin-bottom: 5px;">
+                    <option value="emoji">Emoji</option>
+                    <option value="icon">Image URL / Uploaded Icon</option>
+                    <option value="circle">Circle</option>
+                </select>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="editTgMarkerIcon" placeholder="🔥 or icon filename" style="flex: 1; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+                    <button type="button" class="icon-btn" onclick="document.getElementById('editTgMarkerIconUpload').click()" style="background: rgba(255,255,255,0.1); padding: 5px; font-size: 0.8rem;" title="Upload Marker Icon">📁</button>
+                    <input type="file" id="editTgMarkerIconUpload" style="display: none;" accept="image/png, image/jpeg, image/gif, image/svg+xml, image/webp" onchange="window.uploadTgMarkerIcon(this)">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; text-align: left;">
+                <div style="flex: 1;">
+                    <label style="display:block; margin-bottom:2px; font-size: 0.8rem;">Marker Color:</label>
+                    <input type="color" id="editTgMarkerColor" value="#f97316" style="width: 100%; height: 28px;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display:block; margin-bottom:2px; font-size: 0.8rem;">Border Color:</label>
+                    <input type="color" id="editTgMarkerBorder" value="#ffffff" style="width: 100%; height: 28px;">
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px; text-align: left;">
+                <input type="checkbox" id="editTgSuppressed">
+                <label for="editTgSuppressed" style="font-size: 0.8rem; color: #94a3b8;">Suppress / hide this marker from the map</label>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                <button class="primary-btn" onclick="window.saveTelegramIncident()" style="flex: 2; background: #10b981;">Save</button>
+                <button class="primary-btn" onclick="window.deleteTelegramIncident()" style="flex: 1; background: #ef4444;">Delete</button>
+            </div>
+            <button class="primary-btn" onclick="document.getElementById('editTgIncidentModal').style.display='none'" style="width:100%; background:var(--border-color);">Cancel</button>
         </div>
     </div>
 `;
@@ -550,7 +666,11 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             document.getElementById('stylingLayerName').textContent = filename;
 
             // Get features for the current layer to find unique names
-            if (activeLayers[filename]) {
+            if (filename === 'RadarRussia') {
+                currentStylingFeatures = (activeKMLGeoJSON['RadarRussia'] && activeKMLGeoJSON['RadarRussia'].features)
+                    ? activeKMLGeoJSON['RadarRussia'].features.filter(f => f.properties && f.properties.source === 'telegram')
+                    : [];
+            } else if (activeLayers[filename]) {
                 const layer = activeLayers[filename];
                 currentStylingFeatures = [];
                 layer.eachLayer(l => {
@@ -558,7 +678,10 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                 });
             }
 
-            const existingStyle = layerStyles[filename] || { type: 'single', color: '#3b82f6', opacity: 0.5 };
+            const defaultFallback = filename === 'RadarRussia'
+                ? { type: 'single', color: '#f97316', opacity: 0.9, markerType: 'emoji', markerIcon: '🔥', markerBorder: '#ffffff' }
+                : { type: 'single', color: '#3b82f6', opacity: 0.5 };
+            const existingStyle = layerStyles[filename] || defaultFallback;
             document.getElementById('styleTypeSelect').value = existingStyle.type || 'single';
 
             renderColorPickers(existingStyle);
@@ -595,6 +718,9 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                 // Populate field options
                 if (fieldSelect.options.length === 0 || fieldSelect.getAttribute('data-layer') !== currentStylingLayer) {
                     fieldSelect.innerHTML = '<option value="name">name</option>';
+                    if (currentStylingLayer === 'RadarRussia') {
+                        fieldSelect.innerHTML += '<option value="category">category</option><option value="channel">channel</option>';
+                    }
                     if (appSettings.layerFields && appSettings.layerFields[currentStylingLayer]) {
                         appSettings.layerFields[currentStylingLayer].forEach(f => {
                             if (f.type === 'text') {
@@ -709,10 +835,14 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
             layerStyles[currentStylingLayer] = styleConfig;
             saveStylesToServer();
 
-            // Reload just this layer to apply style
-            fetchAndAddKML(currentStylingLayer).then(() => {
-                reorderActiveLayers();
-            });
+            if (currentStylingLayer === 'RadarRussia') {
+                if (window.forceRadarRefresh) window.forceRadarRefresh();
+            } else {
+                // Reload just this layer to apply style
+                fetchAndAddKML(currentStylingLayer).then(() => {
+                    reorderActiveLayers();
+                });
+            }
             document.getElementById('colorModal').style.display = 'none';
         }
 
@@ -1348,4 +1478,249 @@ setTimeout(() => {
                 statusEl.style.color = '#ef4444';
             }
             setTimeout(() => statusEl.style.display = 'none', 3000);
+        };
+
+        // --- Telegram Automated Strike / Hit Markers Admin Logic ---
+        let cachedAdminTgIncidents = {};
+
+        function renderTgCustomFieldsInputs(customValues = {}) {
+            const container = document.getElementById('editTgCustomFields');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const fields = (appSettings.layerFields && appSettings.layerFields['RadarRussia']) ? appSettings.layerFields['RadarRussia'] : [];
+            if (fields.length === 0) return;
+
+            fields.forEach(f => {
+                const val = customValues[f.name] || '';
+                const fieldDiv = document.createElement('div');
+                fieldDiv.style.marginBottom = '8px';
+
+                let inputHtml = '';
+                if (f.type === 'date') {
+                    inputHtml = `<input type="date" id="tgCustomField_${f.name}" value="${val}" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">`;
+                } else if (f.type === 'url') {
+                    inputHtml = `<input type="url" id="tgCustomField_${f.name}" value="${val}" placeholder="https://..." style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">`;
+                } else if (f.type === 'image') {
+                    inputHtml = `
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="tgCustomField_${f.name}" value="${val}" placeholder="Image URL or filename" style="flex: 1; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">
+                            <button type="button" class="icon-btn" onclick="document.getElementById('tgCustomFieldImg_${f.name}').click()" style="background: rgba(255,255,255,0.1); padding: 5px; font-size: 0.8rem;">📁</button>
+                            <input type="file" id="tgCustomFieldImg_${f.name}" style="display: none;" accept="image/png, image/jpeg, image/gif, image/svg+xml, image/webp" onchange="window.uploadCustomFieldImage(this, 'tgCustomField_${f.name}')">
+                        </div>
+                    `;
+                } else {
+                    inputHtml = `<input type="text" id="tgCustomField_${f.name}" value="${val}" style="width: 100%; background: var(--border-color); color: white; border: none; padding: 5px; border-radius: 4px; box-sizing: border-box;">`;
+                }
+
+                fieldDiv.innerHTML = `<label style="display:block; margin-bottom:2px; font-size: 0.8rem;">${f.name}:</label>${inputHtml}`;
+                container.appendChild(fieldDiv);
+            });
+        }
+
+        window.openTelegramIncidentsManager = async function() {
+            const container = document.getElementById('tgIncidentsListContainer');
+            container.innerHTML = '<em style="color: #94a3b8;">Loading markers...</em>';
+            document.getElementById('tgIncidentsListModal').style.display = 'flex';
+
+            try {
+                const res = await fetch('/api/admin/telegram_incidents');
+                const data = await res.json();
+                cachedAdminTgIncidents = data.incidents || {};
+                const items = Object.values(cachedAdminTgIncidents).sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0));
+
+                if (items.length === 0) {
+                    container.innerHTML = '<p style="font-size: 0.85rem; color: #94a3b8;">No automated Telegram strike markers recorded yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = items.map(inc => {
+                    const safeId = String(inc.id || '').replace(/'/g, "\\'");
+                    const timeStr = inc.time ? new Date(inc.time).toLocaleString('en-GB') : '';
+                    const statusBadge = inc.suppressed ? '<span style="color:#ef4444; font-size:0.75rem;">[Hidden]</span>' : '';
+                    return `
+                        <div style="padding: 8px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                            <div style="flex: 1; overflow: hidden;">
+                                <div style="font-weight: bold; font-size: 0.88rem; color: #f97316;">${inc.markerIcon || inc.icon || '🔥'} ${inc.name || inc.location_text || inc.id} ${statusBadge}</div>
+                                <div style="font-size: 0.75rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${inc.description || ''}</div>
+                                <div style="font-size: 0.7rem; color: #64748b;">${timeStr} • ${inc.category || 'Strike / Hit'}</div>
+                            </div>
+                            <button class="primary-btn" onclick="document.getElementById('tgIncidentsListModal').style.display='none'; window.editTelegramIncident('${safeId}');" style="padding: 4px 10px; font-size: 0.75rem; background: #3b82f6;">Edit</button>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                container.innerHTML = '<p style="color:#ef4444;">Failed to load markers.</p>';
+            }
+        };
+
+        window.editTelegramIncident = async function(recordId) {
+            try {
+                const res = await fetch('/api/admin/telegram_incidents');
+                const data = await res.json();
+                cachedAdminTgIncidents = data.incidents || {};
+            } catch (e) {}
+
+            const inc = recordId && cachedAdminTgIncidents[recordId] ? cachedAdminTgIncidents[recordId] : {};
+            document.getElementById('editTgIncidentTitle').textContent = recordId ? 'Edit Telegram Strike Marker' : 'Add Telegram Strike Marker';
+            document.getElementById('editTgId').value = recordId || '';
+            document.getElementById('editTgName').value = inc.name || '';
+            document.getElementById('editTgLocationText').value = inc.location_text || '';
+            document.getElementById('editTgCategory').value = inc.category || 'Strike / Hit';
+            document.getElementById('editTgDescription').value = inc.description || '';
+            document.getElementById('editTgPostUrl').value = inc.post_url || '';
+            document.getElementById('editTgImages').value = Array.isArray(inc.images) ? inc.images.join(', ') : '';
+            document.getElementById('editTgLat').value = inc.lat != null ? inc.lat : '';
+            document.getElementById('editTgLng').value = inc.lng != null ? inc.lng : '';
+            document.getElementById('editTgMarkerType').value = inc.markerType || 'emoji';
+            document.getElementById('editTgMarkerIcon').value = inc.markerIcon || inc.icon || '🔥';
+            document.getElementById('editTgMarkerColor').value = inc.markerColor || '#f97316';
+            document.getElementById('editTgMarkerBorder').value = inc.markerBorder || '#ffffff';
+            document.getElementById('editTgSuppressed').checked = Boolean(inc.suppressed);
+
+            renderTgCustomFieldsInputs(inc.custom_fields || {});
+
+            if (map) map.closePopup();
+            document.getElementById('editTgIncidentModal').style.display = 'flex';
+        };
+
+        window.useClickForTgLocation = function() {
+            document.getElementById('editTgIncidentModal').style.display = 'none';
+            window.isAwaitingLocationClick = true;
+            document.body.style.cursor = 'crosshair';
+
+            window.populateLocationFromClick = function(lat, lng) {
+                document.getElementById('editTgLat').value = lat.toFixed(5);
+                document.getElementById('editTgLng').value = lng.toFixed(5);
+                window.isAwaitingLocationClick = false;
+                document.body.style.cursor = '';
+                delete window.populateLocationFromClick;
+                document.getElementById('editTgIncidentModal').style.display = 'flex';
+            };
+        };
+
+        window.uploadTgIncidentPhoto = async function(inputEl) {
+            if (!inputEl.files || inputEl.files.length === 0) return;
+            const formData = new FormData();
+            formData.append('file', inputEl.files[0]);
+            try {
+                const res = await fetch('/api/upload_image', { method: 'POST', body: formData });
+                const result = await res.json();
+                if (res.ok && result.status === 'success') {
+                    const cur = document.getElementById('editTgImages').value.trim();
+                    document.getElementById('editTgImages').value = cur ? `${cur}, ${result.filename}` : result.filename;
+                }
+            } catch (e) {
+                console.error('Upload error:', e);
+            }
+        };
+
+        window.uploadTgMarkerIcon = async function(inputEl) {
+            if (!inputEl.files || inputEl.files.length === 0) return;
+            const formData = new FormData();
+            formData.append('file', inputEl.files[0]);
+            try {
+                const res = await fetch('/api/upload_image', { method: 'POST', body: formData });
+                const result = await res.json();
+                if (res.ok && result.status === 'success') {
+                    document.getElementById('editTgMarkerIcon').value = result.filename;
+                    document.getElementById('editTgMarkerType').value = 'icon';
+                }
+            } catch (e) {
+                console.error('Upload error:', e);
+            }
+        };
+
+        window.saveTelegramIncident = async function() {
+            const recordId = document.getElementById('editTgId').value;
+            const latStr = document.getElementById('editTgLat').value;
+            const lngStr = document.getElementById('editTgLng').value;
+            const imagesStr = document.getElementById('editTgImages').value;
+            const images = imagesStr.split(',').map(s => s.trim()).filter(Boolean);
+
+            const customFields = {};
+            const fields = (appSettings.layerFields && appSettings.layerFields['RadarRussia']) ? appSettings.layerFields['RadarRussia'] : [];
+            fields.forEach(f => {
+                const el = document.getElementById(`tgCustomField_${f.name}`);
+                if (el && el.value.trim()) {
+                    customFields[f.name] = el.value.trim();
+                }
+            });
+
+            const payload = {
+                id: recordId,
+                name: document.getElementById('editTgName').value,
+                location_text: document.getElementById('editTgLocationText').value,
+                category: document.getElementById('editTgCategory').value,
+                description: document.getElementById('editTgDescription').value,
+                full_text: document.getElementById('editTgDescription').value,
+                post_url: document.getElementById('editTgPostUrl').value,
+                images: images,
+                lat: latStr !== '' ? parseFloat(latStr) : null,
+                lng: lngStr !== '' ? parseFloat(lngStr) : null,
+                markerType: document.getElementById('editTgMarkerType').value,
+                markerIcon: document.getElementById('editTgMarkerIcon').value,
+                markerColor: document.getElementById('editTgMarkerColor').value,
+                markerBorder: document.getElementById('editTgMarkerBorder').value,
+                suppressed: document.getElementById('editTgSuppressed').checked,
+                custom_fields: customFields
+            };
+
+            try {
+                const res = await fetch('/api/admin/telegram_incidents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error('Save failed');
+                document.getElementById('editTgIncidentModal').style.display = 'none';
+                if (window.forceRadarRefresh) window.forceRadarRefresh();
+            } catch (e) {
+                alert('Failed to save Telegram incident marker: ' + e.message);
+            }
+        };
+
+        window.deleteTelegramIncident = async function() {
+            const recordId = document.getElementById('editTgId').value;
+            if (!recordId) {
+                document.getElementById('editTgIncidentModal').style.display = 'none';
+                return;
+            }
+            if (!confirm('Are you sure you want to permanently delete this Telegram strike marker?')) return;
+            try {
+                const res = await fetch(`/api/admin/telegram_incidents/${encodeURIComponent(recordId)}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Delete failed');
+                document.getElementById('editTgIncidentModal').style.display = 'none';
+                if (window.forceRadarRefresh) window.forceRadarRefresh();
+            } catch (e) {
+                alert('Failed to delete marker: ' + e.message);
+            }
+        };
+
+        window.runTelegramHistoryBackfill = async function() {
+            const btn = document.getElementById('telegramBackfillBtn');
+            const statusEl = document.getElementById('telegramBackfillStatus');
+            btn.disabled = true;
+            btn.textContent = '⏳ Backfilling history...';
+            statusEl.style.display = 'block';
+            statusEl.style.color = '#94a3b8';
+            statusEl.textContent = 'Connecting to Telegram channels and populating radar_history.db...';
+
+            try {
+                const res = await fetch('/api/admin/telegram_backfill?limit=100', { method: 'POST' });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    statusEl.style.color = '#10b981';
+                    statusEl.textContent = 'Backfill complete! History DB and live cache updated.';
+                    if (window.forceRadarRefresh) window.forceRadarRefresh();
+                } else {
+                    throw new Error(data.message || 'Backfill failed');
+                }
+            } catch (e) {
+                statusEl.style.color = '#ef4444';
+                statusEl.textContent = 'Error: ' + e.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📥 Backfill Telegram History to DB';
+            }
         };
