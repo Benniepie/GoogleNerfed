@@ -216,8 +216,8 @@ def parse_telegram_message(
                     ).strip()
                     if not loc_clean or loc_clean.lower() in NON_LOCATION_PHRASES:
                         continue
-                    # Ignore trajectory descriptions like "От Ельня до Дугино" or "далее Бежецк-Кашин"
-                    if re.match(r"^(?:от\s+\S+\s+до\s+|далее\s+|граница\s+)", loc_clean, flags=re.IGNORECASE):
+                    # Ignore trajectory descriptions like "От Ельня до Дугино" or "От Белый-Ржев далее Торжок-Тверь"
+                    if re.match(r"^(?:от\s+|далее\s+|граница\s+)", loc_clean, flags=re.IGNORECASE) or re.search(r"\bдалее\b", loc_clean, flags=re.IGNORECASE):
                         continue
 
                     loc_clean = re.sub(r"(?i)и близлежащие", "округ", loc_clean).strip()
@@ -236,6 +236,19 @@ def parse_telegram_message(
                     for prefix, expansion in admin_expansions.items():
                         if lower_loc.startswith(prefix):
                             loc_clean = expansion + loc_clean[len(prefix):].strip()
+                            break
+
+                    # Also expand trailing abbreviations e.g. "Наро-Фоминский ГО"
+                    trailing_expansions = {
+                        " го": " городской округ",
+                        " мо": " муниципальный округ",
+                        " мр": " муниципальный район",
+                        " ао": " административный округ",
+                    }
+                    lower_loc = loc_clean.lower()
+                    for suffix, expansion in trailing_expansions.items():
+                        if lower_loc.endswith(suffix):
+                            loc_clean = loc_clean[:-len(suffix)].strip() + expansion
                             break
 
                     # Split compound "Саратов/Энгельс" into two locations
@@ -653,7 +666,7 @@ def save_radar_alert_to_live_cache(parsed_alert: Dict[str, Any], data_dir: Optio
 
 
 def save_incident_to_live_cache(incident_data: Dict[str, Any], data_dir: Optional[Path] = None) -> str:
-    """Atomically saves or updates an incident in data/telegram_incidents.json."""
+    """Atomically saves or updates a 24h incident in data/telegram_incidents.json (pruning expired non-admin items)."""
     d = data_dir or resolve_data_dir()
     incidents_file = d / "telegram_incidents.json"
 
@@ -665,8 +678,35 @@ def save_incident_to_live_cache(incident_data: Dict[str, Any], data_dir: Optiona
         except Exception:
             records = {}
 
+    now = datetime.now(timezone.utc)
+    for k in list(records.keys()):
+        if records[k].get("admin_modified"):
+            continue
+        try:
+            t = datetime.fromisoformat(records[k]["time"].replace("Z", "+00:00"))
+            if t.tzinfo is None:
+                t = t.replace(tzinfo=timezone.utc)
+            if (now - t).total_seconds() > 24 * 3600:
+                del records[k]
+        except Exception:
+            pass
+
     record_id = incident_data.get("id") or f"{incident_data['channel']}_{incident_data['msg_id']}"
     incident_data["id"] = record_id
+
+    if not incident_data.get("admin_modified"):
+        try:
+            inc_t = datetime.fromisoformat(incident_data["time"].replace("Z", "+00:00"))
+            if inc_t.tzinfo is None:
+                inc_t = inc_t.replace(tzinfo=timezone.utc)
+            if (now - inc_t).total_seconds() > 24 * 3600:
+                temp_file = incidents_file.with_suffix(f".tmp.{uuid.uuid4().hex}")
+                with open(temp_file, "w", encoding="utf-8") as f:
+                    json.dump(records, f, ensure_ascii=False, indent=2)
+                _safe_replace(temp_file, incidents_file)
+                return record_id
+        except Exception:
+            pass
 
     # Preserve manual admin edits if re-scraping an existing incident
     if record_id in records and records[record_id].get("admin_modified"):

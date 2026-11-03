@@ -48,10 +48,17 @@ document.getElementById('admin-panel-container').innerHTML = `
             <hr style="border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
 
             <h3 style="margin-top:0; font-size: 0.95rem;">🚨 Radar Russia Overrides</h3>
-            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 10px;">Fix bad geocoding or translations. Leave ID/Translation blank to delete cache and retry.</p>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px;">Fix bad geocoding or translations. Leave ID/Translation blank to delete cache and retry.</p>
+            <div style="margin-bottom: 10px;">
+                <button type="button" id="loadGeocodeFailuresBtn" class="primary-btn" onclick="window.loadGeocodeFailuresQueue()" style="width: 100%; background: #f59e0b; color: #0f172a; font-weight: bold; font-size: 0.78rem; padding: 6px;">📍 Load Failed Geocodes Queue</button>
+                <div id="geocodeFailuresQueueContainer" style="display: none; margin-top: 8px; max-height: 220px; overflow-y: auto; background: rgba(0,0,0,0.45); border: 1px solid #475569; border-radius: 6px; padding: 6px;"></div>
+            </div>
             <form id="overrideForm" style="display: flex; flex-direction: column; gap: 8px;">
                 <div>
-                    <label style="font-size: 0.8rem; color: #94a3b8;">Location Name (Russian text):</label>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label style="font-size: 0.8rem; color: #94a3b8;">Location Name (Russian text):</label>
+                        <a id="overrideNominatimSearchLink" href="https://nominatim.openstreetmap.org/ui/search.html" target="_blank" onclick="const q=document.getElementById('overrideLocationName').value.trim(); if(q) this.href='https://nominatim.openstreetmap.org/ui/search.html?q='+encodeURIComponent(q);" style="font-size:0.72rem; color:#38bdf8; text-decoration:none;">🔍 Lookup on OSM ↗</a>
+                    </div>
                     <input type="text" id="overrideLocationName" required placeholder="e.g. Орловский район" style="width: 100%; box-sizing: border-box; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px;">
                 </div>
                 <div>
@@ -82,7 +89,18 @@ document.getElementById('admin-panel-container').innerHTML = `
                 <button type="button" class="primary-btn" onclick="window.openTelegramIncidentsManager()" style="flex: 1; background: #3b82f6; font-size: 0.78rem; padding: 6px;">✏️ Manage Markers</button>
                 <button type="button" class="primary-btn" onclick="window.editTelegramIncident('')" style="flex: 1; background: #10b981; font-size: 0.78rem; padding: 6px;">➕ Add Hit Marker</button>
             </div>
-            <button type="button" id="telegramBackfillBtn" class="primary-btn" onclick="window.runTelegramHistoryBackfill()" style="width: 100%; background: #8b5cf6; font-size: 0.78rem; padding: 6px;">📥 Backfill Telegram History to DB</button>
+            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                <a href="/history" target="_blank" class="primary-btn" style="flex: 1; background: #0ea5e9; font-size: 0.78rem; padding: 6px; text-align: center; text-decoration: none; box-sizing: border-box;">📊 View Historical Archive Table (/history)</a>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <select id="telegramBackfillLimit" style="background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 5px; font-size: 0.75rem;" title="Messages per channel to scan">
+                    <option value="100">100 / ch (~4k rows)</option>
+                    <option value="500">500 / ch (~20k rows)</option>
+                    <option value="2500">2,500 / ch (~100k rows)</option>
+                    <option value="5000">5,000 / ch (~200k rows)</option>
+                </select>
+                <button type="button" id="telegramBackfillBtn" class="primary-btn" onclick="window.runTelegramHistoryBackfill()" style="flex: 1; background: #8b5cf6; font-size: 0.78rem; padding: 6px;">📥 Backfill History DB</button>
+            </div>
             <div id="telegramBackfillStatus" style="display: none; font-size: 0.78rem; color: #94a3b8; margin-top: 5px;"></div>
 
         </div>
@@ -1026,7 +1044,118 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
         };
 
 
-        // 5. Override Geocodes
+        // 5. Override Geocodes & Failed Geocodes Queue
+        let cachedGeocodeFailures = [];
+
+        window.loadGeocodeFailuresQueue = async function(keepOpen = false) {
+            const container = document.getElementById('geocodeFailuresQueueContainer');
+            const btn = document.getElementById('loadGeocodeFailuresBtn');
+            if (!container) return;
+
+            if (!keepOpen && container.style.display === 'block') {
+                container.style.display = 'none';
+                btn.textContent = '📍 Load Failed Geocodes Queue';
+                return;
+            }
+
+            container.style.display = 'block';
+            container.innerHTML = '<div style="font-size:0.78rem; color:#94a3b8; padding:4px;">Loading failed geocodes...</div>';
+
+            try {
+                const res = await fetch('/api/admin/geocode_failures');
+                const data = await res.json();
+                cachedGeocodeFailures = data.items || [];
+                btn.textContent = `🔽 Hide Failed Geocodes Queue (${cachedGeocodeFailures.length})`;
+
+                if (cachedGeocodeFailures.length === 0) {
+                    container.innerHTML = '<div style="font-size:0.78rem; color:#10b981; padding:6px;">✅ No unresolved geocode failures in queue!</div>';
+                    return;
+                }
+
+                container.innerHTML = cachedGeocodeFailures.map((item, idx) => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; padding:5px 4px; border-bottom:1px solid rgba(255,255,255,0.08); font-size:0.76rem;">
+                        <div onclick="window.selectGeocodeFailureForOverride(${idx})" style="flex:1; cursor:pointer; color:#f8fafc; word-break:break-word;" title="Click to drop into Location Name field">
+                            <span style="color:#fbbf24; font-weight:bold;">▸</span> ${item.location_name.replace(/</g, '&lt;')}
+                            <span style="color:#64748b; font-size:0.7rem;">(${item.count}x, ${item.date || ''})</span>
+                        </div>
+                        <div style="display:flex; gap:3px; flex-shrink:0;">
+                            <button type="button" onclick="window.selectGeocodeFailureForOverride(${idx})" style="background:#3b82f6; color:white; border:none; border-radius:3px; padding:2px 5px; font-size:0.7rem; cursor:pointer;" title="Drop into Override Form">Use</button>
+                            <button type="button" onclick="window.suppressGeocodeFailure(${idx})" style="background:#ef4444; color:white; border:none; border-radius:3px; padding:2px 5px; font-size:0.7rem; cursor:pointer;" title="Suppress permanently">🚫</button>
+                            <button type="button" onclick="window.dismissGeocodeFailure(${idx})" style="background:#475569; color:white; border:none; border-radius:3px; padding:2px 5px; font-size:0.7rem; cursor:pointer;" title="Dismiss from log file">✕</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                container.innerHTML = '<div style="font-size:0.78rem; color:#ef4444; padding:4px;">Failed to load queue.</div>';
+            }
+        };
+
+        window.selectGeocodeFailureForOverride = function(idx) {
+            const item = cachedGeocodeFailures[idx];
+            if (!item) return;
+            const locInput = document.getElementById('overrideLocationName');
+            const osmInput = document.getElementById('overrideOsmId');
+            if (locInput) {
+                locInput.value = item.location_name;
+                locInput.style.borderColor = '#fbbf24';
+                setTimeout(() => { locInput.style.borderColor = 'var(--border-color)'; }, 1200);
+            }
+            const searchLink = document.getElementById('overrideNominatimSearchLink');
+            if (searchLink) {
+                searchLink.href = 'https://nominatim.openstreetmap.org/ui/search.html?q=' + encodeURIComponent(item.location_name);
+            }
+            if (osmInput) osmInput.focus();
+        };
+
+        window.suppressGeocodeFailure = async function(idx) {
+            const item = cachedGeocodeFailures[idx];
+            if (!item) return;
+            try {
+                const res = await fetch('/api/admin/geocode_override', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ location_name: item.location_name, osm_id: '', english_name: '', suppress: true })
+                });
+                if (res.ok) {
+                    await window.loadGeocodeFailuresQueue(true);
+                    if (window.forceRadarRefresh) window.forceRadarRefresh();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        window.dismissGeocodeFailure = async function(idx) {
+            const item = cachedGeocodeFailures[idx];
+            if (!item) return;
+            try {
+                const res = await fetch('/api/admin/geocode_failures?location_name=' + encodeURIComponent(item.location_name), { method: 'DELETE' });
+                if (res.ok) {
+                    await window.loadGeocodeFailuresQueue(true);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        // Check if opened with ?override=<location_name> from /history table
+        setTimeout(() => {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const ov = params.get('override');
+                if (ov) {
+                    const adminPanel = document.getElementById('adminContent');
+                    if (adminPanel) adminPanel.style.display = 'block';
+                    const locInput = document.getElementById('overrideLocationName');
+                    if (locInput) {
+                        locInput.value = ov;
+                        locInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        locInput.focus();
+                    }
+                    window.loadGeocodeFailuresQueue(true);
+                }
+            } catch (e) {}
+        }, 600);
                         document.getElementById('overrideForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const locationName = document.getElementById('overrideLocationName').value;
@@ -1049,7 +1178,12 @@ document.body.insertAdjacentHTML('beforeend', modalsHTML);
                 });
                 const data = await response.json();
                 if (response.ok && data.status === 'success') {
-                    statusMsg.textContent = 'Override saved! (Map updated)';
+                    statusMsg.textContent = 'Override saved! (Map & queue updated)';
+                    document.getElementById('overrideLocationName').value = '';
+                    const qCont = document.getElementById('geocodeFailuresQueueContainer');
+                    if (qCont && qCont.style.display !== 'none' && window.loadGeocodeFailuresQueue) {
+                        window.loadGeocodeFailuresQueue(true);
+                    }
                     statusMsg.style.display = 'block';
                     document.getElementById('overrideOsmId').value = '';
                     document.getElementById('overrideEnglishName').value = '';
@@ -1707,12 +1841,35 @@ setTimeout(() => {
             statusEl.textContent = 'Connecting to Telegram channels and populating radar_history.db...';
 
             try {
-                const res = await fetch('/api/admin/telegram_backfill?limit=100', { method: 'POST' });
+                const limitSel = document.getElementById('telegramBackfillLimit');
+                const limit = limitSel ? parseInt(limitSel.value || '100', 10) : 100;
+                const res = await fetch(`/api/admin/telegram_backfill?limit=${limit}`, { method: 'POST' });
                 const data = await res.json();
-                if (res.ok && data.status === 'success') {
+                if (res.ok && (data.status === 'started' || data.status === 'already_running' || data.status === 'success')) {
+                    statusEl.style.color = '#38bdf8';
+                    statusEl.textContent = data.message || `Backfill started in background...`;
+                    const poll = setInterval(async () => {
+                        try {
+                            const stRes = await fetch('/api/admin/telegram_backfill/status');
+                            const st = await stRes.json();
+                            if (!st.running) {
+                                clearInterval(poll);
+                                btn.disabled = false;
+                                btn.textContent = '📥 Backfill History DB';
+                                statusEl.style.color = (st.last_result && st.last_result.startsWith('error')) ? '#ef4444' : '#10b981';
+                                statusEl.textContent = `Backfill complete! Archive holds ${(st.db_total || 0).toLocaleString()} records.`;
+                                if (window.forceRadarRefresh) window.forceRadarRefresh();
+                            } else {
+                                statusEl.textContent = `⏳ Backfilling in background... Archive currently at ${(st.db_total || 0).toLocaleString()} rows.`;
+                            }
+                        } catch (pe) {
+                            clearInterval(poll);
+                        }
+                    }, 3000);
+                    if (false) {
                     statusEl.style.color = '#10b981';
                     statusEl.textContent = 'Backfill complete! History DB and live cache updated.';
-                    if (window.forceRadarRefresh) window.forceRadarRefresh();
+                    if (window.forceRadarRefresh) window.forceRadarRefresh(); }
                 } else {
                     throw new Error(data.message || 'Backfill failed');
                 }

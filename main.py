@@ -1280,9 +1280,9 @@ async def admin_geocode_override(override: GeocodeOverride):
             pass
 
     if override.suppress:
-        fresh_cache[actual_key] = {"empty": True}
+        fresh_cache[actual_key] = {"empty": True, "suppressed": True}
         if 'geocode_cache' in globals():
-            geocode_cache[actual_key] = {"empty": True}
+            geocode_cache[actual_key] = {"empty": True, "suppressed": True}
     elif not override.osm_id and not override.english_name:
         if actual_key in fresh_cache:
             del fresh_cache[actual_key]
@@ -1308,7 +1308,123 @@ async def admin_geocode_override(override: GeocodeOverride):
     import os
     os.replace(temp_file, cache_file)
 
+    # Remove this location from any geocode_failures_*.txt files and update radar_history.db if resolved
+    _remove_from_geocode_failure_logs(target_name)
+    if actual_key != target_name:
+        _remove_from_geocode_failure_logs(actual_key)
+
+    if actual_key in fresh_cache and isinstance(fresh_cache[actual_key], dict) and "empty" not in fresh_cache[actual_key]:
+        try:
+            geo_entry = fresh_cache[actual_key]
+            disp = geo_entry.get("display_name", "")
+            res_name = geo_entry.get("name", "")
+            if disp and "," in disp:
+                res_name = disp.split(",")[0].strip()
+            elif not res_name:
+                res_name = actual_key
+            osm_id_val = str(geo_entry.get("osm_id", "")) if geo_entry.get("osm_id") else ""
+            osm_type_val = str(geo_entry.get("osm_type", "")) if geo_entry.get("osm_type") else ""
+            lat_val = float(geo_entry["lat"]) if "lat" in geo_entry else None
+            lon_val = float(geo_entry["lon"]) if "lon" in geo_entry else None
+            db_path = init_radar_history_db(DATA_DIR)
+            conn = sqlite3.connect(db_path, timeout=30.0)
+            conn.execute(
+                """
+                UPDATE radar_alerts_history
+                SET resolved_name = ?, osm_id = ?, osm_type = ?, lat = COALESCE(?, lat), lon = COALESCE(?, lon)
+                WHERE LOWER(nominatim_query) = LOWER(?)
+                """,
+                (res_name, osm_id_val, osm_type_val, lat_val, lon_val, actual_key),
+            )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.warning(f"Failed to update radar_history.db after geocode override: {e}")
+
     return {"status": "success"}
+
+
+def _remove_from_geocode_failure_logs(location_name: str) -> int:
+    """Removes lines matching `location_name` from all geocode_failures_*.txt files in DATA_DIR."""
+    target = (location_name or "").strip().lower()
+    if not target:
+        return 0
+    removed_count = 0
+    for fpath in DATA_DIR.glob("geocode_failures_*.txt"):
+        try:
+            lines = fpath.read_text(encoding="utf-8").splitlines()
+            kept = []
+            for line in lines:
+                m = re.search(r"Failed to geocode:\s*(.+)$", line)
+                if m and m.group(1).strip().lower() == target:
+                    removed_count += 1
+                else:
+                    kept.append(line)
+            if len(kept) != len(lines):
+                fpath.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+        except Exception as e:
+            logger.warning(f"Error cleaning {fpath}: {e}")
+    return removed_count
+
+
+@app.get("/api/admin/geocode_failures", dependencies=[Depends(verify_admin)])
+async def admin_list_geocode_failures():
+    """Returns deduplicated unresolved locations from data/geocode_failures_*.txt files."""
+    cache_file = DATA_DIR / "geocode_cache.json"
+    cache = {}
+    if cache_file.exists():
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+        except Exception:
+            cache = {}
+
+    cache_lower = {k.lower(): v for k, v in cache.items()}
+    failures_map: Dict[str, Dict[str, Any]] = {}
+
+    for fpath in sorted(DATA_DIR.glob("geocode_failures_*.txt"), reverse=True):
+        date_part = fpath.stem.replace("geocode_failures_", "")
+        try:
+            lines = fpath.read_text(encoding="utf-8").splitlines()
+        except Exception:
+            continue
+        for line in lines:
+            m = re.match(r"^\[([^\]]+)\]\s*Failed to geocode:\s*(.+)$", line.strip())
+            if not m:
+                continue
+            ts_str, loc_name = m.group(1).strip(), m.group(2).strip()
+            if not loc_name:
+                continue
+            loc_key = loc_name.lower()
+            cached_val = cache_lower.get(loc_key)
+            # If already resolved to a valid geometry in geocode_cache, skip it
+            if isinstance(cached_val, dict) and ("empty" not in cached_val or cached_val.get("suppressed")):
+                continue
+
+            if loc_key not in failures_map:
+                failures_map[loc_key] = {
+                    "location_name": loc_name,
+                    "count": 1,
+                    "last_seen": ts_str,
+                    "date": date_part,
+                }
+            else:
+                failures_map[loc_key]["count"] += 1
+                if ts_str > failures_map[loc_key]["last_seen"]:
+                    failures_map[loc_key]["last_seen"] = ts_str
+                    failures_map[loc_key]["date"] = date_part
+
+    items = sorted(failures_map.values(), key=lambda x: x["last_seen"], reverse=True)
+    return {"status": "success", "total": len(items), "failures": items}
+
+
+@app.delete("/api/admin/geocode_failures", dependencies=[Depends(verify_admin)])
+async def admin_delete_geocode_failure(location_name: str = ""):
+    """Removes a specific location_name from geocode_failures_*.txt files."""
+    if not location_name.strip():
+        raise HTTPException(status_code=400, detail="location_name is required")
+    removed = _remove_from_geocode_failure_logs(location_name)
+    return {"status": "success", "removed": removed}
 
 
 class TelegramIncidentEdit(BaseModel):
@@ -1418,17 +1534,30 @@ async def admin_delete_telegram_incident(record_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/history")
+async def serve_history_ui():
+    """Serves the human-friendly web UI for exploring the longitudinal radar & strike history database."""
+    return FileResponse("static/history.html")
+
+
 @app.get("/api/radar-russia/history")
 async def get_radar_russia_history(
-    limit: int = 200,
+    limit: int = 100,
     offset: int = 0,
     channel: Optional[str] = None,
     source_type: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
     query: Optional[str] = None,
+    format: Optional[str] = None,
 ):
-    """Returns longitudinal historical air alerts and strike incidents from radar_history.db."""
+    """Returns longitudinal historical air alerts and strike incidents from radar_history.db (JSON or CSV)."""
+    import csv
+    import io
+
     db_path = init_radar_history_db(DATA_DIR)
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, timeout=30.0)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -1440,14 +1569,67 @@ async def get_radar_russia_history(
     if source_type:
         clauses.append("source_type = ?")
         params.append(source_type)
+    if status_filter == "unresolved":
+        clauses.append("(lat IS NULL OR lon IS NULL)")
+    elif status_filter in ("active", "over"):
+        clauses.append("status = ?")
+        params.append(status_filter)
+    if date_from:
+        clauses.append("timestamp >= ?")
+        params.append(date_from)
+    if date_to:
+        clauses.append("timestamp <= ?")
+        params.append(date_to + "T23:59:59" if "T" not in date_to else date_to)
     if query:
-        clauses.append("(nominatim_query LIKE ? OR resolved_name LIKE ? OR threat LIKE ?)")
+        clauses.append("(nominatim_query LIKE ? OR resolved_name LIKE ? OR threat LIKE ? OR raw_text LIKE ?)")
         q_like = f"%{query}%"
-        params.extend([q_like, q_like, q_like])
+        params.extend([q_like, q_like, q_like, q_like])
 
     where_sql = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+
+    if format and format.lower() == "csv":
+        cursor.execute(
+            f"SELECT timestamp, channel, source_type, resolved_name, nominatim_query, raw_location, threat, status, lat, lon, osm_id, post_url FROM radar_alerts_history{where_sql} ORDER BY timestamp DESC LIMIT ?",
+            [*params, min(limit, 100000)],
+        )
+        csv_rows = cursor.fetchall()
+        conn.close()
+        buf = io.StringIO()
+        buf.write("\ufeff")  # UTF-8 BOM for Excel compatibility
+        writer = csv.writer(buf)
+        writer.writerow([
+            "timestamp",
+            "channel",
+            "source_type",
+            "resolved_name",
+            "nominatim_query",
+            "raw_location",
+            "threat",
+            "status",
+            "lat",
+            "lon",
+            "osm_id",
+            "post_url",
+        ])
+        for r in csv_rows:
+            writer.writerow(list(r))
+        return Response(
+            content=buf.getvalue(),
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": 'attachment; filename="radar_history_export.csv"'},
+        )
+
     cursor.execute(f"SELECT COUNT(*) FROM radar_alerts_history{where_sql}", params)
     total = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM radar_alerts_history")
+    db_total = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM radar_alerts_history WHERE source_type = 'telegram_incident'")
+    incident_total = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM radar_alerts_history WHERE lat IS NULL OR lon IS NULL")
+    unresolved_total = cursor.fetchone()[0]
 
     cursor.execute(
         f"SELECT * FROM radar_alerts_history{where_sql} ORDER BY timestamp DESC LIMIT ? OFFSET ?",
@@ -1463,6 +1645,9 @@ async def get_radar_russia_history(
 
     return {
         "total": total,
+        "db_total": db_total,
+        "incident_total": incident_total,
+        "unresolved_total": unresolved_total,
         "limit": limit,
         "offset": offset,
         "by_channel": by_channel,
@@ -1470,16 +1655,31 @@ async def get_radar_russia_history(
     }
 
 
-@app.post("/api/admin/telegram_backfill", dependencies=[Depends(verify_admin)])
-async def admin_trigger_telegram_backfill(limit: int = 100):
-    """Triggers telegram_userbot_scraper.py --backfill-only to populate longitudinal history from Telegram."""
+_backfill_task_state: Dict[str, Any] = {
+    "running": False,
+    "limit": 0,
+    "started_at": None,
+    "finished_at": None,
+    "last_status": "idle",
+    "last_message": "",
+}
+
+
+async def _run_background_backfill(limit: int):
+    global _backfill_task_state
+    _backfill_task_state["running"] = True
+    _backfill_task_state["limit"] = limit
+    _backfill_task_state["started_at"] = datetime.now(timezone.utc).isoformat()
+    _backfill_task_state["finished_at"] = None
+    _backfill_task_state["last_status"] = "running"
+    _backfill_task_state["last_message"] = f"Backfilling up to {limit} messages per channel across {len(CHANNEL_CONFIGS)} channels..."
     try:
         process = await asyncio.create_subprocess_exec(
             sys.executable if "sys" in globals() else "python",
             "-u",
             "telegram_userbot_scraper.py",
             "--backfill",
-            str(max(1, min(limit, 1000))),
+            str(max(1, min(limit, 10000))),
             "--backfill-only",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
@@ -1487,14 +1687,51 @@ async def admin_trigger_telegram_backfill(limit: int = 100):
         stdout, stderr = await process.communicate()
         if process.returncode != 0:
             err_msg = stderr.decode("utf-8", errors="replace") or stdout.decode("utf-8", errors="replace")
-            return {"status": "error", "message": err_msg[-1000:]}
-        return {
-            "status": "success",
-            "output": stdout.decode("utf-8", errors="replace")[-2000:],
-        }
+            _backfill_task_state["last_status"] = "error"
+            _backfill_task_state["last_message"] = err_msg[-600:]
+        else:
+            out_lines = [l.strip() for l in stdout.decode("utf-8", errors="replace").splitlines() if l.strip()]
+            summary_line = out_lines[-1] if out_lines else "Backfill completed."
+            _backfill_task_state["last_status"] = "success"
+            _backfill_task_state["last_message"] = summary_line
     except Exception as e:
-        logger.error(f"Backfill trigger error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        _backfill_task_state["last_status"] = "error"
+        _backfill_task_state["last_message"] = str(e)
+    finally:
+        _backfill_task_state["running"] = False
+        _backfill_task_state["finished_at"] = datetime.now(timezone.utc).isoformat()
+
+
+@app.post("/api/admin/telegram_backfill", dependencies=[Depends(verify_admin)])
+async def admin_trigger_telegram_backfill(limit: int = 250):
+    """Triggers background telegram_userbot_scraper.py --backfill-only (up to 10,000 msgs/channel for 100k+ records)."""
+    if _backfill_task_state.get("running"):
+        return {
+            "status": "running",
+            "message": "A backfill task is already running in the background.",
+            "state": _backfill_task_state,
+        }
+    asyncio.create_task(_run_background_backfill(max(1, min(limit, 10000))))
+    return {
+        "status": "started",
+        "message": f"Started background backfill ({limit} messages/channel).",
+        "state": _backfill_task_state,
+    }
+
+
+@app.get("/api/admin/telegram_backfill/status", dependencies=[Depends(verify_admin)])
+async def admin_get_telegram_backfill_status():
+    db_path = init_radar_history_db(DATA_DIR)
+    conn = sqlite3.connect(db_path, timeout=30.0)
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM radar_alerts_history")
+    total_rows = cur.fetchone()[0]
+    conn.close()
+    return {
+        "status": "success",
+        "db_total_rows": total_rows,
+        "state": _backfill_task_state,
+    }
 
 @app.get("/admin", dependencies=[Depends(verify_admin)])
 async def serve_admin():
