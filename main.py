@@ -1415,7 +1415,7 @@ async def admin_list_geocode_failures():
                     failures_map[loc_key]["date"] = date_part
 
     items = sorted(failures_map.values(), key=lambda x: x["last_seen"], reverse=True)
-    return {"status": "success", "total": len(items), "failures": items}
+    return {"status": "success", "total": len(items), "items": items, "failures": items}
 
 
 @app.delete("/api/admin/geocode_failures", dependencies=[Depends(verify_admin)])
@@ -1730,6 +1730,9 @@ async def admin_get_telegram_backfill_status():
     return {
         "status": "success",
         "db_total_rows": total_rows,
+        "db_total": total_rows,
+        "running": _backfill_task_state.get("running", False),
+        "last_result": f"error: {_backfill_task_state.get('last_message', '')}" if _backfill_task_state.get("last_status") == "error" else _backfill_task_state.get("last_message", ""),
         "state": _backfill_task_state,
     }
 

@@ -90,7 +90,7 @@ document.getElementById('admin-panel-container').innerHTML = `
                 <button type="button" class="primary-btn" onclick="window.editTelegramIncident('')" style="flex: 1; background: #10b981; font-size: 0.78rem; padding: 6px;">➕ Add Hit Marker</button>
             </div>
             <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                <a href="/history" target="_blank" class="primary-btn" style="flex: 1; background: #0ea5e9; font-size: 0.78rem; padding: 6px; text-align: center; text-decoration: none; box-sizing: border-box;">📊 View Historical Archive Table (/history)</a>
+                <a href="/history.html" target="_blank" class="primary-btn" style="flex: 1; background: #0ea5e9; font-size: 0.78rem; padding: 6px; text-align: center; text-decoration: none; box-sizing: border-box;">📊 View Historical Archive Table (/history)</a>
             </div>
             <div style="display: flex; gap: 6px; align-items: center;">
                 <select id="telegramBackfillLimit" style="background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white; border-radius: 4px; padding: 5px; font-size: 0.75rem;" title="Messages per channel to scan">
